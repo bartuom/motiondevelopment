@@ -20,76 +20,40 @@
     <div class="portfolio-layout">
       <nav class="effect-nav" aria-label="Effect categories">
         <p class="nav-label">Effects</p>
-        <button class="effect-nav__item is-active" type="button" data-effect="explosion">
-          <span class="effect-number">01</span>
-          <span>Explosions</span>
-          <small>Live</small>
-        </button>
-        <button class="effect-nav__item" type="button" data-effect="flash" disabled>
-          <span class="effect-number">02</span>
-          <span>Flash</span>
-          <small>Next</small>
-        </button>
-        <button class="effect-nav__item" type="button" data-effect="impact" disabled>
-          <span class="effect-number">03</span>
-          <span>Impact</span>
-        </button>
-        <button class="effect-nav__item" type="button" data-effect="spell" disabled>
-          <span class="effect-number">04</span>
-          <span>Spell Effects</span>
-        </button>
-        <button class="effect-nav__item" type="button" data-effect="draw" disabled>
-          <span class="effect-number">05</span>
-          <span>Draw Animations</span>
-        </button>
-        <button class="effect-nav__item" type="button" data-effect="trails" disabled>
-          <span class="effect-number">06</span>
-          <span>Trails & Particles</span>
-        </button>
+        <button class="effect-nav__item is-active" type="button" data-effect="explosion"><span class="effect-number">01</span><span>Explosions</span><small>Live</small></button>
+        <button class="effect-nav__item" type="button" data-effect="flash"><span class="effect-number">02</span><span>Flash</span><small>Live</small></button>
+        <button class="effect-nav__item" type="button" data-effect="impact"><span class="effect-number">03</span><span>Impact</span><small>Live</small></button>
+        <button class="effect-nav__item" type="button" data-effect="spell"><span class="effect-number">04</span><span>Spell Effects</span><small>Live</small></button>
+        <button class="effect-nav__item" type="button" data-effect="draw"><span class="effect-number">05</span><span>Draw Animations</span><small>Live</small></button>
+        <button class="effect-nav__item" type="button" data-effect="trails"><span class="effect-number">06</span><span>Trails & Particles</span><small>Live</small></button>
       </nav>
 
       <section class="demo-panel" aria-labelledby="effect-title">
         <div class="demo-header">
           <div>
-            <p class="demo-index">01 / 06</p>
+            <p class="demo-index" id="demo-index">01 / 06</p>
             <h2 id="effect-title">Explosions</h2>
-            <p class="demo-description">Two lightweight gameplay explosions with separate sprite sheets and hand-tuned frame pacing.</p>
+            <p class="demo-description" id="demo-description"></p>
           </div>
           <div class="runtime-meta" aria-label="Runtime information">
             <span>App FPS <strong id="app-fps">--</strong></span>
-            <span>Sprite avg FPS <strong id="animation-fps">--</strong></span>
+            <span id="animation-fps-wrap">Anim FPS <strong id="animation-fps">--</strong></span>
             <span>0 dependencies</span>
             <span>Buildless</span>
           </div>
         </div>
 
-        <div class="stage" id="stage" aria-label="Explosion animation preview">
+        <div class="stage" id="stage">
           <div class="stage-grid" aria-hidden="true"></div>
-          <div class="origin" aria-hidden="true"><span></span></div>
-          <div class="blast-bloom" id="blast-bloom" aria-hidden="true"></div>
-          <div class="explosion-flash" id="explosion-flash" aria-hidden="true"></div>
-          <div class="shock-ring shock-ring--a" id="shock-ring-a" aria-hidden="true"></div>
-          <div class="shock-ring shock-ring--b" id="shock-ring-b" aria-hidden="true"></div>
-          <div class="explosion-sprite" id="explosion-sprite" aria-hidden="true"></div>
-          <div class="particles" id="particles" aria-hidden="true"></div>
+          <div id="effect-root" class="effect-root" aria-live="polite"></div>
         </div>
 
         <div class="demo-controls">
-          <div class="variants" aria-label="Explosion variants">
-            <button type="button" data-variant="small" class="is-active">Small</button>
-            <button type="button" data-variant="big">Big</button>
-          </div>
+          <div class="variants" id="variant-controls" aria-label="Effect variants"></div>
           <button class="play-button" id="play-button" type="button">Play effect</button>
         </div>
 
-        <div class="technical-strip">
-          <span>2 sprite sheets</span>
-          <span>JS frame timing</span>
-          <span>transform + opacity</span>
-          <span>pooled DOM particles</span>
-          <span>Vanilla JS</span>
-          <span>Mobile friendly</span>
-        </div>
+        <div class="technical-strip" id="technical-strip"></div>
       </section>
     </div>
   </main>
