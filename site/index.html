@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Browser-native game motion studies built with HTML, CSS, SVG, Canvas 2D and vanilla JavaScript.">
+  <title>Motion Development | Power Shot Impact</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script>document.documentElement.classList.replace('no-js', 'js');</script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Motion Development home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>Motion Development</strong>
+          <small>Browser-native game motion studies</small>
+        </span>
+      </a>
+      <div class="tech-stack" aria-label="Technologies used">
+        <span>CSS</span>
+        <span>SVG</span>
+        <span>Canvas 2D</span>
+        <span>Vanilla JS</span>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="demo-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Effect 01</p>
+        <h1 id="demo-title">Power Shot <span>Impact</span></h1>
+        <p>
+          A reusable football shot effect combining anticipation, trajectory, trail,
+          impact flash, directional particles, net punch and screen shake.
+        </p>
+      </div>
+      <div class="hero-meta" aria-label="Demo characteristics">
+        <div><span>Runtime</span><strong>0 deps</strong></div>
+        <div><span>Target</span><strong>60 FPS</strong></div>
+        <div><span>Renderer</span><strong>Hybrid</strong></div>
+      </div>
+    </section>
+
+    <section class="demo-layout" aria-label="Interactive power shot demo">
+      <div class="demo-card">
+        <div class="demo-card__header">
+          <div>
+            <span class="status-dot" aria-hidden="true"></span>
+            <strong>Live stage</strong>
+          </div>
+          <p id="stage-status" aria-live="polite">Ready. Choose a target and fire.</p>
+        </div>
+
+        <div class="stage-frame">
+          <div class="stage" id="stage" tabindex="0" aria-label="Football goal. Click or use target controls to choose where to shoot.">
+            <div class="stage-atmosphere" aria-hidden="true"></div>
+            <div class="stage-glow" aria-hidden="true"></div>
+
+            <svg class="stage-vectors" viewBox="0 0 800 450" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="trail-gradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#6affb0" stop-opacity="0"></stop>
+                  <stop offset="38%" stop-color="#6affb0" stop-opacity="0.45"></stop>
+                  <stop offset="100%" stop-color="#ecfff5" stop-opacity="1"></stop>
+                </linearGradient>
+                <filter id="trail-glow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="6"></feGaussianBlur>
+                </filter>
+                <filter id="goal-glow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
+                  <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+                </filter>
+              </defs>
+
+              <g class="pitch-lines">
+                <path d="M0 383 H800"></path>
+                <path d="M60 450 L330 260"></path>
+                <path d="M740 450 L470 260"></path>
+                <path d="M287 290 H513"></path>
+                <ellipse cx="400" cy="368" rx="86" ry="25"></ellipse>
+              </g>
+
+              <g id="goal" class="goal" filter="url(#goal-glow)">
+                <g id="goal-net" class="goal-net">
+                  <path d="M553 113 L713 113 L751 313 L516 313 Z"></path>
+                  <path d="M568 113 L544 313 M593 113 L575 313 M618 113 L607 313 M643 113 L639 313 M668 113 L671 313 M693 113 L703 313"></path>
+                  <path d="M548 145 L719 145 M541 181 L726 181 M534 219 L733 219 M526 261 L742 261"></path>
+                </g>
+                <g class="goal-frame">
+                  <path d="M553 113 H713 L751 313"></path>
+                  <path d="M553 113 L516 313"></path>
+                  <path d="M516 313 H751"></path>
+                  <path d="M553 113 V290"></path>
+                  <path d="M713 113 V290"></path>
+                </g>
+              </g>
+
+              <polyline id="ball-trail-glow" class="ball-trail ball-trail--glow" points=""></polyline>
+              <polyline id="ball-trail" class="ball-trail" points=""></polyline>
+
+              <g id="impact-rays" class="impact-rays"></g>
+              <circle id="shockwave" class="shockwave" cx="680" cy="140" r="28"></circle>
+
+              <g id="target-reticle" class="target-reticle" transform="translate(680 140)">
+                <circle r="20"></circle>
+                <circle r="7"></circle>
+                <path d="M0 -30 V-19 M0 19 V30 M-30 0 H-19 M19 0 H30"></path>
+              </g>
+            </svg>
+
+            <canvas id="particle-canvas" class="particle-canvas" role="presentation"></canvas>
+
+            <div id="ball" class="ball" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="29" fill="#f4f7f5"></circle>
+                <path d="M32 19 42 26 38 38 26 38 22 26Z" fill="#101714"></path>
+                <path d="M32 3 32 19 M5 25 22 26 M59 25 42 26 M14 54 26 38 M50 54 38 38" stroke="#101714" stroke-width="5" stroke-linecap="round"></path>
+              </svg>
+            </div>
+
+            <div id="impact-flash" class="impact-flash" aria-hidden="true"></div>
+            <div id="impact-label" class="impact-label" aria-hidden="true">
+              <strong>POWER</strong><span>SHOT</span>
+            </div>
+
+            <div class="stage-hint" aria-hidden="true">
+              <span>Click goal to aim</span>
+              <span class="stage-hint__line"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-footer">
+          <span><kbd>Space</kbd> Fire</span>
+          <span><kbd>R</kbd> Reset</span>
+          <span id="motion-preference">Reduced motion: auto</span>
+        </div>
+      </div>
+
+      <aside class="playground" aria-labelledby="playground-title">
+        <div class="playground__title">
+          <div>
+            <p class="eyebrow">Tuning</p>
+            <h2 id="playground-title">FX Playground</h2>
+          </div>
+          <span class="live-badge">Live</span>
+        </div>
+
+        <fieldset class="control-group">
+          <legend>Preset</legend>
+          <div class="segmented" id="preset-controls">
+            <button type="button" data-preset="subtle">Subtle</button>
+            <button type="button" data-preset="arcade" class="is-active" aria-pressed="true">Arcade</button>
+            <button type="button" data-preset="heavy">Heavy</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="control-group">
+          <legend>Target</legend>
+          <div class="target-grid" id="target-controls">
+            <button type="button" data-target="top-left" aria-label="Aim top left">↖</button>
+            <button type="button" data-target="top-right" class="is-active" aria-pressed="true" aria-label="Aim top right">↗</button>
+            <button type="button" data-target="center" aria-label="Aim center">●</button>
+            <button type="button" data-target="bottom-left" aria-label="Aim bottom left">↙</button>
+            <button type="button" data-target="bottom-right" aria-label="Aim bottom right">↘</button>
+          </div>
+        </fieldset>
+
+        <div class="sliders" id="sliders">
+          <label class="slider-row" for="power-control">
+            <span><strong>Power</strong><output id="power-output">100%</output></span>
+            <input id="power-control" data-control="power" type="range" min="60" max="140" value="100">
+          </label>
+          <label class="slider-row" for="trail-control">
+            <span><strong>Trail</strong><output id="trail-output">100%</output></span>
+            <input id="trail-control" data-control="trail" type="range" min="0" max="150" value="100">
+          </label>
+          <label class="slider-row" for="particles-control">
+            <span><strong>Particles</strong><output id="particles-output">100%</output></span>
+            <input id="particles-control" data-control="particles" type="range" min="0" max="150" value="100">
+          </label>
+          <label class="slider-row" for="shake-control">
+            <span><strong>Shake</strong><output id="shake-output">100%</output></span>
+            <input id="shake-control" data-control="shake" type="range" min="0" max="150" value="100">
+          </label>
+          <label class="slider-row" for="flash-control">
+            <span><strong>Flash</strong><output id="flash-output">100%</output></span>
+            <input id="flash-control" data-control="flash" type="range" min="0" max="150" value="100">
+          </label>
+        </div>
+
+        <div class="playground-actions">
+          <button id="play-button" class="primary-button" type="button" disabled>
+            <span class="button-icon" aria-hidden="true">▶</span>
+            Fire power shot
+          </button>
+          <button id="reset-button" class="secondary-button" type="button" disabled>Reset</button>
+        </div>
+
+        <div class="implementation-note">
+          <span>Implementation</span>
+          <p>CSS for punch and UI, SVG for vectors, Canvas for particles, JavaScript for timing and simulation.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="breakdown" aria-labelledby="breakdown-title">
+      <div class="section-heading">
+        <p class="eyebrow">Under the hood</p>
+        <h2 id="breakdown-title">One effect, five reusable primitives.</h2>
+        <p>The first study is also the foundation for later reveals, celebrations, spells and UI impact states.</p>
+      </div>
+      <div class="primitive-grid">
+        <article><span>01</span><h3>Trajectory</h3><p>Time-based quadratic motion driven by requestAnimationFrame.</p></article>
+        <article><span>02</span><h3>Trail</h3><p>Sampled SVG polyline with a layered glow treatment.</p></article>
+        <article><span>03</span><h3>Particles</h3><p>Pooled Canvas particles inheriting the shot direction.</p></article>
+        <article><span>04</span><h3>Impact</h3><p>WAAPI shockwave plus CSS flash, label punch and net response.</p></article>
+        <article><span>05</span><h3>Shake</h3><p>Short transform-only camera punch with reduced-motion fallback.</p></article>
+      </div>
+    </section>
+
+    <noscript>
+      <p class="noscript">The interactive FX playground requires JavaScript. The technical breakdown remains available without it.</p>
+    </noscript>
+  </main>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
