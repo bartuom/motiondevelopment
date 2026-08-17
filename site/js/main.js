@@ -3,6 +3,11 @@ const flash = document.querySelector('#explosion-flash');
 const particleRoot = document.querySelector('#particles');
 const playButton = document.querySelector('#play-button');
 const variantButtons = [...document.querySelectorAll('[data-variant]')];
+const appFpsOutput = document.querySelector('#app-fps');
+const animationFpsOutput = document.querySelector('#animation-fps');
+
+const SPRITE_FRAMES = 8;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const variants = {
   compact: {
@@ -39,11 +44,19 @@ for (let i = 0; i < 16; i += 1) {
   particlePool.push(particle);
 }
 
+function updateAnimationFps() {
+  const settings = variants[activeVariant];
+  const duration = reducedMotion.matches ? 760 : settings.spriteDuration;
+  const fps = SPRITE_FRAMES / (duration / 1000);
+  animationFpsOutput.textContent = fps.toFixed(1);
+}
+
 function setVariant(name) {
   activeVariant = name;
   variantButtons.forEach((button) => {
     button.classList.toggle('is-active', button.dataset.variant === name);
   });
+  updateAnimationFps();
 }
 
 function resetEffect() {
@@ -102,6 +115,28 @@ function playExplosion() {
   }, settings.spriteDuration + 120);
 }
 
+let fpsFrames = 0;
+let fpsWindowStart = performance.now();
+let smoothedFps = 0;
+
+function measureAppFps(now) {
+  fpsFrames += 1;
+  const elapsed = now - fpsWindowStart;
+
+  if (elapsed > 1500) {
+    fpsFrames = 0;
+    fpsWindowStart = now;
+  } else if (elapsed >= 500) {
+    const currentFps = fpsFrames * 1000 / elapsed;
+    smoothedFps = smoothedFps ? smoothedFps * 0.6 + currentFps * 0.4 : currentFps;
+    appFpsOutput.textContent = Math.round(smoothedFps);
+    fpsFrames = 0;
+    fpsWindowStart = now;
+  }
+
+  requestAnimationFrame(measureAppFps);
+}
+
 variantButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setVariant(button.dataset.variant);
@@ -118,4 +153,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
+reducedMotion.addEventListener('change', updateAnimationFps);
+
 setVariant('standard');
+requestAnimationFrame(measureAppFps);
