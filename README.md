@@ -1,63 +1,46 @@
-# Motion Development
+# Motion FX Portfolio
 
-Lightweight browser-game motion portfolio built for practical CSS/JavaScript gameplay effects.
+A neutral, lightweight browser portfolio focused on six motion / game FX categories:
 
-## Effect 01: Power Shot Impact
+1. Explosions
+2. Flash
+3. Impact
+4. Spell Effects
+5. Draw Animations
+6. Trails & Particles
 
-The first demo intentionally uses a very small production-style stack:
+The project is intentionally small and easy to integrate into existing browser game code.
+
+## Stack
 
 - HTML
-- CSS animations and keyframes
-- vanilla JavaScript for sequencing
-- one 8-frame sprite sheet
-- 12 reusable DOM particles
-- no framework
-- no runtime libraries
-- no build step
+- CSS animations / keyframes / transitions
+- Vanilla JavaScript
+- Sprite sheets
+- Small reusable DOM particle pools
 
-The effect combines a ball shot, trail, flash, sprite-sheet impact, short particle burst, goal-net punch and screen shake.
+No framework, no runtime dependencies and no build step.
 
-## Why this architecture
+## Effect 01: Explosion
 
-The goal is not to build an FX framework. The goal is to show effects that can be dropped into an existing browser game with minimal integration cost.
+The first finished study uses:
 
-CSS handles most visual motion through `transform` and `opacity`. JavaScript only selects presets, calculates the responsive shot vector and sequences the effect.
-
-```text
-site/
-├── index.html
-├── styles.css
-├── assets/
-│   └── impact-sprite.svg
-└── js/
-    └── main.js
-```
+- an 8-frame sprite sheet
+- CSS `steps()` playback
+- `transform` and `opacity` based animation
+- a fixed reusable pool of up to 16 DOM particles
+- three variants: Compact, Standard and Heavy
 
 ## Run locally
 
-Any static server is enough:
+Any static HTTP server is enough:
 
 ```bash
 python -m http.server 8080 --directory site
 ```
 
-There is no install or build command.
+Then open `http://localhost:8080`.
 
-## GitHub Pages
+## Live portfolio
 
-The repository deploys `site/` directly through GitHub Actions.
-
-Live portfolio:
-
-`https://bartuom.github.io/motiondevelopment/`
-
-## Planned portfolio effects
-
-1. Power Shot Impact
-2. Explosion Sprite Sheet
-3. Spell Cast
-4. Player Draw / Reward Reveal
-5. Gameplay Trails
-6. Small Particle Emitters
-
-The set is focused on reusable browser-game motion patterns, sprite sheets, gameplay feedback and mobile-friendly performance.
+GitHub Pages publishes the `site/` directory directly. No npm install or build command is required.

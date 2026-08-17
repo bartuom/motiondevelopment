@@ -3,93 +3,92 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Lightweight CSS and JavaScript motion effects for browser games.">
-  <meta name="color-scheme" content="dark">
-  <title>Motion Development | Power Shot</title>
+  <meta name="description" content="Lightweight browser motion and game FX portfolio built with CSS, JavaScript and sprite sheets.">
+  <title>Motion FX Portfolio</title>
   <link rel="stylesheet" href="./styles.css">
-  <script src="./js/main.js" defer></script>
 </head>
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <a class="brand" href="./">Motion Development</a>
-      <div class="stack" aria-label="Technology stack">
-        <span>CSS</span><span>JavaScript</span><span>Sprite Sheet</span><span>0 deps</span>
+  <main class="page-shell">
+    <header class="site-header">
+      <div>
+        <p class="site-label">Motion Development</p>
+        <h1>Motion FX Portfolio</h1>
       </div>
+      <p class="stack">CSS · JavaScript · Sprite Sheets</p>
     </header>
 
-    <section class="intro">
-      <p class="kicker">Effect 01</p>
-      <h1>Power Shot Impact</h1>
-      <p class="intro-copy">A lightweight gameplay effect built from CSS animations, a sprite sheet and simple JavaScript sequencing.</p>
-    </section>
+    <div class="portfolio-layout">
+      <nav class="effect-nav" aria-label="Effect categories">
+        <p class="nav-label">Effects</p>
+        <button class="effect-nav__item is-active" type="button" data-effect="explosion">
+          <span class="effect-number">01</span>
+          <span>Explosions</span>
+          <small>Live</small>
+        </button>
+        <button class="effect-nav__item" type="button" data-effect="flash" disabled>
+          <span class="effect-number">02</span>
+          <span>Flash</span>
+          <small>Next</small>
+        </button>
+        <button class="effect-nav__item" type="button" data-effect="impact" disabled>
+          <span class="effect-number">03</span>
+          <span>Impact</span>
+        </button>
+        <button class="effect-nav__item" type="button" data-effect="spell" disabled>
+          <span class="effect-number">04</span>
+          <span>Spell Effects</span>
+        </button>
+        <button class="effect-nav__item" type="button" data-effect="draw" disabled>
+          <span class="effect-number">05</span>
+          <span>Draw Animations</span>
+        </button>
+        <button class="effect-nav__item" type="button" data-effect="trails" disabled>
+          <span class="effect-number">06</span>
+          <span>Trails & Particles</span>
+        </button>
+      </nav>
 
-    <section class="demo-card" aria-label="Power Shot demo">
-      <div class="demo-head">
-        <div><span class="dot"></span><strong>Live effect</strong></div>
-        <span id="status">Ready</span>
-      </div>
-
-      <div class="stage-wrap">
-        <div class="stage" id="stage">
-          <div class="field-line field-line--one"></div>
-          <div class="field-line field-line--two"></div>
-
-          <div class="goal" aria-hidden="true">
-            <div class="goal-net"></div>
+      <section class="demo-panel" aria-labelledby="effect-title">
+        <div class="demo-header">
+          <div>
+            <p class="demo-index">01 / 06</p>
+            <h2 id="effect-title">Explosion</h2>
+            <p class="demo-description">A lightweight sprite-sheet explosion with a small reusable DOM particle pool.</p>
           </div>
+          <div class="runtime-meta">
+            <span>0 dependencies</span>
+            <span>Buildless</span>
+          </div>
+        </div>
 
-          <div class="trail" id="trail" aria-hidden="true"></div>
-          <div class="ball" id="ball" aria-hidden="true"><span></span></div>
-
-          <div class="impact-sprite" id="impactSprite" aria-hidden="true"></div>
+        <div class="stage" id="stage" aria-label="Explosion animation preview">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <div class="origin" aria-hidden="true"><span></span></div>
+          <div class="explosion-flash" id="explosion-flash" aria-hidden="true"></div>
+          <div class="explosion-sprite" id="explosion-sprite" aria-hidden="true"></div>
           <div class="particles" id="particles" aria-hidden="true"></div>
-          <div class="flash" id="flash" aria-hidden="true"></div>
+        </div>
 
-          <div class="impact-copy" id="impactCopy" aria-hidden="true">
-            <strong>POWER</strong><span>SHOT</span>
+        <div class="demo-controls">
+          <div class="variants" aria-label="Explosion variants">
+            <button type="button" data-variant="compact">Compact</button>
+            <button type="button" data-variant="standard" class="is-active">Standard</button>
+            <button type="button" data-variant="heavy">Heavy</button>
           </div>
+          <button class="play-button" id="play-button" type="button">Play effect</button>
         </div>
-      </div>
 
-      <div class="controls">
-        <div class="presets" aria-label="Effect strength">
-          <button type="button" data-preset="normal">Normal</button>
-          <button type="button" data-preset="strong" class="active">Strong</button>
-          <button type="button" data-preset="critical">Critical</button>
+        <div class="technical-strip">
+          <span>Sprite sheet</span>
+          <span>CSS steps()</span>
+          <span>transform + opacity</span>
+          <span>Vanilla JS</span>
+          <span>Mobile friendly</span>
         </div>
-        <button class="play" id="playButton" type="button">Play effect</button>
-      </div>
-    </section>
-
-    <section class="recipe" aria-labelledby="recipeTitle">
-      <div>
-        <p class="kicker">Implementation</p>
-        <h2 id="recipeTitle">Small enough to drop into an existing game.</h2>
-      </div>
-      <div class="recipe-grid">
-        <article><strong>CSS</strong><span>ball motion, trail, flash, shake</span></article>
-        <article><strong>Sprite sheet</strong><span>8-frame impact animation</span></article>
-        <article><strong>Particles</strong><span>12 pooled DOM elements</span></article>
-        <article><strong>JavaScript</strong><span>preset + sequencing only</span></article>
-        <article><strong>Performance</strong><span>transform + opacity, mobile-first</span></article>
-        <article><strong>Runtime</strong><span>0 libraries, 0 build step</span></article>
-      </div>
-    </section>
-
-    <section class="next-effects" aria-labelledby="nextTitle">
-      <div>
-        <p class="kicker">Portfolio set</p>
-        <h2 id="nextTitle">Next lightweight effects</h2>
-      </div>
-      <div class="next-grid">
-        <article><span>02</span><strong>Explosion</strong><small>sprite sheet</small></article>
-        <article><span>03</span><strong>Spell Cast</strong><small>CSS + sprites</small></article>
-        <article><span>04</span><strong>Player Draw</strong><small>reward reveal</small></article>
-        <article><span>05</span><strong>Trails</strong><small>gameplay motion</small></article>
-        <article><span>06</span><strong>Particles</strong><small>small emitters</small></article>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
+
+  <script src="./js/main.js" defer></script>
 </body>
 </html>
