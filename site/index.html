@@ -52,12 +52,12 @@
         <div class="demo-header">
           <div>
             <p class="demo-index">01 / 06</p>
-            <h2 id="effect-title">Explosion</h2>
-            <p class="demo-description">Fast layered gameplay explosion: sprite-sheet fireball, pressure rings, sparks, embers and a short smoke tail.</p>
+            <h2 id="effect-title">Explosions</h2>
+            <p class="demo-description">Two lightweight gameplay explosions with separate sprite sheets and hand-tuned frame pacing.</p>
           </div>
           <div class="runtime-meta" aria-label="Runtime information">
             <span>App FPS <strong id="app-fps">--</strong></span>
-            <span>Sprite FPS <strong id="animation-fps">--</strong></span>
+            <span>Sprite avg FPS <strong id="animation-fps">--</strong></span>
             <span>0 dependencies</span>
             <span>Buildless</span>
           </div>
@@ -76,18 +76,17 @@
 
         <div class="demo-controls">
           <div class="variants" aria-label="Explosion variants">
-            <button type="button" data-variant="compact">Compact</button>
-            <button type="button" data-variant="standard" class="is-active">Standard</button>
-            <button type="button" data-variant="heavy">Heavy</button>
+            <button type="button" data-variant="small" class="is-active">Small</button>
+            <button type="button" data-variant="big">Big</button>
           </div>
           <button class="play-button" id="play-button" type="button">Play effect</button>
         </div>
 
         <div class="technical-strip">
-          <span>12-frame sprite sheet</span>
-          <span>CSS steps()</span>
+          <span>2 sprite sheets</span>
+          <span>JS frame timing</span>
           <span>transform + opacity</span>
-          <span>pooled DOM sparks</span>
+          <span>pooled DOM particles</span>
           <span>Vanilla JS</span>
           <span>Mobile friendly</span>
         </div>
