@@ -53,7 +53,7 @@
           <div>
             <p class="demo-index">01 / 06</p>
             <h2 id="effect-title">Explosion</h2>
-            <p class="demo-description">A lightweight sprite-sheet explosion with a small reusable DOM particle pool.</p>
+            <p class="demo-description">Fast layered gameplay explosion: sprite-sheet fireball, pressure rings, sparks, embers and a short smoke tail.</p>
           </div>
           <div class="runtime-meta" aria-label="Runtime information">
             <span>App FPS <strong id="app-fps">--</strong></span>
@@ -66,7 +66,10 @@
         <div class="stage" id="stage" aria-label="Explosion animation preview">
           <div class="stage-grid" aria-hidden="true"></div>
           <div class="origin" aria-hidden="true"><span></span></div>
+          <div class="blast-bloom" id="blast-bloom" aria-hidden="true"></div>
           <div class="explosion-flash" id="explosion-flash" aria-hidden="true"></div>
+          <div class="shock-ring shock-ring--a" id="shock-ring-a" aria-hidden="true"></div>
+          <div class="shock-ring shock-ring--b" id="shock-ring-b" aria-hidden="true"></div>
           <div class="explosion-sprite" id="explosion-sprite" aria-hidden="true"></div>
           <div class="particles" id="particles" aria-hidden="true"></div>
         </div>
@@ -81,9 +84,10 @@
         </div>
 
         <div class="technical-strip">
-          <span>8-frame sprite sheet</span>
+          <span>12-frame sprite sheet</span>
           <span>CSS steps()</span>
           <span>transform + opacity</span>
+          <span>pooled DOM sparks</span>
           <span>Vanilla JS</span>
           <span>Mobile friendly</span>
         </div>
