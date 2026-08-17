@@ -1,76 +1,63 @@
 # Motion Development
 
-Browser-native game motion portfolio experiments built with HTML, CSS, SVG, Canvas 2D and vanilla JavaScript.
+Lightweight browser-game motion portfolio built for practical CSS/JavaScript gameplay effects.
 
 ## Effect 01: Power Shot Impact
 
-The first study is a football power-shot effect and the reusable foundation for later demos.
+The first demo intentionally uses a very small production-style stack:
 
-It combines:
+- HTML
+- CSS animations and keyframes
+- vanilla JavaScript for sequencing
+- one 8-frame sprite sheet
+- 12 reusable DOM particles
+- no framework
+- no runtime libraries
+- no build step
 
-- time-based shot trajectory driven by `requestAnimationFrame`
-- SVG trajectory trail and impact vectors
-- pooled Canvas 2D particles
-- Web Animations API shockwave and net response
-- CSS screen shake and UI motion
-- live `Subtle`, `Arcade` and `Heavy` presets
-- per-effect tuning for power, trail, particles, shake and flash
-- five selectable shot targets
-- responsive layout and `prefers-reduced-motion` handling
+The effect combines a ball shot, trail, flash, sprite-sheet impact, short particle burst, goal-net punch and screen shake.
 
-## Runtime architecture
+## Why this architecture
 
-There are no runtime dependencies and no framework.
+The goal is not to build an FX framework. The goal is to show effects that can be dropped into an existing browser game with minimal integration cost.
+
+CSS handles most visual motion through `transform` and `opacity`. JavaScript only selects presets, calculates the responsive shot vector and sequences the effect.
 
 ```text
 site/
 ├── index.html
 ├── styles.css
+├── assets/
+│   └── impact-sprite.svg
 └── js/
-    ├── main.js
-    ├── core/
-    │   └── timeline.js
-    ├── fx/
-    │   ├── particles.js
-    │   ├── shake.js
-    │   ├── shockwave.js
-    │   └── trail.js
-    └── demos/
-        └── power-shot.js
+    └── main.js
 ```
-
-The deployed `site/` directory is already browser-native static output. There is no build step.
 
 ## Run locally
 
-Any static HTTP server is enough.
+Any static server is enough:
 
 ```bash
 python -m http.server 8080 --directory site
 ```
 
-Then open `http://localhost:8080`.
+There is no install or build command.
 
 ## GitHub Pages
 
-`.github/workflows/pages.yml` publishes the `site/` directory directly to GitHub Pages on pushes to `main`.
+The repository deploys `site/` directly through GitHub Actions.
 
-In repository settings, set **Pages > Build and deployment > Source** to **GitHub Actions**.
+Live portfolio:
 
-## Controls
+`https://bartuom.github.io/motiondevelopment/`
 
-- `Space`, fire the shot
-- `R`, reset
-- click the goal, choose the nearest target
-- use the target buttons for keyboard-friendly target selection
+## Planned portfolio effects
 
-## Design intent
+1. Power Shot Impact
+2. Explosion Sprite Sheet
+3. Spell Cast
+4. Player Draw / Reward Reveal
+5. Gameplay Trails
+6. Small Particle Emitters
 
-The effect is intentionally hybrid rather than Canvas-only. The code should make the rendering decision visible:
-
-- DOM and CSS for semantic UI, punch, flash and shake
-- SVG for crisp line-based game FX
-- Canvas 2D for higher-count procedural particles
-- JavaScript for orchestration and time-based simulation
-
-This keeps the demo lightweight, inspectable and directly deployable as static files.
+The set is focused on reusable browser-game motion patterns, sprite sheets, gameplay feedback and mobile-friendly performance.
