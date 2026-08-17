@@ -6,7 +6,6 @@
   --text: #151515;
   --muted: #727272;
   --line: #d9d9d4;
-  --line-dark: #2a2a2a;
   --active: #111111;
   --radius: 14px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -40,31 +39,165 @@ h1 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.35rem); line-height: 1; letter-s
 .demo-description { max-width: 570px; margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.55; }
 .runtime-meta { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .runtime-meta span, .technical-strip span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: #666; background: #fafaf8; font-size: .62rem; font-weight: 650; white-space: nowrap; }
+.runtime-meta strong { color: #171717; font-variant-numeric: tabular-nums; }
 
-.stage { position: relative; width: calc(100% - 32px); aspect-ratio: 16 / 8.5; margin: 16px; overflow: hidden; border-radius: 9px; background: var(--stage); isolation: isolate; }
-.stage-grid { position: absolute; inset: 0; opacity: .55; background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 32px 32px; }
-.stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; border: 1px solid rgba(255,255,255,.06); border-radius: inherit; }
-.origin { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%); opacity: .28; }
+.stage {
+  position: relative;
+  width: calc(100% - 32px);
+  aspect-ratio: 16 / 8.5;
+  margin: 16px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: radial-gradient(circle at 50% 50%, #212121 0, #181818 44%, #131313 100%);
+  isolation: isolate;
+  transform-origin: 50% 50%;
+}
+.stage-grid { position: absolute; inset: 0; opacity: .38; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 32px 32px; }
+.stage::after { content: ""; position: absolute; inset: 0; z-index: 20; pointer-events: none; border: 1px solid rgba(255,255,255,.06); border-radius: inherit; box-shadow: inset 0 0 80px rgba(0,0,0,.34); }
+.stage.is-kicked { animation: stage-kick 145ms linear both; }
+@keyframes stage-kick {
+  0%,100% { transform: translate3d(0,0,0); }
+  18% { transform: translate3d(calc(var(--kick, 2px) * -1), calc(var(--kick, 2px) * .35), 0); }
+  38% { transform: translate3d(var(--kick, 2px), calc(var(--kick, 2px) * -.2), 0); }
+  60% { transform: translate3d(calc(var(--kick, 2px) * -.45), calc(var(--kick, 2px) * .12), 0); }
+  80% { transform: translate3d(calc(var(--kick, 2px) * .2), 0, 0); }
+}
+
+.origin { position: absolute; left: 50%; top: 50%; z-index: 1; width: 18px; height: 18px; transform: translate(-50%, -50%); opacity: .16; }
 .origin::before, .origin::after { content: ""; position: absolute; left: 50%; top: 50%; background: #fff; transform: translate(-50%, -50%); }
 .origin::before { width: 18px; height: 1px; }
 .origin::after { width: 1px; height: 18px; }
 .origin span { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; border: 1px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); }
 
-.explosion-sprite { position: absolute; left: 50%; top: 50%; z-index: 3; width: 128px; height: 128px; background-image: url("./assets/explosion-sprite.svg"); background-repeat: no-repeat; background-size: 1024px 128px; opacity: 0; transform: translate(-50%, -50%) scale(var(--sprite-scale, 1)); transform-origin: center; will-change: background-position, transform, opacity; }
-.explosion-sprite.is-playing { opacity: 1; animation: sprite-explosion var(--sprite-duration, 520ms) steps(8, end) both; }
-@keyframes sprite-explosion { from { background-position: 0 0; } to { background-position: -1024px 0; } }
+.blast-bloom {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,248,210,.9) 0 5%, rgba(255,170,45,.38) 19%, rgba(255,80,20,.16) 38%, transparent 68%);
+  transform: translate(-50%, -50%) scale(.12);
+  mix-blend-mode: screen;
+}
+.blast-bloom.is-playing { animation: blast-bloom 205ms cubic-bezier(.08,.7,.18,1) both; }
+@keyframes blast-bloom {
+  0% { opacity: .95; transform: translate(-50%, -50%) scale(.1); }
+  28% { opacity: .82; transform: translate(-50%, -50%) scale(.72); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.18); }
+}
 
-.explosion-flash { position: absolute; left: 50%; top: 50%; z-index: 2; width: 18px; height: 18px; border-radius: 50%; background: #fff; opacity: 0; transform: translate(-50%, -50%) scale(.2); pointer-events: none; }
-.explosion-flash.is-playing { animation: core-flash 140ms ease-out both; }
-@keyframes core-flash { 0% { opacity: .95; transform: translate(-50%, -50%) scale(.2); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(5.2); } }
+.explosion-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 7;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 18px 6px rgba(255,244,188,.92), 0 0 48px 18px rgba(255,126,30,.45);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.1);
+}
+.explosion-flash.is-playing { animation: core-flash 72ms ease-out both; }
+@keyframes core-flash {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(.12); }
+  34% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.35); }
+}
 
-.particles { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
-.particle { position: absolute; left: 50%; top: 50%; width: var(--size, 4px); height: var(--size, 4px); border-radius: 50%; background: var(--particle-color, #ffb23f); opacity: 0; transform: translate(-50%, -50%); will-change: transform, opacity; }
-.particle.is-playing { animation: particle-burst var(--duration, 430ms) cubic-bezier(.12,.72,.2,1) var(--delay, 0ms) both; }
-@keyframes particle-burst {
-  0% { opacity: 1; transform: translate(-50%, -50%) translate(0,0) scale(1); }
-  75% { opacity: .9; }
-  100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(.25); }
+.shock-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+  border: 2px solid rgba(255,223,159,.8);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.25);
+}
+.shock-ring--b { border-width: 1px; border-color: rgba(255,139,58,.6); }
+.shock-ring--a.is-playing { animation: shock-a 245ms cubic-bezier(.08,.72,.16,1) both; }
+.shock-ring--b.is-playing { animation: shock-b 330ms cubic-bezier(.08,.68,.14,1) 34ms both; }
+@keyframes shock-a {
+  0% { opacity: .92; transform: translate(-50%, -50%) scale(.25); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); }
+}
+@keyframes shock-b {
+  0% { opacity: .6; transform: translate(-50%, -50%) scale(.25); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(4.7); }
+}
+
+.explosion-sprite {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  width: 144px;
+  height: 144px;
+  background-image: url("./assets/explosion-sprite-v2.svg");
+  background-repeat: no-repeat;
+  background-size: 1728px 144px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(var(--sprite-scale, 1));
+  transform-origin: center;
+  filter: drop-shadow(0 0 9px rgba(255,116,34,.35));
+  will-change: background-position, transform, opacity;
+}
+.explosion-sprite.is-playing {
+  opacity: 1;
+  animation: sprite-explosion var(--sprite-duration, 430ms) steps(12, end) both;
+}
+@keyframes sprite-explosion {
+  from { background-position: 0 0; }
+  to { background-position: -1728px 0; }
+}
+
+.particles { position: absolute; inset: 0; z-index: 8; pointer-events: none; mix-blend-mode: screen; }
+.particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
+  transform-origin: 0 50%;
+  will-change: transform, opacity;
+}
+.particle.spark {
+  width: var(--length, 22px);
+  height: var(--thickness, 2px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff7bd 0, var(--particle-color, #ff9f32) 42%, rgba(255,106,25,0) 100%);
+  box-shadow: 0 0 7px rgba(255,145,45,.55);
+}
+.particle.ember {
+  width: var(--size, 4px);
+  height: var(--size, 4px);
+  border-radius: 50%;
+  background: var(--particle-color, #ff8b2d);
+  box-shadow: 0 0 6px rgba(255,116,31,.45);
+}
+.particle.spark.is-playing { animation: spark-burst var(--duration, 410ms) cubic-bezier(.08,.62,.16,1) var(--delay, 0ms) both; }
+.particle.ember.is-playing { animation: ember-burst var(--duration, 500ms) cubic-bezier(.1,.5,.2,1) var(--delay, 0ms) both; }
+@keyframes spark-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rotation)) translateX(4px) scaleX(.35); }
+  9% { opacity: 1; }
+  62% { opacity: .92; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rotation)) translateX(var(--distance)) scaleX(.18); }
+}
+@keyframes ember-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) translate3d(0,0,0) scale(.8); }
+  12% { opacity: 1; }
+  64% { opacity: .78; }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate3d(var(--x), var(--y), 0) scale(.18); }
 }
 
 .demo-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 16px 16px; }
@@ -103,6 +236,8 @@ h1 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.35rem); line-height: 1; letter-s
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .explosion-sprite.is-playing { animation-duration: 760ms; }
-  .particle.is-playing { animation-duration: 560ms; }
+  .stage.is-kicked { animation: none; }
+  .shock-ring { display: none; }
+  .explosion-sprite.is-playing { animation-duration: 650ms; }
+  .particle.spark.is-playing, .particle.ember.is-playing { animation-duration: 620ms; }
 }
