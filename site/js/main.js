@@ -9,47 +9,52 @@ const playButton = document.querySelector('#play-button');
 const variantButtons = [...document.querySelectorAll('[data-variant]')];
 const appFpsOutput = document.querySelector('#app-fps');
 const animationFpsOutput = document.querySelector('#animation-fps');
-
-const SPRITE_FRAMES = 12;
-const REDUCED_SPRITE_DURATION = 650;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const variants = {
-  compact: {
-    spriteScale: 0.76,
-    spriteDuration: 350,
-    sparkCount: 7,
+  small: {
+    asset: './assets/explosion-small.svg',
+    frames: 10,
+    frameSize: 160,
+    frameTimes: [0, 18, 42, 72, 110, 158, 220, 296, 386, 486],
+    endTime: 570,
+    spriteScale: 0.96,
+    sparkCount: 8,
     emberCount: 3,
-    sparkDistance: 76,
-    emberDistance: 56,
-    particleDuration: 340,
-    kick: 1,
+    debrisCount: 0,
+    sparkDistance: 92,
+    emberDistance: 64,
+    particleDuration: 320,
+    kick: 0.35,
+    rings: 1,
   },
-  standard: {
-    spriteScale: 1,
-    spriteDuration: 430,
-    sparkCount: 10,
+  big: {
+    asset: './assets/explosion-big.svg',
+    frames: 12,
+    frameSize: 192,
+    frameTimes: [0, 18, 40, 66, 98, 136, 180, 236, 306, 392, 492, 610],
+    endTime: 760,
+    spriteScale: 1.08,
+    sparkCount: 12,
     emberCount: 6,
-    sparkDistance: 112,
-    emberDistance: 82,
-    particleDuration: 450,
-    kick: 2,
-  },
-  heavy: {
-    spriteScale: 1.28,
-    spriteDuration: 500,
-    sparkCount: 14,
-    emberCount: 8,
-    sparkDistance: 150,
-    emberDistance: 110,
-    particleDuration: 540,
-    kick: 3,
+    debrisCount: 4,
+    sparkDistance: 154,
+    emberDistance: 108,
+    particleDuration: 470,
+    kick: 1.1,
+    rings: 2,
   },
 };
 
-let activeVariant = 'standard';
+let activeVariant = 'small';
 let replayTimer = 0;
+let spriteRaf = 0;
 const particlePool = [];
+
+Object.values(variants).forEach((settings) => {
+  const image = new Image();
+  image.src = settings.asset;
+});
 
 for (let i = 0; i < 24; i += 1) {
   const particle = document.createElement('span');
@@ -60,8 +65,8 @@ for (let i = 0; i < 24; i += 1) {
 
 function updateAnimationFps() {
   const settings = variants[activeVariant];
-  const duration = reducedMotion.matches ? REDUCED_SPRITE_DURATION : settings.spriteDuration;
-  animationFpsOutput.textContent = (SPRITE_FRAMES / (duration / 1000)).toFixed(1);
+  const averageFps = settings.frames / (settings.endTime / 1000);
+  animationFpsOutput.textContent = `~${averageFps.toFixed(1)}`;
 }
 
 function setVariant(name) {
@@ -74,6 +79,7 @@ function setVariant(name) {
 
 function resetEffect() {
   clearTimeout(replayTimer);
+  cancelAnimationFrame(spriteRaf);
   stage.classList.remove('is-kicked');
   sprite.classList.remove('is-playing');
   flash.classList.remove('is-playing');
@@ -83,10 +89,49 @@ function resetEffect() {
   particlePool.forEach((particle) => particle.classList.remove('is-playing'));
 }
 
+function prepareSprite(settings) {
+  const sheetWidth = settings.frames * settings.frameSize;
+  sprite.style.width = `${settings.frameSize}px`;
+  sprite.style.height = `${settings.frameSize}px`;
+  sprite.style.backgroundImage = `url("${settings.asset}")`;
+  sprite.style.backgroundSize = `${sheetWidth}px ${settings.frameSize}px`;
+  sprite.style.backgroundPosition = '0 0';
+  sprite.style.setProperty('--sprite-scale', settings.spriteScale);
+}
+
+function playSprite(settings) {
+  const startTime = performance.now();
+  let lastFrame = -1;
+
+  sprite.classList.add('is-playing');
+
+  function tick(now) {
+    const elapsed = now - startTime;
+    let frame = 0;
+
+    while (frame + 1 < settings.frameTimes.length && elapsed >= settings.frameTimes[frame + 1]) {
+      frame += 1;
+    }
+
+    if (frame !== lastFrame) {
+      sprite.style.backgroundPosition = `${-frame * settings.frameSize}px 0`;
+      lastFrame = frame;
+    }
+
+    if (elapsed < settings.endTime) {
+      spriteRaf = requestAnimationFrame(tick);
+    } else {
+      sprite.classList.remove('is-playing');
+    }
+  }
+
+  spriteRaf = requestAnimationFrame(tick);
+}
+
 function configureParticles(settings) {
-  const sparkColors = ['#fff1a8', '#ffd05c', '#ffad35', '#ff7626'];
-  const emberColors = ['#ffb03a', '#ff7d28', '#e95622', '#c94620'];
-  const total = settings.sparkCount + settings.emberCount;
+  const sparkColors = ['#fff5bc', '#ffd45b', '#ffac37', '#ff7629'];
+  const emberColors = ['#ffad38', '#ff7c2b', '#e45729', '#bc4028'];
+  const total = settings.sparkCount + settings.emberCount + settings.debrisCount;
 
   particlePool.forEach((particle, index) => {
     particle.className = 'particle';
@@ -94,62 +139,84 @@ function configureParticles(settings) {
     if (particle.hidden) return;
 
     if (index < settings.sparkCount) {
-      const jitter = ((index * 17) % 25) - 12;
+      const jitter = ((index * 19) % 31) - 15;
       const rotation = (360 / settings.sparkCount) * index + jitter;
-      const distance = settings.sparkDistance * (0.76 + (index % 5) * 0.075);
+      const distance = settings.sparkDistance * (0.72 + (index % 5) * 0.08);
 
       particle.classList.add('spark');
       particle.style.setProperty('--rotation', `${rotation.toFixed(1)}deg`);
       particle.style.setProperty('--distance', `${distance.toFixed(1)}px`);
-      particle.style.setProperty('--length', `${17 + (index % 4) * 5}px`);
-      particle.style.setProperty('--thickness', `${1.5 + (index % 2) * 0.8}px`);
-      particle.style.setProperty('--duration', `${Math.round(settings.particleDuration * (0.72 + (index % 3) * 0.08))}ms`);
-      particle.style.setProperty('--delay', `${8 + (index % 4) * 7}ms`);
+      particle.style.setProperty('--length', `${14 + (index % 4) * 5}px`);
+      particle.style.setProperty('--thickness', `${1.3 + (index % 2) * 0.7}px`);
+      particle.style.setProperty('--duration', `${Math.round(settings.particleDuration * (0.58 + (index % 3) * 0.08))}ms`);
+      particle.style.setProperty('--delay', `${28 + (index % 4) * 7}ms`);
       particle.style.setProperty('--particle-color', sparkColors[index % sparkColors.length]);
       return;
     }
 
-    const emberIndex = index - settings.sparkCount;
-    const jitter = ((emberIndex * 23) % 31) - 15;
-    const angle = ((360 / settings.emberCount) * emberIndex + jitter) * Math.PI / 180;
-    const distance = settings.emberDistance * (0.58 + (emberIndex % 4) * 0.12);
-    const x = Math.cos(angle) * distance;
-    const y = Math.sin(angle) * distance + 14 + (emberIndex % 3) * 5;
+    const emberStart = settings.sparkCount;
+    const debrisStart = emberStart + settings.emberCount;
 
-    particle.classList.add('ember');
+    if (index < debrisStart) {
+      const emberIndex = index - emberStart;
+      const jitter = ((emberIndex * 23) % 35) - 17;
+      const angle = ((360 / settings.emberCount) * emberIndex + jitter) * Math.PI / 180;
+      const distance = settings.emberDistance * (0.58 + (emberIndex % 4) * 0.13);
+      const x = Math.cos(angle) * distance;
+      const y = Math.sin(angle) * distance + 18 + (emberIndex % 3) * 7;
+
+      particle.classList.add('ember');
+      particle.style.setProperty('--x', `${x.toFixed(1)}px`);
+      particle.style.setProperty('--y', `${y.toFixed(1)}px`);
+      particle.style.setProperty('--size', `${2.2 + (emberIndex % 3) * 1.1}px`);
+      particle.style.setProperty('--duration', `${settings.particleDuration + 60 + (emberIndex % 3) * 45}ms`);
+      particle.style.setProperty('--delay', `${72 + (emberIndex % 4) * 13}ms`);
+      particle.style.setProperty('--particle-color', emberColors[emberIndex % emberColors.length]);
+      return;
+    }
+
+    const debrisIndex = index - debrisStart;
+    const angle = (220 + debrisIndex * 43) * Math.PI / 180;
+    const distance = 74 + debrisIndex * 13;
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance + 40;
+
+    particle.classList.add('debris');
     particle.style.setProperty('--x', `${x.toFixed(1)}px`);
     particle.style.setProperty('--y', `${y.toFixed(1)}px`);
-    particle.style.setProperty('--size', `${2.5 + (emberIndex % 3) * 1.2}px`);
-    particle.style.setProperty('--duration', `${settings.particleDuration + 70 + (emberIndex % 3) * 38}ms`);
-    particle.style.setProperty('--delay', `${28 + (emberIndex % 4) * 12}ms`);
-    particle.style.setProperty('--particle-color', emberColors[emberIndex % emberColors.length]);
+    particle.style.setProperty('--w', `${5 + debrisIndex % 2 * 3}px`);
+    particle.style.setProperty('--h', `${3 + debrisIndex % 3}px`);
+    particle.style.setProperty('--spin', `${180 + debrisIndex * 95}deg`);
+    particle.style.setProperty('--duration', `${520 + debrisIndex * 45}ms`);
+    particle.style.setProperty('--delay', `${48 + debrisIndex * 11}ms`);
   });
 }
 
 function playExplosion() {
   const settings = variants[activeVariant];
   resetEffect();
+  prepareSprite(settings);
   configureParticles(settings);
 
-  sprite.style.setProperty('--sprite-scale', settings.spriteScale);
-  sprite.style.setProperty('--sprite-duration', `${settings.spriteDuration}ms`);
-  stage.style.setProperty('--kick', `${settings.kick}px`);
+  const motionFactor = reducedMotion.matches ? 0 : 1;
+  stage.style.setProperty('--kick', `${settings.kick * motionFactor}px`);
+  stage.style.setProperty('--ring-a-scale', settings.rings === 2 ? '4.0' : '2.7');
+  stage.style.setProperty('--ring-b-scale', settings.rings === 2 ? '5.6' : '3.4');
 
   void stage.offsetWidth;
 
-  stage.classList.add('is-kicked');
+  if (motionFactor) stage.classList.add('is-kicked');
   bloom.classList.add('is-playing');
   flash.classList.add('is-playing');
-  shockRingA.classList.add('is-playing');
-  shockRingB.classList.add('is-playing');
-  sprite.classList.add('is-playing');
+  if (motionFactor && settings.rings >= 1) shockRingA.classList.add('is-playing');
+  if (motionFactor && settings.rings >= 2) shockRingB.classList.add('is-playing');
+  playSprite(settings);
+
   particlePool.forEach((particle) => {
     if (!particle.hidden) particle.classList.add('is-playing');
   });
 
-  replayTimer = window.setTimeout(() => {
-    resetEffect();
-  }, Math.max(settings.spriteDuration + 140, settings.particleDuration + 180));
+  replayTimer = window.setTimeout(resetEffect, settings.endTime + 170);
 }
 
 let fpsFrames = 0;
@@ -187,8 +254,6 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-reducedMotion.addEventListener('change', updateAnimationFps);
-
-setVariant('standard');
+setVariant('small');
 requestAnimationFrame(measureAppFps);
-window.setTimeout(playExplosion, 360);
+window.setTimeout(playExplosion, 320);
