@@ -2,7 +2,7 @@ import { registerHeavyImpact } from './heavy-impact.js?v=p3.6.0';
 import { registerExplosion } from './explosion.js?v=p3.6.0';
 import { registerFireball } from './fireball.js?v=p3.6.4';
 import { registerEnvironmentEmitter } from './environment-emitter.js?v=p3.8.1';
-import { registerRareReward } from './rare-reward.js?v=p3.9.0';
+import { registerRareReward } from './rare-reward.js?v=p3.9.0-r2';
 
 export function registerProductionEffects(fx) {
   registerHeavyImpact(fx);
