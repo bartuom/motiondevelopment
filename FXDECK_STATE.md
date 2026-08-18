@@ -12,9 +12,9 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion
-- **Current build:** **P3.7.1**
+- **Current build:** **P3.7.2**
 - **Status:** ACTIVE.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.7.1.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.7.2.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1.
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0.
 - **Primary real-effect test:** Debug / Tests → **Effect Grid Lab**.
@@ -38,25 +38,46 @@
 - Effect Grid Lab appears first in Debug / Tests.
 - **Effect Regression** is a secondary tier for real-effect A/B and lifecycle/cancellation checks.
 - **Backend Diagnostics — Advanced** is collapsed by default and contains matched backend stress, synthetic isolation and the historical fixed ×6 overlap fixture.
-- Grid preset/direction changes while active now perform a **clean respawn** instead of leaving a previous generation alive while the new layout is selected.
-- Cell-size dragging updates the virtual layout continuously; releasing/committing the value cleanly respawns the active batch.
-- Grid `Loop` now defaults to **Replace batch**: each cycle clears the previous FXDeck workload before spawning the next grid. This makes repeated-load results interpretable and is safe for future sustained effects.
-- Explicit **Stack / Soak** loop mode remains available for intentional accumulation. It is visually warned as advanced because sustained effects can grow active workload without bound.
-- Loop logging no longer appends a full `GRID SPAWN` line every cycle; the readout tracks cycle count instead. This reduces diagnostic UI overhead during long runs.
-- Grid readout now states `instances / batch`, loop mode, cycle number, logical world size and viewport zoom.
+- Grid preset/direction changes while active perform a clean respawn instead of mixing generations.
+- Grid `Loop` defaults to **Replace batch**; explicit **Stack / Soak** remains available for intentional accumulation.
+- Loop logging is reduced and the readout tracks cycle count.
+
+### P3.7.2 changes
+
+- **Effect Grid is now self-contained.** Debug / Tests no longer requires switching back to Play to choose what is being tested.
+- Grid `Test setup` exposes and synchronizes:
+  - real effect under test,
+  - particle spawn topology,
+  - runtime intensity,
+  - base direction.
+- Debug and Play controls are two views of the same runtime state; changes remain synchronized both ways.
+- Grid exposes the three already-proven particle topology modes directly:
+  - **Shared scheduled — Emission Points + scheduler** (`scheduled`) — production one-shot default;
+  - **Shared direct — Emission Points immediate** (`shared`) — diagnostic immediate shared path;
+  - **Per-play emitter — emitter per burst** (`emitter`) — reference topology.
+- Changing topology while a grid is active performs a clean real-effect respawn so the same grid/effect/load can be compared without stale workload.
+- Fireball note is explicit: its hero projectile remains an independent DOM visual; selected topology affects sparse ember bursts and the Explosion handoff. Explosion and Heavy Impact use the selected topology for their particle layers.
+- Grid readout is decorated with the current topology (`scheduled EP`, `direct EP`, or `per-burst emitter`).
+- The old Debug callout that instructed users to return to Play has been replaced with a statement that Debug owns the current test setup.
 
 ### Current gate
 
-Use P3.7.1 Effect Grid Lab as the standard scaling harness:
+Use P3.7.2 Effect Grid Lab as the standard scaling/topology harness:
 
-1. Choose the real effect in **Play**.
-2. Switch to **Debug / Tests**.
+1. Stay in **Debug / Tests**.
+2. Choose the real effect directly in Grid `Test setup`.
 3. Keep Loop behavior on **Replace batch** for normal performance/scalability tests.
-4. Use 2×5=10, 3×5=15, 4×6=24 and 6×6=36 as representative tiers.
-5. Record `FPS / Particles / Visuals / Instances` and visual correctness.
-6. Use **Stack / Soak** only when intentionally testing accumulated or sustained workload.
+4. Test the same grid under:
+   - `Shared scheduled — Emission Points + scheduler`,
+   - `Shared direct — Emission Points immediate`,
+   - `Per-play emitter — emitter per burst`.
+5. Use representative tiers such as 2×5=10, 3×5=15, 4×6=24 and 6×6=36.
+6. Record `FPS / Particles / Visuals / Instances`, selected topology and visual correctness.
+7. Use **Stack / Soak** only when intentionally testing accumulated or sustained workload.
 
-For Fireball specifically, repeat the Galaxy S20+ comparison under P3.6.4/P3.7.1 using the grid. If mobile still collapses badly, isolate hero visual vs sparse embers vs Explosion handoff before creating broader optimization machinery.
+This topology comparison is now the preferred way to investigate the unexpectedly poor scaling before adding more optimization machinery. It lets the same authored effect and same spatial workload isolate whether the dominant cost comes from shared scheduled work, immediate shared creation, per-burst emitters, or simply the total authored particle workload.
+
+For Fireball specifically, repeat the Galaxy S20+ comparison using the grid. If mobile still collapses badly across all topology modes, isolate hero visual vs sparse embers vs Explosion handoff before creating broader optimization machinery.
 
 After Fireball mobile scalability is acceptable, continue with the sustained **Environment emitter** (`start → live update position/intensity → stop`). The same Effect Grid Lab should scale-test Environment and later Rare Reward.
 
@@ -109,7 +130,8 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 
 - `ParticleAdapter.burst()` is semantic; effect code does not encode backend topology.
 - `shared-scheduled` is the production default for short one-shot bursts.
-- Explicit emitter mode remains available for sustained emitter archetypes.
+- `shared-direct` remains a diagnostic immediate shared path.
+- `per-play emitter` remains a reference path and is still relevant for sustained emitter archetypes.
 - Shared work uses a persistent container, immediate seed, frame-budgeted queue and per-burst ownership.
 - Heterogeneous emission-point parameters were validated.
 - Heavy Impact and Explosion proved the scheduled topology visually and through real-effect tests.
@@ -154,7 +176,8 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - Basic HUD exposes FPS, tsParticles `Particles`, independent DOM `Visuals`, and active FXDeck `Instances`.
 - Full HUD adds 1% low, p95/p99/worst/debt, >20 ms frames, queued work, emitters, groups, queue pressure, quality shedding, burst path and canvas scale.
 - HUD avoids backdrop blur so diagnostics do not materially contaminate measured runtime cost.
-- P3.7.1 Debug hierarchy explicitly separates primary real-effect scaling from advanced backend isolation.
+- P3.7.1 separates primary real-effect scaling from advanced backend isolation.
+- P3.7.2 makes Debug self-sufficient for effect/topology/intensity/direction selection.
 
 ### Effect Grid Lab — PRIMARY REAL-EFFECT SCALING HARNESS
 
@@ -165,12 +188,13 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - tsParticles backing canvas remains viewport-sized while the logical world is projected across it, avoiding huge DPR-scaled debug canvases on mobile.
 - Lab-only shared target/screen hooks are omitted from grid cells so cells do not fight over one target. Effect-owned particles/adapters/child effects remain real.
 - Normal Loop mode replaces the previous batch; Stack / Soak is explicit advanced accumulation.
+- P3.7.2 adds direct topology comparison on identical grid/effect settings.
 
 ---
 
 # Remaining P3 capability roadmap
 
-1. **P3.7.1 real-effect scaling validation** — desktop + Galaxy S20+ using Effect Grid, with Replace loop semantics.
+1. **P3.7.2 real-effect topology/scaling validation** — desktop + Galaxy S20+ using Effect Grid and identical grids across scheduled/shared/emitter paths.
 2. **Environment emitter** — sustained lifetime and real live-update pressure.
 3. **Effect-owned asset lifecycle hardening** — only if Fireball/Environment expose real preload/unload problems.
 4. **Rare Reward** — UI/DOM + particles; test large card-sized cells through the same zoomable grid.
@@ -185,7 +209,7 @@ P3 exits when representative one-shot, moving and sustained effects all use the 
 
 - [x] Heavy Impact — short composite impact.
 - [x] Explosion — multi-layer one-shot.
-- [ ] Fireball — concurrency visually fixed; P3.7.1 mobile scaling validation pending.
+- [ ] Fireball — concurrency visually fixed; P3.7.2 topology/mobile scaling validation pending.
 - [ ] Environment emitter — sustained/long-running.
 - [ ] Rare Reward — UI/DOM + particles.
 - [ ] Critical Hit — ultra-short readability.
@@ -216,7 +240,7 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 
 1. tsParticles is a backend, not the public API.
 2. Proof-first architecture: real effects drive abstractions.
-3. One-shot bursts default to shared-scheduled; sustained sources may use explicit emitters.
+3. One-shot bursts default to shared-scheduled; shared-direct and per-play-emitter remain explicit diagnostic/reference paths.
 4. Shared scheduled work is bounded, fair and cancellable.
 5. Effect assets belong to effect definitions, not to Runtime Lab bootstrap code.
 6. Fireball reuses Explosion instead of duplicating impact logic.
@@ -226,18 +250,21 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 10. Lab UI concerns stay outside FXDeck Core.
 11. Moving hero visuals need independent ownership and compositor-friendly movement.
 12. Diagnostics must not materially distort measured runtime cost.
-13. **Real-effect grid scaling is now the default scalability test. Backend stress is an advanced isolation tool, not the product workflow.**
+13. **Real-effect grid scaling is the default scalability test. Backend stress is an advanced isolation tool, not the product workflow.**
 14. Repeated grid tests default to **Replace batch** so measured workload is controlled. Accumulation must be explicit through Stack / Soak.
-15. Every user-testable iteration advances visible build/cache keys.
+15. Grid topology selection compares already-existing backend paths; it does not introduce a new particle engine abstraction.
+16. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
 # Changelog — 2026-08-18
 
+- **P3.7.2 — self-contained Grid setup:** added effect, particle topology, intensity and base-direction controls directly to Effect Grid; synchronized them with Play.
+- **P3.7.2 — topology comparison:** exposed `shared-scheduled`, `shared-direct` and `per-play-emitter` under clear Emission Points/reference labels for identical real-effect grid tests.
+- **P3.7.2 — clean topology mutation:** changing particle topology while Grid is active respawns the selected grid cleanly; Fireball topology scope is explicitly documented.
 - **P3.7.1 — Debug hierarchy:** promoted Effect Grid to `Real Effect Scaling`; moved effect regression to a secondary tier; collapsed matched/synthetic backend tooling under `Backend Diagnostics — Advanced`.
-- **P3.7.1 — clean grid mutation:** changing preset/direction or committing cell size while active now stops the old batch and respawns the selected grid cleanly.
+- **P3.7.1 — clean grid mutation:** changing preset/direction or committing cell size while active stops the old batch and respawns the selected grid cleanly.
 - **P3.7.1 — loop semantics:** default loop is `Replace batch`; explicit `Stack / Soak` is retained for intentional accumulated/sustained load.
-- **P3.7.1 — lower test-instrumentation overhead:** loop cycles update the grid readout instead of appending a complete spawn log every second.
 - **P3.7.0 — Effect Grid Lab:** added real-effect grid presets, logical-world Fit, wheel zoom, drag pan, direction patterns and looping.
 - **P3.7.0 — desktop scaling observation:** Explosion grid showed visible scaling cost at 16/24/36 instances; 36-instance repeated waves could dip toward ~33 FPS on a high-end desktop, confirming the grid reaches meaningful production-level load.
 - **P3.6.4 — Fireball mobile concurrency pass:** transform-only projectile movement, cheaper visual, sparse trail, clean HUD diagnostics.
