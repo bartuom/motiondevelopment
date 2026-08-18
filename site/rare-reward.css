@@ -1,0 +1,201 @@
+.fxdeck-reward-shell{
+  --fxdeck-visual-x:0px;
+  --fxdeck-visual-y:0px;
+  --fxdeck-reward-scale:1;
+  --fxdeck-reward-angle:0deg;
+  position:absolute;
+  left:0;
+  top:0;
+  z-index:6;
+  width:224px;
+  height:320px;
+  transform:translate3d(var(--fxdeck-visual-x),var(--fxdeck-visual-y),0) translate(-50%,-50%) scale(var(--fxdeck-reward-scale));
+  transform-origin:center;
+  pointer-events:none;
+  will-change:transform,opacity;
+  contain:layout paint style;
+}
+.fxdeck-reward-card{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  border:1px solid rgba(255,229,139,.88);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 50% 33%,rgba(181,116,255,.28),transparent 31%),
+    linear-gradient(155deg,#17131f 0%,#251b35 46%,#101116 100%);
+  box-shadow:
+    0 0 0 1px rgba(111,74,162,.75),
+    0 0 0 5px rgba(8,7,12,.88),
+    0 18px 46px rgba(0,0,0,.52),
+    0 0 38px rgba(183,112,255,.16),
+    inset 0 0 42px rgba(151,82,220,.12);
+  opacity:0;
+  transform-origin:50% 50%;
+  backface-visibility:hidden;
+  will-change:transform,opacity;
+}
+.fxdeck-reward-card::before{
+  content:"";
+  position:absolute;
+  inset:9px;
+  border:1px solid rgba(255,226,131,.34);
+  border-radius:12px;
+  box-shadow:inset 0 0 0 1px rgba(193,139,255,.12);
+}
+.fxdeck-reward-card::after{
+  content:"";
+  position:absolute;
+  left:18px;
+  right:18px;
+  top:18px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,238,172,.84),transparent);
+  box-shadow:0 284px 0 rgba(255,238,172,.3);
+}
+.fxdeck-reward-card__inner{
+  position:absolute;
+  inset:18px;
+  border-radius:9px;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.025),transparent 32%),
+    repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 1px,transparent 1px 8px);
+}
+.fxdeck-reward-card__inner::before,
+.fxdeck-reward-card__inner::after{
+  content:"";
+  position:absolute;
+  width:42px;
+  height:42px;
+  border-color:rgba(255,224,127,.58);
+  border-style:solid;
+}
+.fxdeck-reward-card__inner::before{left:-5px;top:-5px;border-width:1px 0 0 1px}
+.fxdeck-reward-card__inner::after{right:-5px;bottom:-5px;border-width:0 1px 1px 0}
+.fxdeck-reward-card__crest{
+  position:absolute;
+  left:50%;
+  top:42%;
+  width:116px;
+  height:116px;
+  transform:translate(-50%,-50%) scale(.2);
+  opacity:0;
+  filter:drop-shadow(0 0 13px rgba(240,186,255,.36));
+  will-change:transform,opacity;
+}
+.fxdeck-reward-card__crest svg{width:100%;height:100%;overflow:visible}
+.fxdeck-reward-card__crest path:first-child{
+  fill:rgba(205,151,255,.13);
+  stroke:#f1d58d;
+  stroke-width:2.2;
+}
+.fxdeck-reward-card__crest circle{
+  fill:rgba(23,16,34,.92);
+  stroke:#d69cff;
+  stroke-width:1.7;
+}
+.fxdeck-reward-card__crest .fxdeck-reward-card__rune{
+  fill:#ffe69c;
+  stroke:#fff6cf;
+  stroke-width:.8;
+}
+.fxdeck-reward-card__rarity,
+.fxdeck-reward-card__title,
+.fxdeck-reward-card__subtitle,
+.fxdeck-reward-card__pip{
+  position:absolute;
+  left:22px;
+  right:22px;
+  text-align:center;
+  opacity:0;
+  will-change:transform,opacity;
+}
+.fxdeck-reward-card__rarity{
+  top:22px;
+  color:#e4bfff;
+  font:700 9px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+  letter-spacing:.22em;
+  text-shadow:0 0 14px rgba(208,132,255,.48);
+}
+.fxdeck-reward-card__title{
+  bottom:51px;
+  color:#fff4cf;
+  font:800 20px/1.1 Inter,ui-sans-serif,system-ui,sans-serif;
+  letter-spacing:.045em;
+  text-shadow:0 0 18px rgba(255,220,124,.22);
+}
+.fxdeck-reward-card__subtitle{
+  bottom:32px;
+  color:#a89daf;
+  font:700 8px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+  letter-spacing:.24em;
+}
+.fxdeck-reward-card__pip{
+  bottom:14px;
+  display:flex;
+  justify-content:center;
+  gap:5px;
+}
+.fxdeck-reward-card__pip i{
+  width:4px;
+  height:4px;
+  transform:rotate(45deg);
+  background:#e7c773;
+  box-shadow:0 0 7px rgba(255,226,126,.5);
+}
+.fxdeck-reward-card__sheen{
+  position:absolute;
+  top:-28%;
+  bottom:-28%;
+  left:30%;
+  width:46px;
+  transform:translate3d(-150%,0,0) rotate(14deg);
+  opacity:0;
+  background:linear-gradient(90deg,transparent,rgba(255,250,224,.34),transparent);
+  filter:blur(1px);
+  pointer-events:none;
+}
+.fxdeck-reward-aura,
+.fxdeck-reward-rays,
+.fxdeck-reward-flare{
+  position:absolute;
+  left:50%;
+  top:50%;
+  pointer-events:none;
+  will-change:transform,opacity;
+}
+.fxdeck-reward-aura{
+  width:360px;
+  height:360px;
+  transform:translate(-50%,-50%) scale(.3);
+  border-radius:50%;
+  opacity:0;
+  background:radial-gradient(circle,rgba(255,225,132,.16) 0 18%,rgba(190,116,255,.15) 36%,rgba(133,70,210,.06) 54%,transparent 72%);
+  box-shadow:0 0 60px rgba(176,97,255,.16);
+}
+.fxdeck-reward-rays{
+  width:420px;
+  height:420px;
+  transform:translate(-50%,-50%) rotate(var(--fxdeck-reward-angle)) scale(.42);
+  opacity:0;
+  background:repeating-conic-gradient(from 0deg,rgba(255,225,137,.15) 0deg 2deg,transparent 2deg 15deg);
+  -webkit-mask-image:radial-gradient(circle,transparent 0 22%,#000 35%,transparent 72%);
+  mask-image:radial-gradient(circle,transparent 0 22%,#000 35%,transparent 72%);
+}
+.fxdeck-reward-flare{
+  width:220px;
+  height:74px;
+  transform:translate(-50%,-50%) scale(.2);
+  opacity:0;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,255,244,.95),rgba(255,221,116,.42) 26%,rgba(195,113,255,.16) 52%,transparent 72%);
+}
+body[data-effect-mode="rare-reward"] .impact-target{display:none!important}
+
+@media (max-width:700px){
+  .fxdeck-reward-shell{width:196px;height:280px}
+  .fxdeck-reward-card__crest{width:98px;height:98px}
+  .fxdeck-reward-card__title{font-size:17px}
+  .fxdeck-reward-aura{width:320px;height:320px}
+  .fxdeck-reward-rays{width:360px;height:360px}
+}
