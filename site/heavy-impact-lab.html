@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FXDeck production runtime and multi-effect gameplay VFX lab.">
+  <meta name="description" content="FXDeck gameplay VFX runtime lab with clean play and debug workspaces.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.2.1">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.6.1">
 </head>
-<body>
+<body data-workspace-mode="play">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
     <div class="fxdeck-project-nav__inner">
       <a class="fxdeck-project-nav__brand" href="./webfx-lab.html">FXDeck</a>
@@ -24,87 +24,134 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.6.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.6.1</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.6 returns to product capability work. Effects now declare their own particle assets, and Fireball adds the first moving-source archetype: moving head + trail → runtime position updates → Explosion handoff at impact.</p>
+      <p class="intro">Play mode stays focused on authoring and the resolved cue. Benchmarks, stress controls and logs live in Debug / Tests. Runtime telemetry moved onto the preview as an optional engine-style HUD.</p>
     </header>
+
+    <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
+      <button id="workspace-tab-play" class="workspace-tab is-active" type="button" role="tab" aria-selected="true" data-workspace-tab="play">
+        <span class="workspace-tab__dot"></span>
+        Play
+      </button>
+      <button id="workspace-tab-debug" class="workspace-tab" type="button" role="tab" aria-selected="false" data-workspace-tab="debug">
+        <span class="workspace-tab__dot workspace-tab__dot--debug"></span>
+        Debug / Tests
+      </button>
+      <span class="workspace-tabs__hint">Preview stays live in both modes</span>
+    </div>
 
     <section class="workbench">
       <aside class="pane controls-pane">
-        <div class="pane-heading">
-          <p class="label">01 / Input</p>
-          <h2>Gameplay call</h2>
+        <div class="workspace-panel" data-workspace-panel="play">
+          <div class="pane-heading">
+            <p class="label">01 / Authoring</p>
+            <h2>Gameplay call</h2>
+          </div>
+
+          <div class="control">
+            <p class="label">Effect</p>
+            <select id="effect-select">
+              <option value="fireball" selected>Fireball — moving-source proof</option>
+              <option value="explosion">Explosion — composite one-shot</option>
+              <option value="heavyImpact">Heavy Impact — production one-shot</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <div class="control control--compact">
+              <p class="label">Version</p>
+              <select disabled><option id="authored-version-label">v1 — Fireball</option></select>
+            </div>
+            <div class="control control--compact">
+              <p class="label">Variant</p>
+              <select disabled><option>default</option></select>
+            </div>
+          </div>
+
+          <div class="control">
+            <p class="label">Particle burst path</p>
+            <select id="particle-path">
+              <option value="scheduled" selected>Shared scheduled — production default</option>
+              <option value="emitter">Per-play emitter — reference</option>
+              <option value="shared">Shared direct — diagnostic</option>
+            </select>
+            <p class="control-note">Fireball intentionally uses explicit moving emitters for flight. Its impact hands off to Explosion through the selected one-shot path.</p>
+          </div>
+
+          <div class="control">
+            <div class="range-row"><span>Runtime intensity</span><strong id="intensity-value">1.0</strong></div>
+            <input id="intensity" type="range" min="0.5" max="2" value="1" step="0.1">
+          </div>
+
+          <div class="control">
+            <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
+            <input id="direction" type="range" min="0" max="359" value="18" step="1">
+            <p class="control-note">Fireball uses this as its actual travel vector. Heavy Impact uses it tightly; Explosion uses a broad blast bias.</p>
+          </div>
+
+          <div class="actions actions--primary">
+            <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
+            <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
+          </div>
+
+          <div class="input-note input-note--clean">
+            <p class="label">Current capability</p>
+            <p>Fireball exercises moving source + trail + runtime position updates + Explosion handoff. Performance tuning is intentionally not the current gate.</p>
+          </div>
         </div>
 
-        <div class="control">
-          <p class="label">Effect</p>
-          <select id="effect-select">
-            <option value="fireball" selected>Fireball — moving-source proof</option>
-            <option value="explosion">Explosion — composite one-shot</option>
-            <option value="heavyImpact">Heavy Impact — production one-shot</option>
-          </select>
-        </div>
-        <div class="control">
-          <p class="label">Authored version</p>
-          <select disabled><option id="authored-version-label">v1 — Fireball</option></select>
-        </div>
-        <div class="control">
-          <p class="label">Authored variant</p>
-          <select disabled><option>default</option></select>
-        </div>
+        <div class="workspace-panel" data-workspace-panel="debug" hidden>
+          <div class="pane-heading pane-heading--debug">
+            <p class="label">01 / Debug</p>
+            <h2>Validation tools</h2>
+          </div>
 
-        <div class="control">
-          <p class="label">Particle burst path</p>
-          <select id="particle-path">
-            <option value="scheduled" selected>Shared scheduled — production default</option>
-            <option value="emitter">Per-play emitter — reference</option>
-            <option value="shared">Shared direct — synchronous reference</option>
-          </select>
-          <p class="control-note">One-shot cues use the selected burst path. Fireball travel intentionally uses explicit moving emitters; its impact reuses Explosion through the selected one-shot path.</p>
-        </div>
+          <div class="debug-callout">
+            <strong>Target follows Play selection</strong>
+            <span>Switch back to Play to change effect, direction, intensity or particle path.</span>
+          </div>
 
-        <div class="control">
-          <p class="label">Matched backend stress load</p>
-          <select id="stress-load">
-            <option value="400">400 particles / 16 emission points</option>
-            <option value="800" selected>800 particles / 24 emission points</option>
-            <option value="1200">1200 particles / 32 emission points</option>
-          </select>
-        </div>
+          <div class="control">
+            <p class="label">Matched backend stress load</p>
+            <select id="stress-load">
+              <option value="400">400 particles / 16 emission points</option>
+              <option value="800" selected>800 particles / 24 emission points</option>
+              <option value="1200">1200 particles / 32 emission points</option>
+            </select>
+          </div>
 
-        <div class="control">
-          <p class="label">Stress parameter profile</p>
-          <select id="stress-profile">
-            <option value="both" selected>Both — uniform then heterogeneous</option>
-            <option value="uniform">Uniform — same parameters at every point</option>
-            <option value="heterogeneous">Heterogeneous — per-point runtime variation</option>
-          </select>
-        </div>
+          <div class="control">
+            <p class="label">Stress parameter profile</p>
+            <select id="stress-profile">
+              <option value="both" selected>Both — uniform then heterogeneous</option>
+              <option value="uniform">Uniform — same parameters at every point</option>
+              <option value="heterogeneous">Heterogeneous — per-point runtime variation</option>
+            </select>
+          </div>
 
-        <div class="control">
-          <div class="range-row"><span>Runtime intensity</span><strong id="intensity-value">1.0</strong></div>
-          <input id="intensity" type="range" min="0.5" max="2" value="1" step="0.1">
-        </div>
+          <div class="debug-group">
+            <p class="label">Effect validation</p>
+            <div class="actions">
+              <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
+              <button id="play-ab" class="secondary" type="button">Effect A/B</button>
+              <button id="run-cancel-gate" class="secondary" type="button">Runtime Cancel Gate</button>
+            </div>
+          </div>
 
-        <div class="control">
-          <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
-          <input id="direction" type="range" min="0" max="359" value="18" step="1">
-          <p class="control-note">Fireball uses direction as its actual travel vector. Heavy Impact uses it tightly; Explosion uses it as a broad blast bias.</p>
-        </div>
+          <div class="debug-group">
+            <p class="label">Backend isolation</p>
+            <div class="actions">
+              <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
+            </div>
+            <p class="control-note">Synthetic stress disables adaptive backpressure so backend workloads remain matched.</p>
+          </div>
 
-        <div class="actions">
-          <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
-          <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
-          <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
-          <button id="play-ab" class="secondary" type="button">Effect A/B</button>
-          <button id="run-cancel-gate" class="secondary" type="button">Runtime Cancel Gate</button>
-          <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
-        </div>
-
-        <div class="input-note">
-          <p class="label">P3.6 focus</p>
-          <p>Performance diagnostics are retained but are no longer the gate. The current question is whether FXDeck handles a genuinely different lifecycle: a moving source with a trail that updates every frame and transitions into an existing effect at impact, while assets are discovered from registered effect definitions rather than a manual Lab preload list.</p>
+          <div class="debug-callout debug-callout--muted">
+            <strong>Diagnostics, not product workflow</strong>
+            <span>These controls stay available for regression work without occupying the normal authoring surface.</span>
+          </div>
         </div>
       </aside>
 
@@ -114,7 +161,17 @@
             <p class="label">02 / Preview</p>
             <strong id="preview-title">Fireball production probe</strong>
           </div>
-          <span id="preview-note">Click to choose launch point; direction controls travel</span>
+          <div class="canvas-toolbar__right">
+            <span id="preview-note">Click to choose launch point; direction controls travel</span>
+            <label class="hud-control" for="hud-mode">
+              <span>HUD</span>
+              <select id="hud-mode" aria-label="Runtime diagnostics HUD mode">
+                <option value="off">Off</option>
+                <option value="basic" selected>Basic</option>
+                <option value="full">Full</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <div id="impact-stage" class="stage">
@@ -128,6 +185,33 @@
               <span class="target-ring"></span>
             </div>
           </div>
+
+          <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
+            <div class="runtime-hud__header">
+              <span class="runtime-hud__live"><i></i> LIVE</span>
+              <span class="runtime-hud__build">P3.6.1</span>
+            </div>
+            <div class="runtime-hud__grid">
+              <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
+              <div class="hud-stat hud-stat--hero" data-hud-stat="particles"><span>Particles</span><strong id="metric-particles">0</strong></div>
+              <div class="hud-stat hud-stat--hero" data-hud-stat="instances"><span>Instances</span><strong id="metric-instances">0</strong></div>
+
+              <div class="hud-stat hud-stat--full" data-hud-stat="low"><span>1% low</span><strong id="metric-low">--</strong></div>
+              <div class="hud-stat hud-stat--full"><span>p95</span><strong id="metric-p95">--</strong></div>
+              <div class="hud-stat hud-stat--full"><span>p99</span><strong id="metric-p99">--</strong></div>
+              <div class="hud-stat hud-stat--full"><span>Worst</span><strong id="metric-worst">--</strong></div>
+              <div class="hud-stat hud-stat--full"><span>Debt</span><strong id="metric-debt">0.0 ms</strong></div>
+              <div class="hud-stat hud-stat--full"><span>&gt;20 ms</span><strong id="metric-spikes">0</strong></div>
+              <div class="hud-stat hud-stat--full" data-hud-stat="queued"><span>Queued</span><strong id="metric-queued">0</strong></div>
+              <div class="hud-stat hud-stat--full"><span>Emitters</span><strong id="metric-emitters">0</strong></div>
+              <div class="hud-stat hud-stat--full"><span>Groups</span><strong id="metric-burst-groups">0</strong></div>
+              <div class="hud-stat hud-stat--full hud-stat--wide" data-hud-stat="pressure"><span>Queue pressure</span><strong id="metric-queue-pressure">none / peak none</strong></div>
+              <div class="hud-stat hud-stat--full hud-stat--wide"><span>Quality shed</span><strong id="metric-quality-shed">0 / 0</strong></div>
+              <div class="hud-stat hud-stat--full hud-stat--wide"><span>Burst path</span><strong id="metric-burst-path">shared-scheduled</strong></div>
+              <div class="hud-stat hud-stat--full hud-stat--wide"><span>Canvas scale</span><strong id="metric-scale">--</strong></div>
+            </div>
+          </aside>
+
           <div class="caption">
             <strong id="caption-title">fireball / v1 / default</strong>
             <span id="caption-note">moving source → trail → Explosion handoff</span>
@@ -136,75 +220,71 @@
       </section>
 
       <aside class="pane inspector-pane">
-        <div class="pane-heading">
-          <p class="label">03 / Output</p>
-          <h2>Resolved cue</h2>
-        </div>
-
-        <p id="effect-summary" class="summary">Fireball proves moving emitters, runtime position updates and effect-to-effect handoff without adding a generic timeline or projectile framework.</p>
-
-        <section class="inspector-section">
-          <p class="label">Authored timing</p>
-          <dl id="effect-timeline" class="timeline-list"></dl>
-        </section>
-
-        <section class="inspector-section resolved-section">
-          <p class="label">Resolved for current play</p>
-          <dl class="definition-grid">
-            <div><dt>Effect</dt><dd id="resolved-effect">--</dd></div>
-            <div><dt>Particle path</dt><dd id="resolved-path">--</dd></div>
-            <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
-            <div><dt>Direction</dt><dd id="resolved-direction">--</dd></div>
-            <div><dt id="resolved-layer-a-label">Layer A</dt><dd id="resolved-layer-a">--</dd></div>
-            <div><dt id="resolved-layer-b-label">Layer B</dt><dd id="resolved-layer-b">--</dd></div>
-            <div><dt id="resolved-layer-c-label">Layer C</dt><dd id="resolved-layer-c">--</dd></div>
-            <div><dt id="resolved-layer-d-label">Layer D</dt><dd id="resolved-layer-d">--</dd></div>
-            <div><dt id="resolved-layer-e-label">Layer E</dt><dd id="resolved-layer-e">--</dd></div>
-            <div><dt>Screen kick</dt><dd id="resolved-screen-kick">--</dd></div>
-            <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
-          </dl>
-        </section>
-
-        <section class="inspector-section runtime-section">
-          <p class="label">Runtime / diagnostics</p>
-          <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.6.0</dd></div>
-            <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
-            <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
-            <div><dt>p95 frame</dt><dd id="metric-p95">--</dd></div>
-            <div><dt>p99 frame</dt><dd id="metric-p99">--</dd></div>
-            <div><dt>Worst frame</dt><dd id="metric-worst">--</dd></div>
-            <div><dt>Frame-time debt</dt><dd id="metric-debt">0.0 ms</dd></div>
-            <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
-            <div><dt>Queue pressure</dt><dd id="metric-queue-pressure">none / peak none</dd></div>
-            <div><dt>Quality shed/requested</dt><dd id="metric-quality-shed">0 / 0</dd></div>
-            <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
-            <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
-            <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
-            <div><dt>Shared burst groups</dt><dd id="metric-burst-groups">0</dd></div>
-            <div><dt>Canvas scale</dt><dd id="metric-scale">--</dd></div>
-          </dl>
-        </section>
-      </aside>
-    </section>
-
-    <section class="diagnostics">
-      <article class="diagnostic-card api-card">
-        <p class="label">Public API / current call</p>
-        <pre id="api-preview" class="api"></pre>
-      </article>
-
-      <article class="diagnostic-card log-card">
-        <div class="log-heading">
-          <p class="label">Runtime / validation log</p>
-          <div class="log-tools">
-            <span id="p2-log-status" class="log-status" aria-live="polite"></span>
-            <button id="copy-p2-log" type="button">Copy log</button>
-            <button id="clear-p2-log" type="button">Clear</button>
+        <div class="workspace-panel" data-workspace-panel="play">
+          <div class="pane-heading">
+            <p class="label">03 / Output</p>
+            <h2>Resolved cue</h2>
           </div>
+
+          <p id="effect-summary" class="summary">Moving projectile archetype: explicit moving head + trail emitters travel along runtime direction, then hand off to the existing Explosion cue at impact.</p>
+
+          <section class="inspector-section">
+            <p class="label">Authored timing</p>
+            <dl id="effect-timeline" class="timeline-list"></dl>
+          </section>
+
+          <section class="inspector-section resolved-section">
+            <div class="section-heading-row">
+              <p class="label">Resolved for current play</p>
+              <span class="status-pill">LIVE INPUT</span>
+            </div>
+            <dl class="definition-grid">
+              <div><dt>Effect</dt><dd id="resolved-effect">--</dd></div>
+              <div><dt>Particle path</dt><dd id="resolved-path">--</dd></div>
+              <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
+              <div><dt>Direction</dt><dd id="resolved-direction">--</dd></div>
+              <div><dt id="resolved-layer-a-label">Layer A</dt><dd id="resolved-layer-a">--</dd></div>
+              <div><dt id="resolved-layer-b-label">Layer B</dt><dd id="resolved-layer-b">--</dd></div>
+              <div><dt id="resolved-layer-c-label">Layer C</dt><dd id="resolved-layer-c">--</dd></div>
+              <div><dt id="resolved-layer-d-label">Layer D</dt><dd id="resolved-layer-d">--</dd></div>
+              <div><dt id="resolved-layer-e-label">Layer E</dt><dd id="resolved-layer-e">--</dd></div>
+              <div><dt>Screen kick</dt><dd id="resolved-screen-kick">--</dd></div>
+              <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
+            </dl>
+          </section>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.0.</pre>
-      </article>
+
+        <div class="workspace-panel debug-output" data-workspace-panel="debug" hidden>
+          <div class="pane-heading pane-heading--debug">
+            <p class="label">03 / Debug output</p>
+            <h2>Runtime console</h2>
+          </div>
+
+          <section class="debug-section debug-section--log">
+            <div class="log-heading">
+              <p class="label">Validation log</p>
+              <div class="log-tools">
+                <span id="p2-log-status" class="log-status" aria-live="polite"></span>
+                <button id="copy-p2-log" type="button">Copy</button>
+                <button id="clear-p2-log" type="button">Clear</button>
+              </div>
+            </div>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.1.</pre>
+          </section>
+
+          <section class="debug-section">
+            <p class="label">Public API / current call</p>
+            <pre id="api-preview" class="api"></pre>
+          </section>
+
+          <section class="debug-section debug-help">
+            <p class="label">Reading the HUD</p>
+            <div class="debug-help__row"><span class="debug-swatch debug-swatch--good"></span><strong>Green</strong><span>healthy 60-ish FPS / no queue pressure</span></div>
+            <div class="debug-help__row"><span class="debug-swatch debug-swatch--warn"></span><strong>Amber</strong><span>degraded frame rate or medium queue pressure</span></div>
+            <div class="debug-help__row"><span class="debug-swatch debug-swatch--bad"></span><strong>Red</strong><span>low frame rate or high/critical queue pressure</span></div>
+          </section>
+        </div>
+      </aside>
     </section>
   </main>
 
@@ -212,5 +292,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.0"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
 </html>
