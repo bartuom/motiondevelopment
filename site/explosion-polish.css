@@ -1,0 +1,130 @@
+/* Explosion 01 polish pass
+   Raster sprite art is the primary read. Secondary layers stay restrained. */
+
+.effect-root[data-explosion-variant="small"] .explosion-sprite {
+  background-image: url("./assets/explosion-small.png") !important;
+  background-size: 1600px 160px !important;
+  filter: none;
+}
+
+.effect-root[data-explosion-variant="big"] .explosion-sprite {
+  background-image: url("./assets/explosion-big.png") !important;
+  background-size: 2304px 192px !important;
+  filter: none;
+}
+
+/* Small: sprite silhouette does the work. No shockwave, almost no bloom. */
+.effect-root[data-explosion-variant="small"] .blast-bloom,
+.effect-root[data-explosion-variant="small"] .shock-ring {
+  display: none;
+}
+
+.effect-root[data-explosion-variant="small"] .explosion-flash {
+  width: 15px;
+  height: 15px;
+  box-shadow: 0 0 12px 3px rgba(255, 209, 112, .38);
+}
+
+.effect-root[data-explosion-variant="small"] .explosion-flash.is-playing {
+  animation: explosion-contact-small 46ms cubic-bezier(.08,.82,.18,1) both;
+}
+
+@keyframes explosion-contact-small {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.18,.7); }
+  14% { opacity: 1; transform: translate(-50%,-50%) scale(.78,1); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(2.25,.34); }
+}
+
+/* Keep five useful sparks, not a radial halo. */
+.effect-root[data-explosion-variant="small"] .particle.spark:nth-child(n+6) { display: none; }
+.effect-root[data-explosion-variant="small"] .particle.ember:nth-child(n+11) { display: none; }
+
+.effect-root[data-explosion-variant="small"] .particle.spark:nth-child(1) { --rotation:-18deg !important; --distance:82px !important; --length:24px !important; --delay:22ms !important; --duration:188ms !important; }
+.effect-root[data-explosion-variant="small"] .particle.spark:nth-child(2) { --rotation:7deg !important; --distance:64px !important; --length:18px !important; --delay:29ms !important; --duration:168ms !important; }
+.effect-root[data-explosion-variant="small"] .particle.spark:nth-child(3) { --rotation:42deg !important; --distance:48px !important; --length:13px !important; --delay:35ms !important; --duration:154ms !important; }
+.effect-root[data-explosion-variant="small"] .particle.spark:nth-child(4) { --rotation:132deg !important; --distance:31px !important; --length:10px !important; --delay:31ms !important; --duration:142ms !important; }
+.effect-root[data-explosion-variant="small"] .particle.spark:nth-child(5) { --rotation:224deg !important; --distance:42px !important; --length:12px !important; --delay:39ms !important; --duration:160ms !important; }
+
+.effect-root[data-explosion-variant="small"] .particle.ember:nth-child(9) { --x:42px !important; --y:38px !important; --size:3px !important; --delay:84ms !important; --duration:330ms !important; }
+.effect-root[data-explosion-variant="small"] .particle.ember:nth-child(10) { --x:-27px !important; --y:47px !important; --size:2px !important; --delay:108ms !important; --duration:375ms !important; }
+
+/* Big: one pressure wave, controlled bloom, stronger breakup. */
+.effect-root[data-explosion-variant="big"] .shock-ring--b { display: none; }
+
+.effect-root[data-explosion-variant="big"] .blast-bloom {
+  width: 210px;
+  height: 210px;
+  background: radial-gradient(circle, rgba(255,210,120,.36) 0 7%, rgba(255,117,32,.14) 28%, transparent 63%);
+  mix-blend-mode: screen;
+}
+
+.effect-root[data-explosion-variant="big"] .blast-bloom.is-playing {
+  animation: explosion-bloom-big 145ms cubic-bezier(.06,.74,.16,1) both;
+}
+
+@keyframes explosion-bloom-big {
+  0% { opacity: .55; transform: translate(-50%,-50%) scale(.12); }
+  30% { opacity: .38; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.02); }
+}
+
+.effect-root[data-explosion-variant="big"] .explosion-flash {
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 0 16px 4px rgba(255,221,137,.42);
+}
+
+.effect-root[data-explosion-variant="big"] .explosion-flash.is-playing {
+  animation: explosion-contact-big 52ms cubic-bezier(.06,.86,.16,1) both;
+}
+
+@keyframes explosion-contact-big {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.12,.78); }
+  12% { opacity: 1; transform: translate(-50%,-50%) scale(1,1.06); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(3.4,.28); }
+}
+
+.effect-root[data-explosion-variant="big"] .shock-ring--a {
+  width: 48px;
+  height: 34px;
+  border-width: 1px;
+  border-color: rgba(255,204,128,.54);
+}
+
+.effect-root[data-explosion-variant="big"] .shock-ring--a.is-playing {
+  animation: explosion-pressure-big 190ms cubic-bezier(.06,.76,.14,1) 10ms both;
+}
+
+@keyframes explosion-pressure-big {
+  0% { opacity: .58; transform: translate(-50%,-50%) scale(.35,.65); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(4.7,1.65); }
+}
+
+/* Reduce the radial count and hand-direct the useful streaks. */
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(n+9) { display: none; }
+.effect-root[data-explosion-variant="big"] .particle.ember:nth-child(n+17) { display: none; }
+.effect-root[data-explosion-variant="big"] .particle.debris:nth-child(n+22) { display: none; }
+
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(1) { --rotation:-12deg !important; --distance:142px !important; --length:31px !important; --delay:26ms !important; --duration:238ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(2) { --rotation:11deg !important; --distance:111px !important; --length:24px !important; --delay:31ms !important; --duration:222ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(3) { --rotation:38deg !important; --distance:83px !important; --length:19px !important; --delay:38ms !important; --duration:205ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(4) { --rotation:82deg !important; --distance:58px !important; --length:14px !important; --delay:45ms !important; --duration:192ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(5) { --rotation:151deg !important; --distance:73px !important; --length:17px !important; --delay:41ms !important; --duration:214ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(6) { --rotation:207deg !important; --distance:96px !important; --length:20px !important; --delay:34ms !important; --duration:226ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(7) { --rotation:276deg !important; --distance:67px !important; --length:13px !important; --delay:47ms !important; --duration:200ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.spark:nth-child(8) { --rotation:326deg !important; --distance:105px !important; --length:22px !important; --delay:36ms !important; --duration:218ms !important; }
+
+/* Debris/embers enter after the fireball peak so the read is layered rather than simultaneous. */
+.effect-root[data-explosion-variant="big"] .particle.ember:nth-child(13) { --x:88px !important; --y:54px !important; --delay:112ms !important; --duration:430ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.ember:nth-child(14) { --x:-61px !important; --y:73px !important; --delay:134ms !important; --duration:470ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.ember:nth-child(15) { --x:34px !important; --y:96px !important; --delay:151ms !important; --duration:500ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.ember:nth-child(16) { --x:-23px !important; --y:111px !important; --delay:169ms !important; --duration:520ms !important; }
+
+.effect-root[data-explosion-variant="big"] .particle.debris:nth-child(19) { --x:104px !important; --y:62px !important; --w:11px !important; --h:6px !important; --delay:92ms !important; --duration:510ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.debris:nth-child(20) { --x:-78px !important; --y:70px !important; --w:7px !important; --h:4px !important; --delay:116ms !important; --duration:550ms !important; }
+.effect-root[data-explosion-variant="big"] .particle.debris:nth-child(21) { --x:48px !important; --y:118px !important; --w:5px !important; --h:4px !important; --delay:138ms !important; --duration:590ms !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .effect-root[data-explosion-variant] .shock-ring,
+  .effect-root[data-explosion-variant] .blast-bloom { display: none; }
+}
