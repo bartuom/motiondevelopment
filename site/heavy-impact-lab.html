@@ -26,10 +26,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.7.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.7.1</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.7.0 adds a generic Effect Grid Lab for real FXDeck effects: preset instance grids, virtual-world Fit, mouse-wheel zoom, drag pan, direction patterns and looping. The P3.6.4 mobile Fireball path remains active underneath it.</p>
+      <p class="intro">P3.7.1 makes real-effect scaling the primary Debug workflow. Backend isolation is now an Advanced tier, grid changes cleanly respawn the selected batch, and Loop defaults to replace rather than accidental accumulation.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -191,7 +191,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.7.0</span>
+              <span class="runtime-hud__build">P3.7.1</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -272,7 +272,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.7.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.7.1.</pre>
           </section>
 
           <section class="debug-section">
@@ -294,7 +294,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.7.0"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.7.1"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
