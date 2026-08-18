@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.6.1</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.6.2</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">Play mode stays focused on authoring and the resolved cue. Benchmarks, stress controls and logs live in Debug / Tests. Runtime telemetry moved onto the preview as an optional engine-style HUD.</p>
+      <p class="intro">Play mode stays focused on authoring and the resolved cue. P3.6.2 hardens Fireball travel under multiple simultaneous instances so emitter-spawn hitches cannot fast-forward projectiles straight to impact.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -98,7 +98,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Fireball exercises moving source + trail + runtime position updates + Explosion handoff. Performance tuning is intentionally not the current gate.</p>
+            <p>Fireball exercises moving source + trail + runtime position updates + Explosion handoff. Multiple overlapping projectiles now preserve visible travel even when emitter creation stalls a frame.</p>
           </div>
         </div>
 
@@ -189,7 +189,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.6.1</span>
+              <span class="runtime-hud__build">P3.6.2</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -269,7 +269,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.1.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.2.</pre>
           </section>
 
           <section class="debug-section">
@@ -290,7 +290,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
