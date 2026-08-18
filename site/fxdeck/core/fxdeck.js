@@ -50,13 +50,53 @@ export class FXDeckRuntime {
     if (!this.registry.has(id)) this.registry.set(id, new Map());
     const versions = this.registry.get(id);
     if (!versions.has(version)) versions.set(version, new Map());
-    versions.get(version).set(variant, { ...definition, id, version, variant });
+    versions.get(version).set(variant, {
+      ...definition,
+      id,
+      version,
+      variant,
+      assets: Array.isArray(definition.assets) ? structuredClone(definition.assets) : []
+    });
 
     if (definition.default === true || !this.defaults.has(id)) {
       this.defaults.set(id, { version, variant });
     }
 
     return this;
+  }
+
+  setAdapter(name, adapter) {
+    if (!name || typeof name !== 'string') throw new TypeError('FXDeck.setAdapter() requires an adapter name.');
+    this.adapters[name] = adapter;
+    return this;
+  }
+
+  getAssets({ target = null } = {}) {
+    const assets = [];
+    const seen = new Set();
+
+    for (const versions of this.registry.values()) {
+      for (const variants of versions.values()) {
+        for (const definition of variants.values()) {
+          for (const asset of definition.assets ?? []) {
+            if (!asset || typeof asset !== 'object' || !asset.src) continue;
+            if (target && asset.target !== target) continue;
+            const normalized = structuredClone(asset);
+            const key = JSON.stringify([
+              normalized.target ?? '',
+              normalized.src,
+              normalized.width ?? null,
+              normalized.height ?? null
+            ]);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            assets.push(normalized);
+          }
+        }
+      }
+    }
+
+    return assets;
   }
 
   resolve(id, { version, variant } = {}) {
