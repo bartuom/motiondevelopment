@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.8.1';
+const BUILD = 'P3.8.2';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,8 +68,8 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.8.1 makes the sustained Environment archetype explicit and inspectable: multiple independent sources, active-source markers, live move/density updates and a much clearer intensity range. Fireball remains the accepted moving-source baseline.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.0)/g, BUILD);
+  if (intro) intro.textContent = 'P3.8.2 closes the sustained Environment probe UX: HUD Off now produces a clean preview with diagnostic reticles/markers hidden. Environment remains the accepted sustained-source baseline.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[01])/g, BUILD);
 }
 
 async function loadEffectGridLab() {
@@ -95,7 +95,7 @@ if (!host) {
 
       effectInput?.dispatchEvent(new Event('change'));
       normalizeVisibleBuild();
-      appendLog(`${BUILD} Fireball baseline retained: independent compositor projectile + sparse embers + Explosion handoff`);
+      appendLog(`${BUILD} Runtime UI cleanup active: HUD Off hides preview diagnostics; Fireball baseline retained`);
       refreshFireballInspector();
       refreshVisualMetric();
 
