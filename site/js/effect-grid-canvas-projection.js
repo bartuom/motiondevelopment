@@ -1,4 +1,4 @@
-const BUILD = 'P3.7.1';
+const BUILD = 'P3.7.3';
 
 const stage = document.querySelector('#impact-stage');
 const logOutput = document.querySelector('#p2-log');
@@ -88,7 +88,7 @@ waitForGrid()
       }
     };
 
-    appendLog(`${BUILD} grid canvas projection ready: logical world zoom uses fixed viewport-sized particle backing canvas`);
+    appendLog(`${BUILD} grid canvas projection ready: safe logical world uses fixed viewport-sized particle backing canvas`);
   })
   .catch((error) => {
     appendLog(`${BUILD} grid canvas projection FAIL: ${error.message}`);
