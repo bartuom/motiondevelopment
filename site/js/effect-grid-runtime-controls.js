@@ -1,4 +1,4 @@
-const BUILD = 'P3.7.3';
+const BUILD = 'P3.8.0';
 
 const primary = {
   effect: document.querySelector('#effect-select'),
@@ -53,7 +53,20 @@ function dispatch(element, type) {
   element.dispatchEvent(new Event(type, { bubbles: true }));
 }
 
+function isSustained(effectId = primary.effect?.value) {
+  return effectId === 'environmentEmitter';
+}
+
+function topologyLabel(effectId, path) {
+  if (isSustained(effectId)) return 'explicit sustained';
+  return path === 'scheduled' ? 'scheduled EP' : path === 'shared' ? 'direct EP' : 'per-burst emitter';
+}
+
 function pathDescription(effectId, path) {
+  if (isSustained(effectId)) {
+    return 'Environment Emitter is a sustained-source proof and currently uses one explicit emitter per FXDeck source. One-shot burst topology selection is intentionally disabled for this effect.';
+  }
+
   const topology = path === 'scheduled'
     ? 'Shared scheduled: Emission Points share one particle system and particle creation is frame-budgeted.'
     : path === 'shared'
@@ -126,13 +139,16 @@ function install({ panel, grid }) {
   function syncFromPrimary() {
     if (syncing) return;
     syncing = true;
-    controls.effect.value = primary.effect.value;
-    controls.path.value = primary.path.value;
+    const effectId = primary.effect.value;
+    const sustained = isSustained(effectId);
+    controls.effect.value = effectId;
+    controls.path.disabled = sustained;
+    controls.path.value = sustained ? 'emitter' : primary.path.value;
     controls.intensity.value = primary.intensity.value;
     controls.intensityValue.textContent = Number(primary.intensity.value).toFixed(1);
     controls.direction.value = primary.direction.value;
     controls.directionValue.textContent = `${primary.direction.value}°`;
-    controls.pathNote.textContent = pathDescription(primary.effect.value, primary.path.value);
+    controls.pathNote.textContent = pathDescription(effectId, controls.path.value);
     syncing = false;
   }
 
@@ -150,6 +166,7 @@ function install({ panel, grid }) {
   });
 
   controls.path.addEventListener('change', () => {
+    if (isSustained()) return;
     const wasActive = grid.isActive();
     setPrimary(primary.path, controls.path.value, 'change');
     syncFromPrimary();
@@ -191,7 +208,7 @@ function install({ panel, grid }) {
   const readout = panel.querySelector('#effect-grid-readout');
   const readoutObserver = new MutationObserver(() => {
     if (!readout || readout.dataset.topologyDecorating === '1') return;
-    const topology = controls.path.value === 'scheduled' ? 'scheduled EP' : controls.path.value === 'shared' ? 'direct EP' : 'per-burst emitter';
+    const topology = topologyLabel(controls.effect.value, controls.path.value);
     if (!readout.textContent.includes(`• ${topology} •`)) {
       readout.dataset.topologyDecorating = '1';
       const parts = readout.textContent.split(' • ');
@@ -204,13 +221,13 @@ function install({ panel, grid }) {
 
   syncFromPrimary();
   if (readout) {
-    const topology = controls.path.value === 'scheduled' ? 'scheduled EP' : controls.path.value === 'shared' ? 'direct EP' : 'per-burst emitter';
+    const topology = topologyLabel(controls.effect.value, controls.path.value);
     const parts = readout.textContent.split(' • ');
     if (parts.length >= 2) parts.splice(1, 0, topology);
     readout.textContent = parts.join(' • ');
   }
 
-  appendLog(`${BUILD} Grid test setup ready: effect + shared-scheduled/shared-direct/per-play-emitter topology + intensity + base direction, synced with Play`);
+  appendLog(`${BUILD} Grid setup ready: one-shot topology comparison retained; sustained Environment uses explicit emitter + live FXDeck.update()`);
 }
 
 waitForGrid()
