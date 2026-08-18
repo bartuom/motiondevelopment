@@ -12,19 +12,22 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion
-- **Current build:** **P3.6.4**
+- **Current build:** **P3.7.0**
 - **Status:** ACTIVE.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.6.4.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.7.0.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0
-- **Current gate:** real-device Fireball concurrency on Galaxy S20+ after removing avoidable DOM/compositor and trail-submission cost. This is a real blocker discovered by the representative effect, not speculative benchmark tuning.
+- **Current gate:** use the new generic Effect Grid Lab on Galaxy S20+ to validate the P3.6.4 Fireball mobile pass at real 10/15/24-instance loads. The grid is now the preferred real-effect scaling harness; synthetic backend stress remains diagnostic only.
 - **P3.6.1 user validation:** Runtime Lab UI cleanup works and is materially cleaner. Single Fireball works; runtime intensity works; direction/travel/Explosion handoff are functional.
 - **P3.6.2 user validation:** clamping Fireball wall-clock advancement did not fix the actual concurrency bug.
 - **P3.6.3 user validation:** independent projectile visuals fixed concurrent visibility; multiple Fireballs are now visible correctly. On Galaxy S20+ sustained concurrency exposed a real mobile cost: roughly 10 active Fireballs could fall toward ~40 FPS and ~15 toward ~30 FPS.
 - **P3.6.4 mobile pass:** Fireball projectile motion is transform/compositor-only instead of per-frame `left/top`; moving projectile CSS no longer uses `mix-blend-mode`, filter blur/drop-shadow or animated expensive paint effects; the visual itself carries the main tail; particle embers are sampled every ~96 ms instead of ~32 ms and use one small particle per sample; Runtime HUD backdrop blur is disabled so diagnostics do not materially contaminate the thing being measured.
-- **Diagnostics:** HUD now distinguishes tsParticles `Particles` from independent DOM `Visuals`, because Fireball heads are not tsParticles particles.
-- **Next action:** on live **P3.6.4**, repeat the same Galaxy S20+ concurrency scenario. Hold roughly 10 and 15 active Fireballs if possible and note FPS plus HUD `Particles` and `Visuals`. Visual correctness must remain intact. Do not run synthetic stress unless a regression specifically needs isolation.
-- **After Fireball:** if this real-device pass restores acceptable concurrency, close Fireball and implement a sustained **Environment emitter** with `start → live update position/intensity → stop`. If it still collapses badly, profile/isolate projectile visual vs ember trail vs Explosion before adding any broader framework.
+- **P3.7.0 Effect Grid Lab:** Debug / Tests can now spawn the currently selected real FXDeck effect in preset grids from 4 to 64 instances, with configurable cell spacing, Same/Radial/Alternating/Seeded direction patterns, looping, Fit Grid, mouse-wheel viewport zoom and drag pan.
+- **Grid camera design:** the grid creates a virtual logical world but intentionally keeps the tsParticles backing canvas at viewport resolution while zoomed. `CoordinateAdapter` projects logical world positions into the fixed backing canvas, avoiding huge DPR-scaled debug canvases on mobile.
+- **Grid semantics:** grid cells call normal `FXDeck.play(effect, params)`. Lab-only shared-target/screen-kick hooks are omitted in the grid so cells do not fight over one shared target; effect-owned adapters/particles/child effects still run normally.
+- **Diagnostics:** HUD distinguishes tsParticles `Particles` from independent DOM `Visuals`, because Fireball heads are not tsParticles particles.
+- **Next action:** on live **P3.7.0**, Debug / Tests → Effect Grid Lab. Test Fireball with `2×5 = 10`, `3×5 = 15`, then optionally `4×6 = 24`; use `Fit Grid` or wheel zoom as needed. Record FPS plus HUD `Particles / Visuals / Instances`. Visual correctness must remain intact.
+- **After Fireball:** if the P3.6.4 path restores acceptable real-device concurrency, close Fireball and implement a sustained **Environment emitter** with `start → live update position/intensity → stop`. The same Effect Grid Lab will then scale-test Environment and later Rare Reward without new one-off benchmark pages.
 
 ## Product target
 
@@ -116,16 +119,28 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - Runtime HUD no longer uses `backdrop-filter`, and Basic HUD exposes `Visuals` separately from `Particles` so Fireball cost is not misread as a raw particle-count problem.
 - Fireball remains effect-local. No generic projectile framework was added.
 
+### P3.7 Effect Grid Lab — IMPLEMENTED
+
+- One generic real-effect scaling harness now replaces manual repeated clicking and future per-effect stress pages.
+- Presets: `2×2`, `2×5`, `3×3`, `3×5`, `4×4`, `4×6`, `5×6`, `6×6`, `8×8`.
+- Cell size controls logical spacing/world size independently from the authored effect.
+- Direction patterns: Same, Radial, Alternating and deterministic Seeded spread.
+- Grid supports Spawn, Stop, Loop with configurable interval, Fit Grid, wheel zoom and drag pan.
+- Grid view is a virtual logical world inside the existing Preview; leaving Debug resets the world back to normal Play dimensions.
+- The particle backing canvas is deliberately not resized to the potentially huge virtual world while grid mode is active. This keeps debug zoom from allocating enormous DPR canvases on mobile while preserving logical world placement through `CoordinateAdapter` scaling.
+- Grid is Lab-only. No grid/camera abstraction was added to FXDeck Core.
+- Current effects are spawned through the public runtime API. Shared Lab-only target/screen hooks are omitted by design to avoid cross-cell coupling.
+
 ### P3.6.1 Runtime Lab UX — USER-ACCEPTED
 
 - Main workbench remains three columns with the existing width balance; Preview stays persistent in the center.
 - Workspace has **Play** and **Debug / Tests** modes instead of exposing every dev control simultaneously.
 - Play left pane contains only effect/version/variant/path/intensity/direction plus `FXDeck.play()` and `stopAll()`.
 - Play right pane contains authored timing + resolved cue only.
-- Debug left pane contains overlap/A-B/cancellation/synthetic stress controls and stress parameters.
+- Debug left pane contains Effect Grid Lab plus overlap/A-B/cancellation/synthetic stress controls and stress parameters.
 - Debug right pane contains validation log, Copy/Clear, API call and HUD legend.
 - Runtime diagnostics live on Preview as an engine-style translucent HUD with **Off / Basic / Full** modes.
-- P3.6.4 Basic HUD: FPS, tsParticles particle count, active independent visuals, active FXDeck instances.
+- Basic HUD: FPS, tsParticles particle count, active independent visuals, active FXDeck instances.
 - Full HUD adds 1% low, p95/p99/worst/debt, >20ms frames, queued work, emitters, groups, queue pressure, quality shedding, burst path and canvas scale.
 - HUD health color coding remains green / amber / red with informational blue workload counters.
 - Workspace mode and HUD mode persist locally in the browser.
@@ -135,10 +150,10 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 
 # Remaining P3 capability roadmap
 
-1. **P3.6.4 Fireball Galaxy S20+ concurrency validation** — current gate. Verify simultaneous projectile correctness and compare roughly 10/15 active Fireballs to the observed ~40/~30 FPS P3.6.3 behavior. Record `FPS / Particles / Visuals`.
-2. **Environment emitter** — sustained lifetime and real live-update pressure.
+1. **P3.7.0 Fireball Galaxy S20+ grid validation** — current gate. Use real grids of 10, 15 and optionally 24 Fireballs; record `FPS / Particles / Visuals / Instances` and verify visual correctness.
+2. **Environment emitter** — sustained lifetime and real live-update pressure; immediately reuse Effect Grid Lab for 1/4/16/24+ sustained sources.
 3. **Effect-owned asset lifecycle hardening** — only if Fireball/Environment expose real preload/unload problems.
-4. **Rare Reward** — UI/DOM + particles to prove non-world-impact cue composition.
+4. **Rare Reward** — UI/DOM + particles; use large logical cell size + Fit/wheel zoom to view many cards without a new tester.
 5. **Critical Hit / Magic Burst** — broaden short-cue authoring without new Core if possible.
 6. **Only then:** broader production resize/DPR, mobile matrix, raw-vs-runtime overhead and deferred quality/backpressure tuning.
 
@@ -150,7 +165,7 @@ P3 exits when representative one-shot, moving and sustained effects all use the 
 
 - [x] Heavy Impact — short composite impact.
 - [x] Explosion — multi-layer one-shot.
-- [ ] Fireball — concurrency visually fixed; P3.6.4 mobile cost validation pending.
+- [ ] Fireball — concurrency visually fixed; P3.7.0 grid mobile validation pending.
 - [ ] Environment emitter — sustained/long-running.
 - [ ] Rare Reward — UI/DOM + particles.
 - [ ] Critical Hit — ultra-short readability.
@@ -191,12 +206,17 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 10. Lab UI concerns stay outside FXDeck Core.
 11. Moving hero visuals need independent ownership and compositor-friendly movement; backend emitter objects are not the Fireball hero visual.
 12. Diagnostics must not materially distort measured runtime cost; avoid backdrop blur and distinguish DOM visuals from particle counts.
-13. Every user-testable iteration advances visible build/cache keys.
+13. Real-effect scalability should be tested through one reusable Effect Grid Lab rather than per-effect benchmark pages.
+14. Grid zoom is a Lab camera concern: keep the particle backing resolution bounded while expanding logical world coordinates.
+15. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
 # Changelog — 2026-08-18
 
+- **P3.7.0 — Effect Grid Lab:** added generic preset grids for the selected real FXDeck effect, with 4/10/9/15/16/24/30/36/64-instance presets, configurable spacing, direction patterns, looping, Fit Grid, wheel zoom and drag pan.
+- **P3.7.0 — virtual debug camera:** grid mode expands logical world coordinates while keeping the tsParticles backing canvas at viewport resolution, preventing debug zoom-out from creating giant DPR-scaled canvases on mobile.
+- **P3.7.0 — reusable validation flow:** Fireball P3.6.4 mobile validation and future Environment/Rare Reward scaling now use the same grid harness; synthetic backend stress remains diagnostic only.
 - **P3.6.4 — Fireball mobile concurrency pass:** changed projectile movement from `left/top` to transform-only `translate3d()` through `DomSpriteAdapter`; removed moving `mix-blend-mode`, filter blur/drop-shadows and related expensive CSS effects.
 - **P3.6.4 — sparse trail:** built-in projectile visual now carries the primary tail; particle embers changed from ~32 ms / ~31 submits per second per Fireball to ~96 ms / ~10.4 submits per second, one small particle per sample.
 - **P3.6.4 — clean diagnostics:** removed Runtime HUD `backdrop-filter` and added separate `Visuals` counter so DOM projectile count is not confused with tsParticles particle count.
