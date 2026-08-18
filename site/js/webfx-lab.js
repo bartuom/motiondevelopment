@@ -1,5 +1,4 @@
 const stage = document.querySelector('#fxdeck-stage');
-const particleHost = document.querySelector('#fxdeck-particles');
 const testButtons = [...document.querySelectorAll('[data-test]')];
 const runButton = document.querySelector('#run-test');
 const stopButton = document.querySelector('#stop-all');
@@ -16,41 +15,13 @@ const contactFlash = document.querySelector('.contact-flash');
 const pressureWave = document.querySelector('.pressure-wave');
 
 const TESTS = {
-  oneshot: {
-    index: '01',
-    label: 'One-shot burst',
-    description: 'Validates runtime emitter creation, visible particles and deterministic cleanup.'
-  },
-  position: {
-    index: '02',
-    label: 'Exact position',
-    description: 'Spawns at a pixel coordinate instead of a percentage-based background position.'
-  },
-  moving: {
-    index: '03',
-    label: 'Moving emitter',
-    description: 'Mutates EmitterInstance.position every frame to follow a moving gameplay source.'
-  },
-  stress: {
-    index: '04',
-    label: '30× stress',
-    description: 'Fires 30 short one-shot emitters rapidly and verifies that tracked emitters clean up.'
-  },
-  image: {
-    index: '05',
-    label: 'Image particles',
-    description: 'Uses an external SVG image as the particle shape instead of a primitive circle.'
-  },
-  composite: {
-    index: '06',
-    label: 'Composite FX',
-    description: 'Combines tsParticles with DOM flash, pressure wave and stage kick in one gameplay cue.'
-  },
-  resize: {
-    index: '07',
-    label: 'Resize / reflow',
-    description: 'Changes the stage height, forces a canvas resize and spawns again at the new center.'
-  }
+  oneshot: { index: '01', label: 'One-shot burst', description: 'Known-good visible burst, particle peak sampling and automatic emitter cleanup.' },
+  position: { index: '02', label: 'Exact position', description: 'Validates CSS stage coordinates -> retina canvas coordinates -> visible spawn alignment.' },
+  moving: { index: '03', label: 'Moving emitter', description: 'Moves one EmitterInstance through canvas coordinates while a DOM marker follows in CSS coordinates.' },
+  stress: { index: '04', label: '30× stress', description: 'Fires 30 visible one-shots rapidly and checks automatic emitter destruction.' },
+  image: { index: '05', label: 'Image particles', description: 'Uses a preloaded local SVG image shape with an intentionally large readable size.' },
+  composite: { index: '06', label: 'Composite FX', description: 'Particles + DOM contact flash + pressure wave + stage kick at the same gameplay coordinate.' },
+  resize: { index: '07', label: 'Resize / reflow', description: 'Resizes the stage/canvas, recalculates coordinate scale and spawns at the new visual center.' }
 };
 
 const Spike = {
@@ -58,7 +29,7 @@ const Spike = {
   selected: 'oneshot',
   generation: 0,
   emitterSerial: 0,
-  activeEmitters: new Set(),
+  trackedEmitters: new Set(),
   timers: new Set(),
   rafs: new Set(),
   running: false,
@@ -75,43 +46,44 @@ const Spike = {
         detectRetina: true,
         fpsLimit: 60,
         pauseOnBlur: true,
+        pauseOnOutsideViewport: false,
+        preload: [{ src: './assets/fxdeck-spark.svg', width: 32, height: 10 }],
         particles: { number: { value: 0 } },
         emitters: []
       }
     });
 
-    if (!this.container?.addEmitter || !this.container?.removeEmitter) {
-      throw new Error('Emitter plugin API is unavailable in the loaded bundle.');
+    if (!this.container?.addEmitter || !this.container?.removeEmitter || !this.container?.getEmitter) {
+      throw new Error('Emitter runtime API is unavailable in the loaded bundle.');
     }
 
-    log('PASS engine init: addEmitter/removeEmitter available');
+    const scale = canvasScale();
+    log(`PASS engine init; canvas scale ${scale.x.toFixed(2)}x${scale.y.toFixed(2)}`);
   },
 
   countParticles() {
     return Number(this.container?.particles?.count ?? this.container?.particles?.array?.length ?? 0);
   },
 
-  async addEmitter(options, position) {
+  sweepEmitters() {
+    for (const name of [...this.trackedEmitters]) {
+      if (!this.container?.getEmitter?.(name)) this.trackedEmitters.delete(name);
+    }
+  },
+
+  async addEmitter(options, cssPosition) {
     const name = `fxdeck-spike-${++this.emitterSerial}`;
-    const instance = await this.container.addEmitter({ ...structuredClone(options), name }, position);
-    this.activeEmitters.add(name);
+    const canvasPosition = cssToCanvas(cssPosition);
+    const instance = await this.container.addEmitter({ ...structuredClone(options), name }, canvasPosition);
+    this.trackedEmitters.add(name);
     updateMetrics();
-    return { name, instance };
+    return { name, instance, canvasPosition };
   },
 
   removeEmitter(name) {
     try { this.container?.removeEmitter?.(name); } catch (error) { console.warn(error); }
-    this.activeEmitters.delete(name);
+    this.trackedEmitters.delete(name);
     updateMetrics();
-  },
-
-  schedule(fn, delay) {
-    const id = window.setTimeout(() => {
-      this.timers.delete(id);
-      fn();
-    }, delay);
-    this.timers.add(id);
-    return id;
   },
 
   trackRaf(fn) {
@@ -128,23 +100,23 @@ const Spike = {
     this.rafs.forEach(cancelAnimationFrame);
     this.timers.clear();
     this.rafs.clear();
-
-    [...this.activeEmitters].forEach((name) => this.removeEmitter(name));
+    for (const name of [...this.trackedEmitters]) this.removeEmitter(name);
     this.container?.particles?.clear?.();
-
     stage.classList.remove('composite-playing');
     movingTarget.classList.remove('is-visible');
+    stage.style.removeProperty('height');
     stage.style.removeProperty('min-height');
+    this.container?.canvas?.resize?.();
     setMarkerPercent(50, 50);
     updateMetrics();
   },
 
-  stop() {
+  stop({ logStop = true } = {}) {
     this.generation += 1;
     this.running = false;
     this.cleanup();
     setResult('idle', 'stopped');
-    log('STOP manual cleanup executed');
+    if (logStop) log('STOP cleanup executed');
   }
 };
 
@@ -152,7 +124,7 @@ function log(message) {
   const stamp = new Date().toLocaleTimeString([], { hour12: false });
   const lines = logOutput.textContent.trim().split('\n').filter(Boolean);
   lines.push(`[${stamp}] ${message}`);
-  logOutput.textContent = lines.slice(-10).join('\n');
+  logOutput.textContent = lines.slice(-12).join('\n');
   logOutput.scrollTop = logOutput.scrollHeight;
 }
 
@@ -169,15 +141,35 @@ function setResult(state, text) {
 }
 
 function updateMetrics() {
+  Spike.sweepEmitters();
   const count = Spike.countParticles();
   if (Spike.running) Spike.peakParticles = Math.max(Spike.peakParticles, count);
   metricParticles.textContent = String(count);
-  metricEmitters.textContent = String(Spike.activeEmitters.size);
+  metricEmitters.textContent = String(Spike.trackedEmitters.size);
 }
 
 function stagePoint(px, py) {
-  const rect = stage.getBoundingClientRect();
-  return { x: rect.width * px, y: rect.height * py };
+  return { x: stage.clientWidth * px, y: stage.clientHeight * py };
+}
+
+function canvasScale() {
+  const canvasSize = Spike.container?.canvas?.size;
+  const cssWidth = Math.max(1, stage.clientWidth);
+  const cssHeight = Math.max(1, stage.clientHeight);
+  return {
+    x: (canvasSize?.width || cssWidth) / cssWidth,
+    y: (canvasSize?.height || cssHeight) / cssHeight
+  };
+}
+
+function cssToCanvas(point) {
+  const scale = canvasScale();
+  return { x: point.x * scale.x, y: point.y * scale.y };
+}
+
+function canvasToCss(point) {
+  const scale = canvasScale();
+  return { x: point.x / scale.x, y: point.y / scale.y };
 }
 
 function setMarkerPixels(x, y) {
@@ -190,22 +182,22 @@ function setMarkerPercent(x, y) {
   setMarkerPixels(point.x, point.y);
 }
 
-function baseParticles({ image = false, direction = 'none', speed = { min: 16, max: 34 }, gravity = 0 } = {}) {
+function visibleParticles({ image = false, direction = 'none', speed = { min: 7, max: 16 }, gravity = 0, life = { min: 0.55, max: 0.95 } } = {}) {
   return {
-    color: { value: image ? '#ffffff' : ['#ffffff', '#bcecff', '#59c8ff'] },
+    color: { value: image ? '#ffffff' : ['#ffffff', '#c9f2ff', '#61d2ff', '#4e8cff'] },
     shape: image ? {
       type: 'image',
       options: { image: { src: './assets/fxdeck-spark.svg', width: 32, height: 10, replaceColor: false } }
     } : { type: 'circle' },
     opacity: {
-      value: { min: 0.65, max: 1 },
-      animation: { enable: true, speed: 4.5, sync: false, startValue: 'max', destroy: 'min' }
+      value: { min: 0.75, max: 1 },
+      animation: { enable: true, speed: 1.25, sync: false, startValue: 'max', destroy: 'min' }
     },
     size: {
-      value: image ? { min: 4, max: 8 } : { min: 1.2, max: 3.4 },
-      animation: { enable: true, speed: 7, sync: false, startValue: 'max', destroy: 'min' }
+      value: image ? { min: 9, max: 16 } : { min: 3, max: 7 },
+      animation: { enable: true, speed: 2.2, sync: false, startValue: 'max', destroy: 'min' }
     },
-    rotate: image ? { value: { min: 0, max: 360 }, direction: 'random', animation: { enable: false } } : undefined,
+    rotate: image ? { value: { min: 0, max: 360 }, direction: 'random' } : undefined,
     move: {
       enable: true,
       direction,
@@ -217,179 +209,197 @@ function baseParticles({ image = false, direction = 'none', speed = { min: 16, m
     },
     life: {
       count: 1,
-      duration: { value: { min: 0.25, max: 0.55 }, sync: false }
+      duration: { value: life, sync: false }
     }
   };
 }
 
-function burstEmitter({ count = 16, image = false, direction = 'none', speed, gravity = 0 } = {}) {
+function burstEmitter({ count = 36, image = false, direction = 'none', speed, gravity = 0, life } = {}) {
   return {
     autoPlay: true,
     startCount: count,
     size: { width: 0, height: 0, mode: 'percent' },
-    rate: { quantity: 1, delay: 10 },
-    life: { count: 1, duration: 0.025, wait: false },
-    particles: baseParticles({ image, direction, speed, gravity })
+    rate: { quantity: 0, delay: 0 },
+    life: { count: 1, duration: 0.1, wait: false },
+    particles: visibleParticles({ image, direction, speed, gravity, life })
   };
 }
 
 function sustainedEmitter() {
   return {
     autoPlay: true,
-    startCount: 2,
+    startCount: 4,
     size: { width: 0, height: 0, mode: 'percent' },
-    rate: { quantity: 2, delay: 0.028 },
-    life: { count: 1, duration: 1.35, wait: false },
-    particles: {
-      ...baseParticles({ speed: { min: 1, max: 5 } }),
-      size: { value: { min: 1, max: 2.8 } },
-      life: { count: 1, duration: { value: { min: 0.22, max: 0.42 }, sync: false } }
-    }
+    rate: { quantity: 3, delay: 0.04 },
+    life: { count: 1, duration: 1.45, wait: false },
+    particles: visibleParticles({ speed: { min: 1.5, max: 4.5 }, life: { min: 0.4, max: 0.7 } })
   };
+}
+
+async function observe(duration, runId) {
+  const started = performance.now();
+  let peak = 0;
+  await new Promise((resolve) => {
+    const tick = (now) => {
+      if (runId !== Spike.generation) return resolve();
+      const count = Spike.countParticles();
+      peak = Math.max(peak, count);
+      Spike.peakParticles = Math.max(Spike.peakParticles, count);
+      if (now - started < duration) Spike.trackRaf(tick); else resolve();
+    };
+    Spike.trackRaf(tick);
+  });
+  return peak;
 }
 
 async function testOneShot(runId) {
   const p = stagePoint(.5, .5);
   setMarkerPixels(p.x, p.y);
-  const { name } = await Spike.addEmitter(burstEmitter({ count: 20 }), p);
-  await sleep(620);
+  const { name } = await Spike.addEmitter(burstEmitter({ count: 42 }), p);
+  const peak = await observe(900, runId);
+  await sleep(350);
   if (runId !== Spike.generation) return null;
-  Spike.removeEmitter(name);
-  return { pass: Spike.peakParticles > 0 && Spike.activeEmitters.size === 0, detail: `peak particles ${Spike.peakParticles}; emitters after cleanup ${Spike.activeEmitters.size}` };
+  Spike.sweepEmitters();
+  const gone = !Spike.container.getEmitter(name);
+  return { pass: peak >= 10 && gone, detail: `peak ${peak}; auto-cleanup ${gone ? 'yes' : 'NO'}` };
 }
 
 async function testPosition(runId) {
-  const p = stagePoint(.27, .34);
+  const p = stagePoint(.72, .34);
   setMarkerPixels(p.x, p.y);
-  const { name, instance } = await Spike.addEmitter(burstEmitter({ count: 18, direction: 'right' }), p);
-  const dx = Math.abs((instance?.position?.x ?? -9999) - p.x);
-  const dy = Math.abs((instance?.position?.y ?? -9999) - p.y);
-  await sleep(560);
+  const { name, instance, canvasPosition } = await Spike.addEmitter(burstEmitter({ count: 34, direction: 'right' }), p);
+  const visiblePosition = canvasToCss(instance.position);
+  const dx = Math.abs(visiblePosition.x - p.x);
+  const dy = Math.abs(visiblePosition.y - p.y);
+  const peak = await observe(850, runId);
+  await sleep(250);
   if (runId !== Spike.generation) return null;
-  Spike.removeEmitter(name);
-  return { pass: dx < 2 && dy < 2, detail: `requested ${Math.round(p.x)},${Math.round(p.y)}; emitter delta ${dx.toFixed(1)},${dy.toFixed(1)} px` };
+  Spike.sweepEmitters();
+  const scale = canvasScale();
+  return {
+    pass: dx < 2 && dy < 2 && peak > 0,
+    detail: `CSS ${Math.round(p.x)},${Math.round(p.y)} -> canvas ${Math.round(canvasPosition.x)},${Math.round(canvasPosition.y)}; visual delta ${dx.toFixed(1)},${dy.toFixed(1)}px; scale ${scale.x.toFixed(2)}`
+  };
 }
 
 async function testMoving(runId) {
-  const rect = stage.getBoundingClientRect();
-  const start = { x: rect.width * .2, y: rect.height * .55 };
+  const start = stagePoint(.16, .56);
   const { name, instance } = await Spike.addEmitter(sustainedEmitter(), start);
   movingTarget.classList.add('is-visible');
-
   const started = performance.now();
   let last = { ...start };
 
   await new Promise((resolve) => {
     const animate = (now) => {
       if (runId !== Spike.generation) return resolve();
-      const t = Math.min(1, (now - started) / 1250);
-      const x = rect.width * (.2 + .6 * t);
-      const y = rect.height * (.5 + Math.sin(t * Math.PI * 2) * .16);
+      const t = Math.min(1, (now - started) / 1350);
+      const x = stage.clientWidth * (.16 + .68 * t);
+      const y = stage.clientHeight * (.52 + Math.sin(t * Math.PI * 2) * .17);
       last = { x, y };
-      if (instance?.position) { instance.position.x = x; instance.position.y = y; }
+      const canvasPoint = cssToCanvas(last);
+      instance.position.x = canvasPoint.x;
+      instance.position.y = canvasPoint.y;
       movingTarget.style.left = `${x}px`;
       movingTarget.style.top = `${y}px`;
       setMarkerPixels(x, y);
+      Spike.peakParticles = Math.max(Spike.peakParticles, Spike.countParticles());
       if (t < 1) Spike.trackRaf(animate); else resolve();
     };
     Spike.trackRaf(animate);
   });
 
-  await sleep(360);
+  await sleep(850);
   if (runId !== Spike.generation) return null;
-  Spike.removeEmitter(name);
+  Spike.sweepEmitters();
   movingTarget.classList.remove('is-visible');
   const travel = Math.hypot(last.x - start.x, last.y - start.y);
-  return { pass: travel > rect.width * .45 && Spike.peakParticles > 0, detail: `emitter moved ${Math.round(travel)} px; peak particles ${Spike.peakParticles}` };
+  return { pass: travel > stage.clientWidth * .6 && Spike.peakParticles >= 5 && !Spike.container.getEmitter(name), detail: `travel ${Math.round(travel)}px; peak ${Spike.peakParticles}; auto-cleanup ${!Spike.container.getEmitter(name) ? 'yes' : 'NO'}` };
 }
 
 async function testStress(runId) {
-  const rect = stage.getBoundingClientRect();
   const names = [];
-
   for (let i = 0; i < 30; i += 1) {
     if (runId !== Spike.generation) return null;
-    const x = rect.width * (.16 + ((i * 37) % 68) / 100);
-    const y = rect.height * (.18 + ((i * 53) % 62) / 100);
-    const { name } = await Spike.addEmitter(burstEmitter({ count: 10, speed: { min: 12, max: 30 } }), { x, y });
+    const x = stage.clientWidth * (.14 + ((i * 37) % 72) / 100);
+    const y = stage.clientHeight * (.14 + ((i * 53) % 70) / 100);
+    const { name } = await Spike.addEmitter(burstEmitter({ count: 18, speed: { min: 6, max: 14 }, life: { min: .45, max: .75 } }), { x, y });
     names.push(name);
-    await sleep(38);
+    Spike.peakParticles = Math.max(Spike.peakParticles, Spike.countParticles());
+    await sleep(42);
   }
-
-  await sleep(700);
+  await observe(900, runId);
+  await sleep(350);
   if (runId !== Spike.generation) return null;
-  names.forEach((name) => Spike.removeEmitter(name));
+  Spike.sweepEmitters();
+  const alive = names.filter((name) => Spike.container.getEmitter(name)).length;
+  const pass = Spike.peakParticles >= 40 && alive === 0;
   Spike.container?.particles?.clear?.();
-  return { pass: Spike.peakParticles > 20 && Spike.activeEmitters.size === 0, detail: `30 emitters fired; peak particles ${Spike.peakParticles}; tracked after cleanup ${Spike.activeEmitters.size}` };
+  return { pass, detail: `30 bursts; peak ${Spike.peakParticles}; emitters still alive ${alive}` };
 }
 
 async function testImage(runId) {
   const p = stagePoint(.5, .5);
   setMarkerPixels(p.x, p.y);
-  const { name } = await Spike.addEmitter(burstEmitter({ count: 16, image: true, direction: 'right', speed: { min: 14, max: 32 } }), p);
-  await sleep(700);
+  const { name } = await Spike.addEmitter(burstEmitter({ count: 28, image: true, direction: 'right', speed: { min: 6, max: 14 }, life: { min: .7, max: 1.05 } }), p);
+  const peak = await observe(1050, runId);
+  await sleep(250);
   if (runId !== Spike.generation) return null;
-  Spike.removeEmitter(name);
-  return { pass: Spike.peakParticles > 0, detail: `external SVG shape loaded; peak particles ${Spike.peakParticles}` };
+  Spike.sweepEmitters();
+  return { pass: peak >= 5 && !Spike.container.getEmitter(name), detail: `preloaded SVG particles; peak ${peak}; auto-cleanup ${!Spike.container.getEmitter(name) ? 'yes' : 'NO'}` };
 }
 
 async function testComposite(runId) {
-  const p = stagePoint(.48, .5);
+  const p = stagePoint(.5, .5);
   setMarkerPixels(p.x, p.y);
   contactFlash.style.left = `${p.x}px`;
   contactFlash.style.top = `${p.y}px`;
   pressureWave.style.left = `${p.x}px`;
   pressureWave.style.top = `${p.y}px`;
-
   stage.classList.remove('composite-playing');
   void stage.offsetWidth;
   stage.classList.add('composite-playing');
 
-  const { name: sparks } = await Spike.addEmitter(burstEmitter({ count: 22, direction: 'right', speed: { min: 22, max: 46 } }), p);
-  await sleep(36);
+  const { name: sparks } = await Spike.addEmitter(burstEmitter({ count: 34, direction: 'right', speed: { min: 9, max: 20 }, life: { min: .45, max: .75 } }), p);
+  await sleep(42);
   if (runId !== Spike.generation) return null;
-  const { name: debris } = await Spike.addEmitter(burstEmitter({ count: 7, direction: 'right', speed: { min: 8, max: 18 }, gravity: 18 }), p);
-
-  await sleep(640);
+  const { name: debris } = await Spike.addEmitter(burstEmitter({ count: 10, direction: 'right', speed: { min: 4, max: 9 }, gravity: 14, life: { min: .65, max: 1.0 } }), p);
+  const peak = await observe(900, runId);
+  await sleep(350);
   if (runId !== Spike.generation) return null;
-  Spike.removeEmitter(sparks);
-  Spike.removeEmitter(debris);
+  Spike.sweepEmitters();
   stage.classList.remove('composite-playing');
-  return { pass: Spike.peakParticles > 0, detail: `particles + DOM layers + stage kick sequenced; peak particles ${Spike.peakParticles}` };
+  return { pass: peak >= 10 && !Spike.container.getEmitter(sparks) && !Spike.container.getEmitter(debris), detail: `aligned particle + DOM cue; peak ${peak}; both emitters auto-cleaned` };
 }
 
 async function testResize(runId) {
   const before = { ...Spike.container.canvas.size };
   stage.style.minHeight = '430px';
-  await sleep(220);
-  if (runId !== Spike.generation) return null;
+  stage.style.height = '430px';
+  await sleep(120);
   Spike.container.canvas.resize();
-  await sleep(80);
+  await sleep(120);
+  if (runId !== Spike.generation) return null;
   const after = { ...Spike.container.canvas.size };
   const p = stagePoint(.5, .5);
   setMarkerPixels(p.x, p.y);
-  const { name } = await Spike.addEmitter(burstEmitter({ count: 14 }), p);
-  await sleep(520);
+  const { name } = await Spike.addEmitter(burstEmitter({ count: 30 }), p);
+  const visiblePosition = canvasToCss(Spike.container.getEmitter(name).position);
+  const centerDelta = Math.hypot(visiblePosition.x - p.x, visiblePosition.y - p.y);
+  const peak = await observe(800, runId);
+  await sleep(300);
   if (runId !== Spike.generation) return null;
-  Spike.removeEmitter(name);
+  Spike.sweepEmitters();
+  const changed = Math.abs((before.height ?? 0) - (after.height ?? 0)) > 10;
+  stage.style.removeProperty('height');
   stage.style.removeProperty('min-height');
   Spike.container.canvas.resize();
-  const changed = Math.abs((before.height ?? 0) - (after.height ?? 0)) > 10;
-  return { pass: changed && Spike.peakParticles > 0, detail: `canvas height ${Math.round(before.height ?? 0)} → ${Math.round(after.height ?? 0)}; peak particles ${Spike.peakParticles}` };
+  return { pass: changed && centerDelta < 2 && peak > 0, detail: `canvas ${Math.round(before.height ?? 0)} -> ${Math.round(after.height ?? 0)}; center delta ${centerDelta.toFixed(1)}px; peak ${peak}` };
 }
 
-const RUNNERS = {
-  oneshot: testOneShot,
-  position: testPosition,
-  moving: testMoving,
-  stress: testStress,
-  image: testImage,
-  composite: testComposite,
-  resize: testResize
-};
+const RUNNERS = { oneshot: testOneShot, position: testPosition, moving: testMoving, stress: testStress, image: testImage, composite: testComposite, resize: testResize };
 
 async function runSelected() {
-  Spike.stop();
+  Spike.stop({ logStop: false });
   const runId = ++Spike.generation;
   Spike.running = true;
   Spike.peakParticles = 0;
