@@ -1,8 +1,9 @@
-const BUILD = 'P3.2.0';
+const BUILD = 'P3.2.1';
 const ROUNDS = 3;
 
 const stressButton = document.querySelector('#play-stress-ab');
 const stressLoadInput = document.querySelector('#stress-load');
+const stressProfileInput = document.querySelector('#stress-profile');
 const logOutput = document.querySelector('#p2-log');
 
 const STRESS_PRESETS = {
@@ -16,6 +17,14 @@ const PATH_LABELS = {
   shared: 'shared-direct',
   scheduled: 'shared-scheduled'
 };
+
+const PROFILE_LABELS = {
+  uniform: 'uniform',
+  heterogeneous: 'heterogeneous'
+};
+
+const HETERO_INTENSITY_WEIGHTS = [.55, .75, .9, 1.1, 1.25, 1.45];
+const HETERO_COLORS = ['#ffffff', '#ffbf69', '#4cc9f0', '#b8f2e6', '#f72585', '#ffd166'];
 
 function stamp() {
   return new Date().toLocaleTimeString([], { hour12: false });
@@ -87,7 +96,13 @@ function aggregate(results) {
   };
 }
 
-function stressEmitterOptions(count) {
+function stressEmitterOptions(count, index = 0, profile = 'uniform') {
+  const heterogeneous = profile === 'heterogeneous';
+  const direction = (index * 137.5) % 360;
+  const speed = .8 + (index % 5) * .45;
+  const size = 2 + (index % 5) * .55;
+  const opacity = .28 + (index % 4) * .12;
+
   return {
     autoPlay: true,
     startCount: count,
@@ -95,11 +110,21 @@ function stressEmitterOptions(count) {
     rate: { quantity: 0, delay: 0 },
     life: { count: 1, duration: 2.6, wait: false },
     particles: {
-      color: { value: '#ffffff' },
+      color: { value: heterogeneous ? HETERO_COLORS[index % HETERO_COLORS.length] : '#ffffff' },
       shape: { type: 'circle' },
-      opacity: { value: .42 },
-      size: { value: 3 },
-      move: { enable: false },
+      opacity: { value: heterogeneous ? opacity : .42 },
+      size: { value: heterogeneous ? size : 3 },
+      move: heterogeneous
+        ? {
+            enable: true,
+            direction: 'right',
+            angle: { value: 16 + (index % 3) * 8, offset: direction },
+            random: false,
+            straight: false,
+            speed,
+            outModes: { default: 'bounce' }
+          }
+        : { enable: false },
       life: { count: 1, duration: { value: 2.4, sync: true } }
     }
   };
@@ -128,6 +153,29 @@ function distribute(total, buckets) {
   const base = Math.floor(total / buckets);
   let remainder = total - base * buckets;
   return Array.from({ length: buckets }, () => base + (remainder-- > 0 ? 1 : 0));
+}
+
+function weightedDistribute(total, buckets) {
+  const weights = Array.from({ length: buckets }, (_, index) => HETERO_INTENSITY_WEIGHTS[index % HETERO_INTENSITY_WEIGHTS.length]);
+  const weightSum = weights.reduce((sum, value) => sum + value, 0);
+  const raw = weights.map((weight) => total * weight / weightSum);
+  const counts = raw.map(Math.floor);
+  let remainder = total - counts.reduce((sum, value) => sum + value, 0);
+  const byFraction = raw
+    .map((value, index) => ({ index, fraction: value - Math.floor(value) }))
+    .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+
+  for (let cursor = 0; remainder > 0; cursor += 1, remainder -= 1) {
+    counts[byFraction[cursor % byFraction.length].index] += 1;
+  }
+
+  return counts;
+}
+
+function makeCounts(total, buckets, profile) {
+  return profile === 'heterogeneous'
+    ? weightedDistribute(total, buckets)
+    : distribute(total, buckets);
 }
 
 async function waitForParticleTarget(adapter, target, timeoutMs = 1400) {
@@ -221,30 +269,31 @@ async function probePopulationFrames(task) {
   };
 }
 
-async function submitWorkload(adapter, path, points, counts) {
+async function submitWorkload(adapter, path, points, counts, profile) {
   let submitCpuMs = 0;
 
   for (let index = 0; index < points.length; index += 1) {
     const startedAt = performance.now();
-    await adapter.burst(stressEmitterOptions(counts[index]), points[index], { mode: path });
+    await adapter.burst(stressEmitterOptions(counts[index], index, profile), points[index], { mode: path });
     submitCpuMs += performance.now() - startedAt;
   }
 
   return submitCpuMs;
 }
 
-async function runLeg(lab, path, preset, round) {
+async function runLeg(lab, path, preset, round, profile) {
   const adapter = lab.particleAdapter;
   const stage = document.querySelector('#impact-stage');
   const points = makePoints(stage, preset.points);
-  const counts = distribute(preset.particles, points.length);
+  const counts = makeCounts(preset.particles, points.length, profile);
   const label = PATH_LABELS[path];
+  const countRange = `${Math.min(...counts)}–${Math.max(...counts)}`;
 
   await cleanLab(lab);
   adapter.setBurstMode(path);
 
   const populationProbe = await probePopulationFrames(async () => {
-    const submitCpuMs = await submitWorkload(adapter, path, points, counts);
+    const submitCpuMs = await submitWorkload(adapter, path, points, counts, profile);
     const target = await waitForParticleTarget(adapter, preset.particles);
     return { submitCpuMs, target };
   });
@@ -252,7 +301,7 @@ async function runLeg(lab, path, preset, round) {
   const target = populationProbe.value.target;
   const statsAtStart = adapter.getStats();
 
-  log(`STRESS R${round} ${label}: submit CPU ${populationProbe.value.submitCpuMs.toFixed(2)} ms / population span ${populationProbe.populationSpanMs.toFixed(1)} ms / worst population frame ${populationProbe.worstPopulationFrameMs.toFixed(1)} ms / population >20ms ${populationProbe.populationSpikes20} / requested ${preset.particles} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / queued ${statsAtStart.queuedParticles ?? 0} / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
+  log(`STRESS R${round} ${label} [${PROFILE_LABELS[profile]}]: submit CPU ${populationProbe.value.submitCpuMs.toFixed(2)} ms / population span ${populationProbe.populationSpanMs.toFixed(1)} ms / worst population frame ${populationProbe.worstPopulationFrameMs.toFixed(1)} ms / population >20ms ${populationProbe.populationSpikes20} / requested ${preset.particles} / per-point count ${countRange} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / queued ${statsAtStart.queuedParticles ?? 0} / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
 
   const frameResult = await sampleFrames(adapter, 1400);
 
@@ -263,6 +312,7 @@ async function runLeg(lab, path, preset, round) {
 
   const result = {
     path,
+    profile,
     requested: preset.particles,
     points: preset.points,
     round,
@@ -290,7 +340,7 @@ async function runLeg(lab, path, preset, round) {
 }
 
 function setUiBusy(busy) {
-  const ids = ['play-impact', 'play-overlap', 'play-ab', 'stop-all', 'particle-path', 'intensity', 'direction', 'stress-load'];
+  const ids = ['play-impact', 'play-overlap', 'play-ab', 'stop-all', 'particle-path', 'intensity', 'direction', 'stress-load', 'stress-profile'];
   for (const id of ids) {
     const element = document.getElementById(id);
     if (element) element.disabled = busy;
@@ -310,6 +360,7 @@ async function runStressCompare() {
   const lab = await waitForLab();
   const requested = Number(stressLoadInput?.value ?? 800);
   const preset = STRESS_PRESETS[requested] ?? STRESS_PRESETS[800];
+  const profile = stressProfileInput?.value === 'heterogeneous' ? 'heterogeneous' : 'uniform';
   const originalPath = lab.particleAdapter.getBurstMode();
   const scheduler = lab.particleAdapter.getStats();
   const results = { emitter: [], shared: [], scheduled: [] };
@@ -320,7 +371,10 @@ async function runStressCompare() {
   ];
 
   setUiBusy(true);
-  log(`${BUILD} STRESS COMPARE START: ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds / integrated scheduler ${scheduler.schedulerBudgetMs ?? '?'}ms budget, chunk ${scheduler.schedulerChunkSize ?? '?'}, immediate ${scheduler.schedulerImmediateCount ?? '?'}`);
+  const profileDetail = profile === 'heterogeneous'
+    ? 'per-point intensity weights 0.55–1.45 normalized to the same total + varied color/direction/speed/size/opacity'
+    : 'identical stationary particle options at every point';
+  log(`${BUILD} STRESS COMPARE START: profile ${PROFILE_LABELS[profile]} / ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds / ${profileDetail} / integrated scheduler ${scheduler.schedulerBudgetMs ?? '?'}ms budget, chunk ${scheduler.schedulerChunkSize ?? '?'}, immediate ${scheduler.schedulerImmediateCount ?? '?'}`);
 
   try {
     for (let round = 1; round <= ROUNDS; round += 1) {
@@ -328,7 +382,7 @@ async function runStressCompare() {
       log(`STRESS ROUND ${round}/${ROUNDS}: ${order.map((path) => PATH_LABELS[path]).join(' → ')}`);
 
       for (const path of order) {
-        const result = await runLeg(lab, path, preset, round);
+        const result = await runLeg(lab, path, preset, round, profile);
         results[path].push(result);
         await sleep(180);
       }
@@ -342,7 +396,7 @@ async function runStressCompare() {
     const workloadMatched = [emitter, shared, scheduled].every((item) => item.allTargetsReached) && Math.max(...peaks) - Math.min(...peaks) <= tolerance;
     const cleanupClean = [emitter, shared, scheduled].every((item) => item.allCleanupClean);
 
-    log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-scheduled', scheduled)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
+    log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}, ${PROFILE_LABELS[profile]}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-scheduled', scheduled)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
   } catch (error) {
     log(`${BUILD} STRESS COMPARE FAIL: ${error.message}`);
     console.error(error);
@@ -368,7 +422,7 @@ if (stressButton) {
 waitForLab()
   .then((lab) => {
     const stats = lab.particleAdapter.getStats();
-    log(`${BUILD} ready: stress now tests the integrated TsParticlesAdapter scheduled mode (${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}) instead of a Lab-only yielding loop`);
+    log(`${BUILD} ready: uniform baseline + heterogeneous per-point stress; integrated scheduled mode ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
   })
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
