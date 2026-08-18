@@ -1,7 +1,7 @@
-import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
+import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.9.0';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.8.2';
+const BUILD = 'P3.9.0';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,8 +68,8 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.8.2 closes the sustained Environment probe UX: HUD Off now produces a clean preview with diagnostic reticles/markers hidden. Environment remains the accepted sustained-source baseline.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[01])/g, BUILD);
+  if (intro) intro.textContent = 'P3.9.0 adds the portfolio-facing Rare Reward archetype: a large owned DOM/SVG card reveal with staged motion, rarity lighting and particle accents, using the same FXDeck lifecycle and zoomable real-effect Grid.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+)/g, BUILD);
 }
 
 async function loadEffectGridLab() {
@@ -95,11 +95,12 @@ if (!host) {
 
       effectInput?.dispatchEvent(new Event('change'));
       normalizeVisibleBuild();
-      appendLog(`${BUILD} Runtime UI cleanup active: HUD Off hides preview diagnostics; Fireball baseline retained`);
+      appendLog(`${BUILD} Runtime capability pass: Fireball + Environment baselines retained; Rare Reward UI/card reveal loading`);
       refreshFireballInspector();
       refreshVisualMetric();
 
       await import('./environment-runtime-bridge.js?v=p3.8.1');
+      await import('./rare-reward-runtime-bridge.js?v=p3.9.0');
       await loadEffectGridLab();
     })
     .catch((error) => {
