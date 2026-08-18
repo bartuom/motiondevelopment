@@ -1,0 +1,87 @@
+.critical-hit-slash,
+.critical-hit-flash,
+.critical-hit-label {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.critical-hit-slash {
+  width: 172px;
+  height: 58px;
+  transform-origin: 50% 50%;
+  mix-blend-mode: screen;
+}
+
+.critical-hit-slash i,
+.critical-hit-slash b {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 164px;
+  height: 8px;
+  border-radius: 999px 18px 999px 18px;
+  transform-origin: 50% 50%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 105, 74, .08) 12%,
+    rgba(255, 123, 82, .9) 36%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 221, 196, .9) 62%,
+    rgba(255, 91, 69, .14) 86%,
+    transparent 100%);
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, .42),
+    0 0 18px rgba(255, 88, 64, .2);
+}
+
+.critical-hit-slash i {
+  transform: translate(-50%, -50%) rotate(-13deg) scaleY(.72);
+}
+
+.critical-hit-slash b {
+  width: 126px;
+  height: 5px;
+  opacity: .82;
+  transform: translate(-50%, -50%) rotate(19deg) scaleY(.64);
+}
+
+.critical-hit-flash {
+  width: 96px;
+  height: 30px;
+  transform-origin: 50% 50%;
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 111, 77, .06) 15%,
+      rgba(255, 237, 220, .86) 43%,
+      #fff 50%,
+      rgba(255, 195, 162, .72) 58%,
+      transparent 100%);
+  filter: blur(.2px);
+  mix-blend-mode: screen;
+}
+
+.critical-hit-label {
+  z-index: 9;
+  padding: 2px 5px 1px;
+  border: 1px solid rgba(255, 231, 219, .52);
+  border-radius: 3px;
+  background: rgba(30, 8, 8, .72);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .24);
+  color: #fff7f2;
+  font: 800 11px/1.05 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 7px rgba(255, 88, 64, .55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .critical-hit-slash,
+  .critical-hit-flash,
+  .critical-hit-label {
+    animation: none !important;
+  }
+}
