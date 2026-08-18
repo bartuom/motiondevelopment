@@ -1,4 +1,4 @@
-const BUILD = 'P3.9.0';
+const BUILD = 'P3.10.0';
 
 const primary = {
   effect: document.querySelector('#effect-select'),
@@ -78,6 +78,9 @@ function pathDescription(effectId, path) {
   }
   if (effectId === 'rareReward') {
     return `${topology} Rare Reward keeps one independently owned DOM/SVG card per cue; topology applies only to the reveal's particle accents.`;
+  }
+  if (effectId === 'footballCardReveal') {
+    return `${topology} Football Card keeps a double-sided interactive DOM/SVG card per cue; topology applies only to flip/rarity particle accents.`;
   }
   return `${topology} The selected topology drives the particle layers of this real effect.`;
 }
@@ -230,7 +233,7 @@ function install({ panel, grid }) {
     readout.textContent = parts.join(' • ');
   }
 
-  appendLog(`${BUILD} Grid setup ready: world, projectile, sustained and card-space effects share one real-effect scaling harness`);
+  appendLog(`${BUILD} Grid setup ready: world, projectile, sustained, fantasy-card and football-card effects share one real-effect scaling harness`);
 }
 
 waitForGrid()
