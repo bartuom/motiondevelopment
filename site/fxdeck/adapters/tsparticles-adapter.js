@@ -385,7 +385,9 @@ export class TsParticlesAdapter {
 
   #admitScheduledCount(requested, priority, backpressure) {
     const queued = this.#queuedParticleCount();
-    const pressure = this.#pressureForQueued(queued);
+    const incomingQueued = Math.max(0, requested - Math.min(requested, this.sharedImmediateCount));
+    const projectedQueued = queued + incomingQueued;
+    const pressure = this.#pressureForQueued(projectedQueued);
     const scale = backpressure ? BACKPRESSURE_SCALES[pressure][priority] : 1;
     const admitted = Math.max(1, Math.min(requested, Math.round(requested * scale)));
 
@@ -402,7 +404,7 @@ export class TsParticlesAdapter {
       this.#recordQualityPressure(pressure);
     }
 
-    return { requested, admitted, pressure, scale };
+    return { requested, admitted, pressure, scale, queued, projectedQueued };
   }
 
   #recordQualityPressure(pressure) {
