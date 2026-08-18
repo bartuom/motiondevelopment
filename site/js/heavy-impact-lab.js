@@ -43,7 +43,11 @@ const state = {
   position: { x: stage.clientWidth * .5, y: stage.clientHeight * .5 },
   frameTimes: [],
   lastFrameAt: 0,
-  perfCapture: null
+  perfCapture: null,
+  benchmark: {
+    running: false,
+    timers: new Set()
+  }
 };
 
 function log(message) {
@@ -71,6 +75,42 @@ function summarizeFrames(samples) {
     low1: 1000 / p99Ms,
     spikes20: valid.filter((dt) => dt > 20).length
   };
+}
+
+function setBenchmarkBusy(busy) {
+  state.benchmark.running = busy;
+  overlapButton.disabled = busy;
+  playButton.disabled = busy;
+  intensityInput.disabled = busy;
+  directionInput.disabled = busy;
+  overlapButton.textContent = busy ? 'Benchmark running…' : 'Overlap ×6 + perf';
+}
+
+function cancelBenchmarkTimers() {
+  for (const timer of state.benchmark.timers) window.clearTimeout(timer);
+  state.benchmark.timers.clear();
+}
+
+function scheduleBenchmarkTask(task, delayMs) {
+  const timer = window.setTimeout(() => {
+    state.benchmark.timers.delete(timer);
+    task();
+  }, delayMs);
+  state.benchmark.timers.add(timer);
+  return timer;
+}
+
+function finishBenchmark() {
+  cancelBenchmarkTimers();
+  setBenchmarkBusy(false);
+}
+
+function abortBenchmark() {
+  const wasRunning = state.benchmark.running || Boolean(state.perfCapture) || state.benchmark.timers.size > 0;
+  cancelBenchmarkTimers();
+  state.perfCapture = null;
+  setBenchmarkBusy(false);
+  return wasRunning;
 }
 
 function startPerfCapture(label, durationMs = 1500) {
@@ -116,6 +156,7 @@ function recordFrame(now, stats) {
   const finalResources = `${finalStats.activeInstances ?? 0}/${finalStats.particles?.emitters ?? 0}/${finalStats.particles?.particles ?? 0}`;
   log(`PERF ${capture.label}: avg ${result.avgFps.toFixed(1)} FPS / 1% low ${result.low1.toFixed(1)} / >20ms ${result.spikes20} / peaks ${capture.peakInstances} instances, ${capture.peakEmitters} emitters, ${capture.peakParticles} particles / final ${finalResources}`);
   state.perfCapture = null;
+  if (state.benchmark.running) finishBenchmark();
 }
 
 function createScreenKickController(element) {
@@ -310,13 +351,33 @@ function playAt(position = state.position, directionOverride = null) {
 }
 
 function playOverlap() {
+  if (state.benchmark.running) {
+    log('PERF Overlap ×6: ignored because a benchmark is already running');
+    return;
+  }
+
   const base = Number(directionInput.value);
+  const position = { ...state.position };
   const offsets = [-24, -14, -5, 6, 16, 27];
-  startPerfCapture('Overlap ×6', 1500);
-  log(`OVERLAP ×6 directions: ${offsets.map((offset) => `${(base + offset + 360) % 360}°`).join(', ')}`);
-  offsets.forEach((offset, index) => {
-    window.setTimeout(() => playAt(state.position, (base + offset + 360) % 360), index * 36);
-  });
+
+  cancelBenchmarkTimers();
+  state.perfCapture = null;
+  state.fx.stopAll('perf-prep');
+  screenKickController.reset();
+  setBenchmarkBusy(true);
+  log('PERF Overlap ×6: preparing clean 0/0/0 baseline');
+
+  scheduleBenchmarkTask(() => {
+    const cleanStats = state.fx.getStats();
+    const cleanResources = `${cleanStats.activeInstances ?? 0}/${cleanStats.particles?.emitters ?? 0}/${cleanStats.particles?.particles ?? 0}`;
+    if (cleanResources !== '0/0/0') log(`PERF Overlap ×6: WARNING pre-test resources ${cleanResources}`);
+
+    startPerfCapture('Overlap ×6', 1500);
+    log(`OVERLAP ×6 directions: ${offsets.map((offset) => `${(base + offset + 360) % 360}°`).join(', ')}`);
+    offsets.forEach((offset, index) => {
+      scheduleBenchmarkTask(() => playAt(position, (base + offset + 360) % 360), index * 36);
+    });
+  }, 120);
 }
 
 async function copyLog() {
@@ -355,7 +416,15 @@ async function bootstrap() {
   state.definition = fx.resolve('heavyImpact', { version: 'v1', variant: 'default' }).definition;
 
   globalThis.FXDeck = fx;
-  globalThis.FXDeckP2 = { fx, particleAdapter, playAt, playOverlap, startPerfCapture, screenKickController };
+  globalThis.FXDeckP2 = {
+    fx,
+    particleAdapter,
+    playAt,
+    playOverlap,
+    startPerfCapture,
+    screenKickController,
+    abortBenchmark
+  };
   globalThis.FXDeckLog = {
     getText: () => logOutput.textContent.trim(),
     getLines: () => logOutput.textContent.trim().split('\n').filter(Boolean),
@@ -363,16 +432,19 @@ async function bootstrap() {
     clear: clearLog
   };
 
-  playButton.addEventListener('click', () => playAt());
+  playButton.addEventListener('click', () => {
+    if (!state.benchmark.running) playAt();
+  });
   overlapButton.addEventListener('click', playOverlap);
   stopButton.addEventListener('click', () => {
+    const cancelledBenchmark = abortBenchmark();
     fx.stopAll('manual-stop-all');
     screenKickController.reset();
-    state.perfCapture = null;
-    log('STOP ALL — instances, particle resources and screen kick cleared');
+    log(`STOP ALL — instances, particle resources, screen kick${cancelledBenchmark ? ' and scheduled overlap tasks' : ''} cleared`);
   });
 
   stage.addEventListener('pointerdown', (event) => {
+    if (state.benchmark.running) return;
     const rect = stage.getBoundingClientRect();
     playAt({ x: event.clientX - rect.left, y: event.clientY - rect.top });
   });
@@ -389,6 +461,7 @@ async function bootstrap() {
   clearLogButton.addEventListener('click', clearLog);
 
   window.addEventListener('resize', () => {
+    abortBenchmark();
     screenKickController.reset();
     particleAdapter.resize();
     state.position = { x: stage.clientWidth * .5, y: stage.clientHeight * .5 };
@@ -413,8 +486,8 @@ async function bootstrap() {
   updateApiPreview();
   requestAnimationFrame(metricsLoop);
   log('PASS P2 bootstrap: heavyImpact/v1/default registered');
-  log('P2.2.1 cache-bust: Heavy Impact effect module is loaded from a versioned URL');
   log('P2.3 pressure wave readability: larger directional arc, brighter leading edge, stronger short peak and larger forward offset');
+  log('P2.3.1 benchmark guard: one capture at a time, clean pre-test reset, manual input lock and cancellable overlap timers');
   log('Overlap ×6 records avg FPS / 1% low / >20ms frames / peak resources / final cleanup state');
   log('Cue timing: flash 0ms / sparks 0ms / debris 14ms / wave 26ms / target 36ms / screen 48ms / cleanup 560ms');
 }
