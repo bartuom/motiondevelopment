@@ -2,42 +2,43 @@ import { burstTracked, runHook, spawnTracked } from './effect-utils.js?v=p3.6.3'
 
 const FIREBALL_SPEC = {
   label: 'Fireball',
-  revision: 'P3.6.3 concurrent projectile visual / v1',
-  summary: 'Moving projectile archetype with an independently owned visual head per FXDeck instance, sampled particle-trail bursts along the flight path, and an Explosion handoff at impact.',
+  revision: 'P3.6.4 mobile concurrency pass / v1',
+  summary: 'Moving projectile archetype with an independently owned visual head per FXDeck instance, a compositor-friendly built-in visual tail, sparse particle embers, and an Explosion handoff at impact.',
   travelDuration: 560,
   travelDistance: 250,
   maxFrameAdvanceMs: 34,
-  trailIntervalMs: 32,
-  trailCleanupMs: 380,
+  trailFirstDelayMs: 48,
+  trailIntervalMs: 96,
+  trailCleanupMs: 300,
   trail: {
-    baseCount: 2,
-    size: { min: 4, max: 10 },
-    life: { min: .16, max: .34 },
-    speed: { min: .8, max: 2.4 },
-    spread: 54
+    baseCount: 1,
+    size: { min: 3, max: 7 },
+    life: { min: .14, max: .26 },
+    speed: { min: .7, max: 1.9 },
+    spread: 48
   }
 };
 
 function trailBurstOptions(spec, intensity, directionDegrees) {
-  const speedScale = Math.max(.75, Math.sqrt(intensity));
-  const count = Math.max(1, Math.round(spec.baseCount * Math.min(1.6, .7 + intensity * .3)));
+  const speedScale = Math.max(.72, Math.sqrt(intensity));
+  const count = Math.max(1, Math.round(spec.baseCount * Math.min(1.25, .82 + intensity * .16)));
 
   return {
     autoPlay: true,
     startCount: count,
     size: { width: 0, height: 0, mode: 'percent' },
     rate: { quantity: 0, delay: 0 },
-    life: { count: 1, duration: .06, wait: false },
+    life: { count: 1, duration: .04, wait: false },
     particles: {
-      color: { value: ['#fff1a3', '#ffb347', '#ff6a2e', '#d83a22'] },
+      color: { value: ['#ffd47b', '#ff9a43', '#ff6230'] },
       shape: { type: 'circle' },
       opacity: {
-        value: { min: .25, max: .72 },
-        animation: { enable: true, speed: 2.8, sync: false, startValue: 'max', destroy: 'min' }
+        value: { min: .2, max: .58 },
+        animation: { enable: true, speed: 2.4, sync: false, startValue: 'max', destroy: 'min' }
       },
       size: {
-        value: { min: spec.size.min, max: spec.size.max * Math.min(1.35, intensity) },
-        animation: { enable: true, speed: 2.6, sync: false, startValue: 'max', destroy: 'min' }
+        value: { min: spec.size.min, max: spec.size.max * Math.min(1.2, intensity) },
+        animation: { enable: true, speed: 2.2, sync: false, startValue: 'max', destroy: 'min' }
       },
       move: {
         enable: true,
@@ -54,7 +55,7 @@ function trailBurstOptions(spec, intensity, directionDegrees) {
 }
 
 function projectileVisualOptions(intensity, directionDegrees) {
-  const scale = Math.min(1.45, .82 + intensity * .18);
+  const scale = Math.min(1.38, .84 + intensity * .16);
   return {
     className: 'fxdeck-fireball-projectile',
     cssVars: {
@@ -111,7 +112,7 @@ function fireballDefinition() {
         trailBursts: 0,
         hitchClamps: 0,
         maxRawFrameGapMs: 0,
-        visualMode: 'independent-dom-head + sampled-particle-trail'
+        visualMode: 'independent-compositor-head + built-in-tail + sparse-embers'
       };
 
       runHook(instance, params.hooks, 'fireballLaunch', {
@@ -133,7 +134,7 @@ function fireballDefinition() {
       let impacted = false;
       let lastFrameAt = null;
       let elapsedVisualMs = 0;
-      let nextTrailAt = 0;
+      let nextTrailAt = spec.trailFirstDelayMs;
 
       const stopMotion = () => {
         if (raf) cancelAnimationFrame(raf);
