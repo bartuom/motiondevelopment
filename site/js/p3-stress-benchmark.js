@@ -1,4 +1,4 @@
-const BUILD = 'P3.5.0';
+const BUILD = 'P3.5.1';
 const ROUNDS = 3;
 const FRAME_BUDGET_MS = 1000 / 60;
 
