@@ -1,4 +1,4 @@
-const UI_BUILD = 'P3.6.1';
+const UI_BUILD = 'P3.8.2';
 
 const body = document.body;
 const workspaceTabs = [...document.querySelectorAll('[data-workspace-tab]')];
@@ -35,8 +35,10 @@ function setWorkspace(mode) {
 
 function setHudMode(mode) {
   const next = ['off', 'basic', 'full'].includes(mode) ? mode : 'basic';
+  body.dataset.hudMode = next;
   if (hud) hud.dataset.mode = next;
   if (hudMode) hudMode.value = next;
+  body.dispatchEvent(new CustomEvent('fxdeck:hud-mode', { detail: { mode: next } }));
   try { localStorage.setItem('fxdeck-runtime-hud', next); } catch {}
 }
 
@@ -123,4 +125,4 @@ setHudMode(initialHud);
 refreshHud();
 window.setInterval(refreshHud, 250);
 
-console.info(`FXDeck Runtime Lab UI ${UI_BUILD}: clean Play/Debug workspaces + runtime HUD ready.`);
+console.info(`FXDeck Runtime Lab UI ${UI_BUILD}: Play/Debug workspaces + preview-wide HUD visibility ready.`);
