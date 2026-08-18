@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FXDeck P3 production runtime and Shared Emission Points benchmark lab.">
+  <meta name="description" content="FXDeck production runtime and multi-effect gameplay VFX lab.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
   <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.2.1">
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.3.0</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.4.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.3 promotes frame-budgeted shared-scheduled emission to the production default for semantic one-shot bursts after matched uniform, heterogeneous and real Heavy Impact tests. This build adds the cancellation gate required before moving to the second production effect.</p>
+      <p class="intro">P3.4 moves beyond the Heavy Impact vertical slice. Explosion is the second real gameplay effect and deliberately reuses the production shared-scheduled burst path, EffectInstance lifecycle, runtime parameters and the first small helpers proven by two effects.</p>
     </header>
 
     <section class="workbench">
@@ -39,11 +39,14 @@
 
         <div class="control">
           <p class="label">Effect</p>
-          <select disabled><option>heavyImpact</option></select>
+          <select id="effect-select">
+            <option value="explosion" selected>Explosion — second-effect proof</option>
+            <option value="heavyImpact">Heavy Impact — vertical slice</option>
+          </select>
         </div>
         <div class="control">
           <p class="label">Authored version</p>
-          <select disabled><option>v1 — Heavy Impact</option></select>
+          <select disabled><option id="authored-version-label">v1 — Explosion</option></select>
         </div>
         <div class="control">
           <p class="label">Authored variant</p>
@@ -57,7 +60,7 @@
             <option value="emitter">Per-play emitter — reference</option>
             <option value="shared">Shared direct — synchronous reference</option>
           </select>
-          <p class="control-note">Semantic one-shot bursts now default to shared-scheduled. Emitter and shared-direct remain explicit reference/debug paths; explicit sustained/moving emitter work can still use the emitter API directly.</p>
+          <p class="control-note">Semantic one-shot bursts default to shared-scheduled. Emitter and shared-direct remain explicit reference/debug paths.</p>
         </div>
 
         <div class="control">
@@ -67,7 +70,6 @@
             <option value="800" selected>800 particles / 24 emission points</option>
             <option value="1200">1200 particles / 32 emission points</option>
           </select>
-          <p class="control-note">All backend strategies receive the same total requested particle count and the same emission-point layout.</p>
         </div>
 
         <div class="control">
@@ -77,7 +79,6 @@
             <option value="uniform">Uniform — same parameters at every point</option>
             <option value="heterogeneous">Heterogeneous — per-point runtime variation</option>
           </select>
-          <p class="control-note">Heterogeneous keeps the total count fixed while each point gets normalized intensity weights plus different color, direction, speed, size and opacity.</p>
         </div>
 
         <div class="control">
@@ -88,21 +89,21 @@
         <div class="control">
           <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
           <input id="direction" type="range" min="0" max="359" value="18" step="1">
-          <p class="control-note">The same normalized direction drives sparks, debris, target recoil and screen kick.</p>
+          <p class="control-note">Direction is available to every effect. Heavy Impact uses it tightly; Explosion uses it as a broad directional blast bias.</p>
         </div>
 
         <div class="actions">
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
-          <button id="run-cancel-gate" class="primary" type="button">Cancel / Stop Gate</button>
           <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
-          <button id="play-ab" class="secondary" type="button">Heavy Impact A/B</button>
+          <button id="play-ab" class="secondary" type="button">Effect A/B</button>
+          <button id="run-cancel-gate" class="secondary" type="button">Runtime Cancel Gate</button>
           <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
         <div class="input-note">
-          <p class="label">P3.3 focus</p>
-          <p>Shared-scheduled has passed matched uniform/heterogeneous stress and the real Heavy Impact A/B. The remaining runtime gate verifies that stopping one EffectInstance cancels only its owned queued work and that stopAll leaves no delayed scheduler/debris respawn. After this passes, the next architectural proof is a second real effect instead of more Heavy Impact tuning.</p>
+          <p class="label">P3.4 focus</p>
+          <p>The cancellation gate passed. The architectural question now is whether a second effect can be authored mostly from the capabilities already extracted. Explosion intentionally adds a different composition—core sprite, fireball, sparks, debris and smoke—without adding a new runtime subsystem.</p>
         </div>
       </aside>
 
@@ -110,9 +111,9 @@
         <div class="canvas-toolbar">
           <div>
             <p class="label">02 / Preview</p>
-            <strong>Heavy Impact production probe</strong>
+            <strong id="preview-title">Explosion production probe</strong>
           </div>
-          <span>Click to move target + impact</span>
+          <span id="preview-note">Click to move target + play selected effect</span>
         </div>
 
         <div id="impact-stage" class="stage">
@@ -127,8 +128,8 @@
             </div>
           </div>
           <div class="caption">
-            <strong>heavyImpact / v1 / default</strong>
-            <span>production shared-scheduled default + ownership/cancellation gate + retained reference benchmarks</span>
+            <strong id="caption-title">explosion / v1 / default</strong>
+            <span id="caption-note">second real effect / shared-scheduled production default</span>
           </div>
         </div>
       </section>
@@ -139,30 +140,25 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged. One-shot particle bursts now resolve through the frame-budgeted shared scheduler by default; backend topology remains hidden behind ParticleAdapter.burst().</p>
+        <p id="effect-summary" class="summary">Explosion reuses the same runtime and burst scheduler as Heavy Impact while composing a different cue.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
-          <dl class="timeline-list">
-            <div><dt>0 ms</dt><dd>Contact flash</dd></div>
-            <div><dt>0 ms</dt><dd>Aligned hero sparks</dd></div>
-            <div><dt>14 ms</dt><dd>Directional debris</dd></div>
-            <div><dt>26 ms</dt><dd>Directional pressure wave</dd></div>
-            <div><dt>36 ms</dt><dd>Target kick hook</dd></div>
-            <div><dt>48 ms</dt><dd>Screen kick hook</dd></div>
-            <div><dt>560 ms</dt><dd>Lifecycle cleanup</dd></div>
-          </dl>
+          <dl id="effect-timeline" class="timeline-list"></dl>
         </section>
 
         <section class="inspector-section resolved-section">
           <p class="label">Resolved for current play</p>
           <dl class="definition-grid">
+            <div><dt>Effect</dt><dd id="resolved-effect">--</dd></div>
             <div><dt>Particle path</dt><dd id="resolved-path">--</dd></div>
             <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
             <div><dt>Direction</dt><dd id="resolved-direction">--</dd></div>
-            <div><dt>Sparks</dt><dd id="resolved-sparks">--</dd></div>
-            <div><dt>Debris</dt><dd id="resolved-debris">--</dd></div>
-            <div><dt>Target kick</dt><dd id="resolved-target-kick">--</dd></div>
+            <div><dt id="resolved-layer-a-label">Layer A</dt><dd id="resolved-layer-a">--</dd></div>
+            <div><dt id="resolved-layer-b-label">Layer B</dt><dd id="resolved-layer-b">--</dd></div>
+            <div><dt id="resolved-layer-c-label">Layer C</dt><dd id="resolved-layer-c">--</dd></div>
+            <div><dt id="resolved-layer-d-label">Layer D</dt><dd id="resolved-layer-d">--</dd></div>
+            <div><dt id="resolved-layer-e-label">Layer E</dt><dd id="resolved-layer-e">--</dd></div>
             <div><dt>Screen kick</dt><dd id="resolved-screen-kick">--</dd></div>
             <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
           </dl>
@@ -171,7 +167,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.3.0</dd></div>
+            <div><dt>Build</dt><dd>P3.4.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -200,14 +196,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.3.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.4.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.3.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.3.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.4.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.4.0"></script>
 </body>
 </html>
