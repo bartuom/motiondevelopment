@@ -20,6 +20,21 @@ export async function burstTracked(instance, particleAdapter, options, position,
   return handle;
 }
 
+export async function spawnTracked(instance, particleAdapter, options, position) {
+  if (typeof particleAdapter?.spawn !== 'function') {
+    throw new Error('spawnTracked requires ParticleAdapter.spawn().');
+  }
+
+  const handle = await particleAdapter.spawn(options, position);
+  if (instance.state !== 'playing') {
+    handle.stop();
+    return null;
+  }
+
+  instance.addCleanup(() => handle.stop());
+  return handle;
+}
+
 export function scheduleAsync(instance, delayMs, task) {
   instance.timeout(() => {
     Promise.resolve()
