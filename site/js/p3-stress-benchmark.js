@@ -182,7 +182,6 @@ async function sampleFrames(adapter, durationMs = 1400) {
 }
 
 async function cleanLab(lab) {
-  lab.abortBenchmark?.();
   lab.fx.stopAll('p3-stress-prep');
   lab.screenKickController?.reset?.();
   lab.particleAdapter.clear();
