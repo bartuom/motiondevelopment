@@ -11,9 +11,10 @@
 ## Current state
 
 - **Current milestone:** P2 — Heavy Impact Vertical Slice
-- **Status:** READY TO START
+- **Status:** ACTIVE — first vertical-slice implementation ready for browser/visual validation.
 - **Previous milestone:** P1 — Minimal FXDeck Core — **DONE** after automated browser validation reported `P1 VALIDATION: PASS` on 2026-08-18.
-- **Next implementation:** register `heavyImpact / v1 / default` and build the first coherent composite cue using only the minimum sequencing/helpers proven necessary by the effect.
+- **Next action:** open `site/heavy-impact-lab.html`, validate the composite cue visually and functionally, then fix concrete P2 failures before extracting any abstractions.
+- **Current P2 Lab:** `site/heavy-impact-lab.html` — P2.0.0
 - **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
@@ -101,22 +102,24 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 
 ---
 
-## P2 — Heavy Impact Vertical Slice — READY TO START
+## P2 — Heavy Impact Vertical Slice — ACTIVE
 
 **Goal:** build the first real gameplay VFX entirely through FXDeck and use it to discover what the runtime actually lacks.
 
-- [ ] Register `heavyImpact / v1 / default` as the first real production-style effect.
-- [ ] Consume real `position`, normalized `direction`, and `intensity` from the FXDeck play context.
-- [ ] Contact flash.
-- [ ] Directional sparks.
-- [ ] Directional debris.
-- [ ] Pressure wave.
-- [ ] Target recoil/kick hook.
-- [ ] Screen/camera kick hook.
-- [ ] Implement only the minimum sequencing/timing needed by this effect; do not create a large timeline framework first.
-- [ ] Whole composite owns one predictable lifecycle and cleans up completely.
-- [ ] Validate repeated playback and overlapping Heavy Impacts.
-- [ ] Validate visual alignment and performance on desktop and mobile.
+- [x] Register `heavyImpact / v1 / default` as the first real production-style effect.
+- [x] Consume real `position`, normalized `direction`, and `intensity` from the FXDeck play context.
+- [x] Contact flash implemented as a browser DOM cue hook in the P2 Lab.
+- [x] Directional sparks implemented through `TsParticlesAdapter` using the shared runtime direction.
+- [x] Directional debris implemented as a second timed particle burst.
+- [x] Pressure wave implemented as a browser DOM cue hook in the P2 Lab.
+- [x] Target recoil/kick hook implemented and demonstrated by the movable Lab target.
+- [x] Screen/camera kick hook implemented and demonstrated by the Lab stage.
+- [x] Minimum sequencing implemented directly inside `heavyImpact` at 0/18/32/40/52 ms; no generic timeline/layer framework added.
+- [x] Whole composite is owned by one `EffectInstance` with a 620 ms completion lifecycle and registered cleanup callbacks. **Code implementation complete; browser cleanup validation still pending.**
+- [ ] Validate repeated playback and overlapping Heavy Impacts (`Overlap ×6`) including final 0/0/0 resource cleanup.
+- [ ] Validate `FXDeck.stopAll()` while Heavy Impacts are active.
+- [ ] Validate visual alignment/feel of flash, sparks, debris, pressure wave, target kick and screen kick on desktop.
+- [ ] Validate representative Heavy Impact performance/behavior on mobile.
 - [ ] Record which code patterns are actually repeated or awkward enough to deserve extraction.
 
 **P2 exit:** Heavy Impact feels like one coherent gameplay cue and can be triggered from one `FXDeck.play("heavyImpact", ...)` call without backend-specific work in game code.
@@ -195,10 +198,11 @@ Do not build these pre-emptively:
 2. **P0 remains raw.** It is the performance and behavior reference against which FXDeck overhead can later be measured.
 3. **Version and variant are authored definitions.** They are analogous to saved prefab/config revisions, not runtime sliders.
 4. **Position, direction and intensity are runtime inputs.** They modify one play instance without creating a new authored version. Direction is normalized by Core to a unit vector; degrees are retained as a convenience representation.
-5. **Vertical-slice-first.** Heavy Impact must drive the next abstractions; the architecture must not expand speculatively.
+5. **Vertical-slice-first.** Heavy Impact drives the next abstractions; the architecture must not expand speculatively.
 6. **Primary product KPI:** how much effect-specific custom code is required to add the next production effect while preserving quality, cleanup and performance.
 7. **Active definitions are immutable for P1/P2.** Version/variant can be selected independently on every new `play()` call. Live parameter mutation on long-running instances is deferred until a real sustained effect proves it useful.
 8. **Runtime diagnostics must be portable.** Lab logs should remain easy to copy/paste so browser failures can be debugged from complete traces rather than screenshots alone.
+9. **P2 integration hooks remain explicit.** Target/camera behavior is supplied through effect hooks rather than hard-coded into Core. Browser-specific flash/wave implementations stay in the Lab until repetition proves a reusable DOM helper is warranted.
 
 ---
 
@@ -206,6 +210,7 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P2.0.0:** Added the first Heavy Impact vertical slice. `heavyImpact/v1/default` orchestrates contact flash, directional SVG sparks, timed debris, pressure wave, target kick and screen kick from one `FXDeck.play()` call with a 620 ms owned lifecycle. Added dedicated three-column P2 Lab, runtime inspector, overlap test control, copyable logs and P2 navigation from P0/P1.
 - **P1.3.1 / P1 DONE:** User reported `P1 VALIDATION: PASS`. Marked Play ×10 lifecycle cleanup and `stopAll()` cleanup gates complete. Added compact `Copy log` / `Clear` controls to the Core Lab runtime log plus `window.FXDeckLog.getText()/getLines()/copy()/clear()` for portable debugging traces.
 - **P1.3.0:** Added one-click automated P1 lifecycle validator covering reset cleanliness, authored-definition resolution, direction normalization, 10 overlapping plays with automatic cleanup, and active-effect `stopAll()` cleanup.
 - **P1.2.3:** Locked desktop workbench proportions to explicit `31.25% / 37.5% / 31.25%` columns so intrinsic panel content cannot let the preview dominate the screen; bumped CSS/JS cache keys for reliable Pages refresh.
