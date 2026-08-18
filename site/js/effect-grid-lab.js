@@ -1,4 +1,4 @@
-const BUILD = 'P3.7.0';
+const BUILD = 'P3.7.1';
 const GRID_PRESETS = {
   '2x2': [2, 2],
   '2x5': [2, 5],
@@ -38,6 +38,8 @@ const state = {
   loopTimer: 0,
   loopEnabled: false,
   loopInterval: 1000,
+  loopMode: 'replace',
+  loopCycles: 0,
   dragging: false,
   dragPointerId: null,
   dragStartX: 0,
@@ -62,7 +64,7 @@ function addStylesheet() {
   if (document.querySelector('link[data-effect-grid-lab]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = './effect-grid-lab.css?v=p3.7.0';
+  link.href = './effect-grid-lab.css?v=p3.7.1';
   link.dataset.effectGridLab = 'true';
   document.head.appendChild(link);
 }
@@ -86,7 +88,6 @@ function installWorld(lab) {
     world = document.createElement('div');
     world.id = 'effect-world';
     world.className = 'effect-world';
-
     for (const child of [...kickLayer.children]) world.appendChild(child);
     kickLayer.appendChild(world);
   }
@@ -115,9 +116,6 @@ function installWorld(lab) {
   state.particleAdapter = lab.particleAdapter;
   state.rawResize = lab.particleAdapter.resize.bind(lab.particleAdapter);
 
-  // The grid camera keeps a fixed backing canvas while the logical world grows.
-  // CoordinateAdapter uses clientWidth/clientHeight, so world-space points are
-  // projected into the existing canvas without allocating a huge mobile canvas.
   lab.particleAdapter.coordinates.stage = world;
   lab.particleAdapter.resize = () => {
     if (state.active) return;
@@ -126,6 +124,85 @@ function installWorld(lab) {
 
   resetWorldGeometry();
   requestAnimationFrame(() => state.rawResize());
+}
+
+function createDebugHierarchy() {
+  if (!debugPanel || debugPanel.querySelector('.debug-tier--real')) return;
+
+  const stressLoad = debugPanel.querySelector('#stress-load')?.closest('.control');
+  const stressProfile = debugPanel.querySelector('#stress-profile')?.closest('.control');
+  const regressionGroup = debugPanel.querySelector('#play-ab')?.closest('.debug-group');
+  const backendGroup = debugPanel.querySelector('#play-stress-ab')?.closest('.debug-group');
+  const overlapButton = debugPanel.querySelector('#play-overlap');
+
+  const realTier = document.createElement('section');
+  realTier.className = 'debug-tier debug-tier--real';
+  realTier.innerHTML = `
+    <div class="debug-tier__head">
+      <div><p class="label">Primary workflow</p><strong>Real Effect Scaling</strong></div>
+      <span>Use this first</span>
+    </div>
+    <div id="effect-grid-anchor"></div>
+  `;
+
+  const regressionTier = document.createElement('section');
+  regressionTier.className = 'debug-tier';
+  regressionTier.innerHTML = `
+    <div class="debug-tier__head">
+      <div><p class="label">Regression</p><strong>Effect lifecycle checks</strong></div>
+      <span>When needed</span>
+    </div>
+  `;
+
+  const advanced = document.createElement('details');
+  advanced.className = 'debug-advanced';
+  advanced.innerHTML = `
+    <summary>
+      <span><small>Engine diagnostics</small><strong>Backend Diagnostics — Advanced</strong></span>
+      <em>Open</em>
+    </summary>
+    <div class="debug-advanced__body">
+      <p class="debug-advanced__note">Backend-isolation tools are retained for diagnosing tsParticles topology, scheduler or lifecycle regressions. They are not the normal effect-scaling workflow.</p>
+      <div id="advanced-stress-controls"></div>
+      <div id="advanced-overlap"></div>
+      <div id="advanced-backend"></div>
+    </div>
+  `;
+
+  const callout = debugPanel.querySelector('.debug-callout');
+  callout?.insertAdjacentElement('afterend', realTier);
+  realTier.insertAdjacentElement('afterend', regressionTier);
+  regressionTier.insertAdjacentElement('afterend', advanced);
+
+  if (regressionGroup) {
+    const label = regressionGroup.querySelector('.label');
+    if (label) label.textContent = 'Effect regression';
+    if (overlapButton) overlapButton.remove();
+    regressionTier.appendChild(regressionGroup);
+  }
+
+  const stressHost = advanced.querySelector('#advanced-stress-controls');
+  if (stressLoad) stressHost.appendChild(stressLoad);
+  if (stressProfile) stressHost.appendChild(stressProfile);
+
+  const overlapHost = advanced.querySelector('#advanced-overlap');
+  if (overlapButton) {
+    const group = document.createElement('div');
+    group.className = 'debug-group';
+    group.innerHTML = '<p class="label">Historical overlap benchmark</p><div class="actions"></div><p class="control-note">Superseded by Effect Grid for scaling; retained as a fixed ×6 regression fixture.</p>';
+    group.querySelector('.actions').appendChild(overlapButton);
+    overlapHost.appendChild(group);
+  }
+
+  if (backendGroup) {
+    const label = backendGroup.querySelector('.label');
+    if (label) label.textContent = 'Backend isolation';
+    advanced.querySelector('#advanced-backend').appendChild(backendGroup);
+  }
+
+  for (const empty of [...debugPanel.children]) {
+    if (empty.classList?.contains('debug-group') && !empty.children.length) empty.remove();
+  }
 }
 
 function injectControls() {
@@ -137,7 +214,7 @@ function injectControls() {
   panel.innerHTML = `
     <div class="effect-grid-tool__head">
       <div><p class="label">Effect Grid Lab</p><strong>Real-effect scale test</strong></div>
-      <span class="effect-grid-tool__badge">P3.7.0</span>
+      <span class="effect-grid-tool__badge">P3.7.1</span>
     </div>
     <div class="control">
       <p class="label">Grid preset</p>
@@ -174,18 +251,26 @@ function injectControls() {
       <label class="effect-grid-tool__check"><input id="effect-grid-auto-fit" type="checkbox" checked> Fit on spawn</label>
       <label><span class="label">Loop ms</span><input id="effect-grid-loop-ms" type="number" min="250" max="5000" step="50" value="1000"></label>
     </div>
+    <div class="control effect-grid-tool__loop-mode">
+      <p class="label">Loop behavior</p>
+      <select id="effect-grid-loop-mode">
+        <option value="replace" selected>Replace batch — clean repeat</option>
+        <option value="stack">Stack / Soak — intentionally accumulate</option>
+      </select>
+      <p id="effect-grid-loop-note" class="control-note">Recommended: each cycle clears the previous grid before spawning the next one.</p>
+    </div>
     <div class="effect-grid-tool__actions">
       <button id="effect-grid-spawn" type="button">Spawn Grid</button>
       <button id="effect-grid-fit" type="button">Fit Grid</button>
       <button id="effect-grid-loop" type="button">Loop: Off</button>
       <button id="effect-grid-stop" type="button">Stop Grid</button>
     </div>
-    <div id="effect-grid-readout" class="effect-grid-tool__readout">24 instances • 640 × 960 world • zoom 100%</div>
-    <p class="effect-grid-tool__hint">Mouse wheel zooms the virtual viewport. Drag the preview to pan. Grid spawns the selected effect through normal <code>FXDeck.play()</code>; Lab-only target/screen hooks are intentionally omitted so cells do not fight over one shared target.</p>
+    <div id="effect-grid-readout" class="effect-grid-tool__readout">24 / batch • replace • 640 × 960 world • zoom 100%</div>
+    <p class="effect-grid-tool__hint">Mouse wheel zooms the virtual viewport. Drag the preview to pan. Grid cells call normal <code>FXDeck.play()</code>. Changing preset/direction while active cleanly respawns the selected grid.</p>
   `;
 
-  const firstDebugGroup = debugPanel.querySelector('.debug-group');
-  debugPanel.insertBefore(panel, firstDebugGroup ?? debugPanel.firstChild);
+  const anchor = debugPanel.querySelector('#effect-grid-anchor');
+  (anchor ?? debugPanel).appendChild(panel);
 
   state.controls = {
     preset: panel.querySelector('#effect-grid-preset'),
@@ -196,6 +281,8 @@ function injectControls() {
     zoomValue: panel.querySelector('#effect-grid-zoom-value'),
     autoFit: panel.querySelector('#effect-grid-auto-fit'),
     loopMs: panel.querySelector('#effect-grid-loop-ms'),
+    loopMode: panel.querySelector('#effect-grid-loop-mode'),
+    loopNote: panel.querySelector('#effect-grid-loop-note'),
     spawn: panel.querySelector('#effect-grid-spawn'),
     fit: panel.querySelector('#effect-grid-fit'),
     loop: panel.querySelector('#effect-grid-loop'),
@@ -208,23 +295,41 @@ function injectControls() {
     state.cols = cols;
     state.rows = rows;
     rebuildGrid({ preserveView: false });
+    refreshActiveGrid('grid-preset-change');
   });
   state.controls.cell.addEventListener('input', () => {
     state.cellSize = Number(state.controls.cell.value);
     state.controls.cellValue.textContent = `${state.cellSize} px`;
     rebuildGrid({ preserveView: false });
   });
-  state.controls.direction.addEventListener('change', () => { state.directionPattern = state.controls.direction.value; });
+  state.controls.cell.addEventListener('change', () => refreshActiveGrid('grid-cell-change'));
+  state.controls.direction.addEventListener('change', () => {
+    state.directionPattern = state.controls.direction.value;
+    refreshActiveGrid('grid-direction-change');
+  });
   state.controls.zoom.addEventListener('input', () => setZoom(Number(state.controls.zoom.value) / 100));
   state.controls.loopMs.addEventListener('change', () => {
     state.loopInterval = clamp(Number(state.controls.loopMs.value) || 1000, 250, 5000);
     state.controls.loopMs.value = String(state.loopInterval);
     if (state.loopEnabled) restartLoop();
+    updateReadout();
+  });
+  state.controls.loopMode.addEventListener('change', () => {
+    state.loopMode = state.controls.loopMode.value === 'stack' ? 'stack' : 'replace';
+    state.controls.loopNote.textContent = state.loopMode === 'replace'
+      ? 'Recommended: each cycle clears the previous grid before spawning the next one.'
+      : 'Advanced soak mode: every cycle intentionally adds another batch. Active instances can grow without bound for sustained effects.';
+    panel.classList.toggle('is-stack-mode', state.loopMode === 'stack');
+    updateReadout();
   });
   state.controls.spawn.addEventListener('click', () => spawnGrid({ reset: true }));
   state.controls.fit.addEventListener('click', () => { activateGrid(); fitGrid(); });
   state.controls.loop.addEventListener('click', toggleLoop);
   state.controls.stop.addEventListener('click', () => stopGrid({ resetView: false }));
+
+  effectInput?.addEventListener('change', () => refreshActiveGrid('grid-effect-change'));
+  intensityInput?.addEventListener('change', () => refreshActiveGrid('grid-intensity-change'));
+  directionInput?.addEventListener('change', () => refreshActiveGrid('grid-base-direction-change'));
 }
 
 function worldSize() {
@@ -295,7 +400,7 @@ function rebuildGrid({ preserveView = true } = {}) {
   state.world.style.height = `${height}px`;
   renderGridGuides();
   if (preserveView && oldCenter) centerWorldPoint(oldCenter.x, oldCenter.y);
-  else fitGrid();
+  else if (state.controls.autoFit?.checked) fitGrid();
   updateReadout();
 }
 
@@ -303,13 +408,7 @@ function gridPositions() {
   const points = [];
   for (let row = 0; row < state.rows; row++) {
     for (let col = 0; col < state.cols; col++) {
-      points.push({
-        index: row * state.cols + col,
-        row,
-        col,
-        x: (col + .5) * state.cellSize,
-        y: (row + .5) * state.cellSize
-      });
+      points.push({ index: row * state.cols + col, row, col, x: (col + .5) * state.cellSize, y: (row + .5) * state.cellSize });
     }
   }
   return points;
@@ -326,7 +425,7 @@ function directionFor(point, baseDirection) {
   return (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
 }
 
-function spawnBatch() {
+function spawnBatch({ source = 'manual', logSpawn = true } = {}) {
   if (!state.fx) return;
   const effectId = effectInput?.value ?? 'fireball';
   const intensity = Number(intensityInput?.value ?? 1);
@@ -344,14 +443,25 @@ function spawnBatch() {
     });
   }
 
-  appendLog(`GRID SPAWN ${effectId}: ${points.length} instances / ${state.cols}×${state.rows} / cell ${state.cellSize}px / zoom ${(state.zoom * 100).toFixed(0)}% / ${state.directionPattern}`);
+  if (logSpawn) {
+    appendLog(`GRID ${source.toUpperCase()} ${effectId}: ${points.length} instances / ${state.cols}×${state.rows} / cell ${state.cellSize}px / zoom ${(state.zoom * 100).toFixed(0)}% / ${state.directionPattern}`);
+  }
+  updateReadout();
 }
 
 function spawnGrid({ reset = true } = {}) {
   activateGrid();
   if (state.controls.autoFit?.checked) fitGrid();
   if (reset) state.fx?.stopAll?.('effect-grid-respawn');
-  spawnBatch();
+  spawnBatch({ source: 'spawn', logSpawn: true });
+}
+
+function refreshActiveGrid(reason) {
+  if (!state.active || !state.fx) return;
+  if (state.controls.autoFit?.checked) fitGrid();
+  state.fx.stopAll(reason);
+  spawnBatch({ source: 'refresh', logSpawn: false });
+  appendLog(`GRID REFRESH: ${reason} → ${state.cols * state.rows} clean instances`);
 }
 
 function stopGrid({ resetView = false } = {}) {
@@ -370,24 +480,41 @@ function startLoop() {
   activateGrid();
   if (state.controls.autoFit?.checked) fitGrid();
   state.loopEnabled = true;
+  state.loopCycles = 0;
   state.controls.loop?.classList.add('is-active');
   if (state.controls.loop) state.controls.loop.textContent = 'Loop: On';
-  spawnGrid({ reset: true });
+
+  state.fx?.stopAll?.('effect-grid-loop-start');
+  spawnBatch({ source: 'loop', logSpawn: false });
+  state.loopCycles = 1;
+  appendLog(`GRID LOOP START: ${state.cols * state.rows}/batch / ${state.loopMode} / ${state.loopInterval}ms`);
   restartLoop();
+  updateReadout();
+}
+
+function runLoopCycle() {
+  if (!state.loopEnabled) return;
+  if (state.loopMode === 'replace') state.fx?.stopAll?.('effect-grid-loop-replace');
+  spawnBatch({ source: 'loop', logSpawn: false });
+  state.loopCycles += 1;
+  updateReadout();
 }
 
 function restartLoop() {
   if (state.loopTimer) window.clearInterval(state.loopTimer);
   if (!state.loopEnabled) return;
-  state.loopTimer = window.setInterval(() => spawnBatch(), state.loopInterval);
+  state.loopTimer = window.setInterval(runLoopCycle, state.loopInterval);
 }
 
 function stopLoop() {
   if (state.loopTimer) window.clearInterval(state.loopTimer);
+  const wasEnabled = state.loopEnabled;
   state.loopTimer = 0;
   state.loopEnabled = false;
   state.controls.loop?.classList.remove('is-active');
   if (state.controls.loop) state.controls.loop.textContent = 'Loop: Off';
+  if (wasEnabled) appendLog(`GRID LOOP STOP: ${state.loopCycles} cycles completed`);
+  updateReadout();
 }
 
 function fitGrid() {
@@ -432,15 +559,13 @@ function applyView() {
 function updateReadout() {
   if (!state.controls.readout) return;
   const { width, height } = worldSize();
-  state.controls.readout.textContent = `${state.cols * state.rows} instances • ${width} × ${height} world • zoom ${Math.round(state.zoom * 100)}%`;
+  const cycles = state.loopEnabled ? ` • cycle ${state.loopCycles}` : '';
+  state.controls.readout.textContent = `${state.cols * state.rows} / batch • ${state.loopMode}${cycles} • ${width} × ${height} world • zoom ${Math.round(state.zoom * 100)}%`;
 }
 
 function screenCenterWorld() {
   if (!state.active || !state.zoom) return null;
-  return {
-    x: (stage.clientWidth * .5 - state.panX) / state.zoom,
-    y: (stage.clientHeight * .5 - state.panY) / state.zoom
-  };
+  return { x: (stage.clientWidth * .5 - state.panX) / state.zoom, y: (stage.clientHeight * .5 - state.panY) / state.zoom };
 }
 
 function centerWorldPoint(x, y) {
@@ -514,6 +639,7 @@ waitForRuntime()
     state.lab = lab;
     state.fx = lab.fx;
     installWorld(lab);
+    createDebugHierarchy();
     injectControls();
     bindViewportInput();
     watchWorkspace();
@@ -535,12 +661,14 @@ waitForRuntime()
         panX: state.panX,
         panY: state.panY,
         directionPattern: state.directionPattern,
-        loop: state.loopEnabled
+        loop: state.loopEnabled,
+        loopMode: state.loopMode,
+        loopCycles: state.loopCycles
       })
     };
 
     updateReadout();
-    appendLog(`${BUILD} Effect Grid Lab ready: real FXDeck.play() grid, virtual world, wheel zoom, drag pan, Fit Grid and loop`);
+    appendLog(`${BUILD} Effect Grid ready: primary real-effect scaling, clean-replace loop default, explicit stack/soak mode, auto-respawn on grid changes`);
   })
   .catch((error) => {
     appendLog(`${BUILD} Effect Grid Lab FAIL: ${error.message}`);
