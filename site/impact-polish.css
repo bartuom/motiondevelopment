@@ -1,0 +1,284 @@
+/* Impact 03 polish pass
+   Directional, asymmetric, production-oriented motion.
+   Loaded after styles.css so the rest of the portfolio stays untouched. */
+
+/* Shared impact cleanup */
+.effect-root.impact-light .impact-line,
+.effect-root.impact-heavy .impact-line {
+  left: 18%;
+  width: 46%;
+  opacity: .1;
+  background: linear-gradient(90deg, transparent, rgba(210,232,248,.2) 42%, rgba(245,251,255,.48));
+}
+
+.effect-root.impact-light .impact-projectile,
+.effect-root.impact-heavy .impact-projectile {
+  transform-origin: 100% 50%;
+  will-change: transform, opacity;
+}
+
+.effect-root.impact-light .impact-flash,
+.effect-root.impact-heavy .impact-flash {
+  width: 18px;
+  height: 18px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.effect-root.impact-light .impact-ring,
+.effect-root.impact-heavy .impact-ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transform-origin: 0 50%;
+}
+
+.effect-root.impact-light .impact-ring::after,
+.effect-root.impact-heavy .impact-ring::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgba(215,236,250,.32);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* Remove the mathematically even fan from the base effect. */
+.effect-root.impact-light.impact-playing .impact-burst span,
+.effect-root.impact-heavy.impact-playing .impact-burst span {
+  width: var(--len, 58px);
+  height: var(--thickness, 2px);
+  opacity: 0;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,var(--hot, .95)) 0%,
+    rgba(190,222,244,var(--mid, .58)) 34%,
+    rgba(150,197,228,.18) 66%,
+    transparent 100%);
+  transform: rotate(var(--angle, 0deg)) translateX(4px) scaleX(.18);
+  animation: impact-ray-directed var(--dur, 150ms) cubic-bezier(.08,.72,.16,1) var(--delay, 0ms) both;
+}
+
+@keyframes impact-ray-directed {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(3px) scaleX(.12);
+  }
+  8% { opacity: var(--alpha, 1); }
+  36% {
+    opacity: var(--alpha, 1);
+    transform: rotate(var(--angle)) translateX(calc(var(--travel) * .42)) scaleX(.9);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(var(--travel)) scaleX(.22);
+  }
+}
+
+.effect-root.impact-light.impact-playing .impact-debris i,
+.effect-root.impact-heavy.impact-playing .impact-debris i {
+  width: var(--w, 5px);
+  height: var(--h, 3px);
+  border-radius: var(--radius, 1px);
+  background: var(--debris-color, #b9cbd8);
+  opacity: 0;
+  animation: impact-debris-directed var(--dur, 280ms) cubic-bezier(.12,.58,.18,1) var(--delay, 0ms) both;
+}
+
+@keyframes impact-debris-directed {
+  0% {
+    opacity: 0;
+    transform: translate(-50%,-50%) translate3d(0,0,0) rotate(var(--start-rot, 0deg)) scale(.72);
+  }
+  9% { opacity: var(--alpha, .9); }
+  52% { opacity: var(--alpha, .9); }
+  100% {
+    opacity: 0;
+    transform: translate(-50%,-50%) translate3d(var(--dx),var(--dy),0) rotate(var(--rot)) scale(.82);
+  }
+}
+
+/* -------------------------
+   LIGHT IMPACT
+   Sharp, compact, little residual motion.
+   ------------------------- */
+.effect-root.impact-light .impact-projectile {
+  width: 68px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(196,225,246,.68) 38%, #fff 94%);
+}
+
+.effect-root.impact-light.impact-playing .impact-projectile {
+  animation: impact-projectile-light 78ms cubic-bezier(.14,.86,.2,1) both;
+}
+
+@keyframes impact-projectile-light {
+  0% { opacity: 0; transform: translate3d(-8px,-50%,0) scaleX(.28); }
+  10% { opacity: 1; }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(720%,-50%,0) scaleX(1.28); }
+}
+
+.effect-root.impact-light.impact-playing .impact-target {
+  animation: impact-target-light 185ms cubic-bezier(.12,.76,.2,1) 76ms both;
+}
+
+@keyframes impact-target-light {
+  0% { transform: translate(-50%,-50%) scale(1); }
+  10% { transform: translate(calc(-50% + 8px),-50%) scale(.87,1.08); }
+  34% { transform: translate(calc(-50% + 3px),-50%) scale(1.035,.985); }
+  70% { transform: translate(calc(-50% + 1px),-50%) scale(.992,1.006); }
+  100% { transform: translate(-50%,-50%) scale(1); }
+}
+
+.effect-root.impact-light.impact-playing .impact-flash {
+  animation: impact-contact-light 48ms cubic-bezier(.08,.8,.18,1) 75ms both;
+}
+
+@keyframes impact-contact-light {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.15,.55); }
+  16% { opacity: 1; transform: translate(-50%,-50%) scale(.72,1); }
+  100% { opacity: 0; transform: translate(calc(-50% + 16px),-50%) scale(2.8,.34); }
+}
+
+.effect-root.impact-light.impact-playing .impact-ring {
+  animation: impact-pressure-light 145ms cubic-bezier(.08,.74,.16,1) 78ms both;
+}
+
+@keyframes impact-pressure-light {
+  0% { opacity: .55; transform: translate(-50%,-50%) scale(.25,.55); }
+  100% { opacity: 0; transform: translate(calc(-50% + 36px),-50%) scale(2.8,.72); }
+}
+
+.effect-root.impact-light.impact-playing .impact-ring::after {
+  animation: impact-pressure-secondary 150ms cubic-bezier(.08,.7,.18,1) 18ms both;
+}
+
+/* Light: only five controlled streaks. 4/5 push forward. */
+.effect-root.impact-light .impact-burst span:nth-child(n+6) { display: none; }
+.effect-root.impact-light .impact-burst span:nth-child(1) { --angle:-3deg;  --len:92px; --travel:76px; --dur:142ms; --delay:76ms; --thickness:2.4px; --alpha:1; }
+.effect-root.impact-light .impact-burst span:nth-child(2) { --angle:10deg;  --len:58px; --travel:53px; --dur:132ms; --delay:80ms; --thickness:1.5px; --alpha:.8; }
+.effect-root.impact-light .impact-burst span:nth-child(3) { --angle:-17deg; --len:46px; --travel:44px; --dur:128ms; --delay:82ms; --thickness:1.3px; --alpha:.68; }
+.effect-root.impact-light .impact-burst span:nth-child(4) { --angle:24deg;  --len:30px; --travel:31px; --dur:112ms; --delay:86ms; --thickness:1px; --alpha:.5; }
+.effect-root.impact-light .impact-burst span:nth-child(5) { --angle:-58deg; --len:18px; --travel:18px; --dur:96ms;  --delay:84ms; --thickness:1px; --alpha:.3; }
+
+.effect-root.impact-light .impact-debris i:nth-child(n+5) { display: none; }
+.effect-root.impact-light .impact-debris i:nth-child(1) { --dx:72px; --dy:-11px; --rot:128deg; --dur:230ms; --delay:84ms; --w:6px; --h:2px; --alpha:.78; }
+.effect-root.impact-light .impact-debris i:nth-child(2) { --dx:54px; --dy:18px;  --rot:244deg; --dur:245ms; --delay:91ms; --w:4px; --h:3px; --alpha:.72; }
+.effect-root.impact-light .impact-debris i:nth-child(3) { --dx:37px; --dy:-28px; --rot:176deg; --dur:218ms; --delay:96ms; --w:3px; --h:2px; --alpha:.56; }
+.effect-root.impact-light .impact-debris i:nth-child(4) { --dx:29px; --dy:34px;  --rot:305deg; --dur:255ms; --delay:89ms; --w:3px; --h:3px; --alpha:.48; }
+
+/* -------------------------
+   HEAVY IMPACT
+   Deep compression, one hero chunk, strong forward cone, longer recovery.
+   ------------------------- */
+.effect-root.impact-heavy .impact-projectile {
+  width: 92px;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, rgba(153,201,232,.35) 20%, rgba(220,239,252,.82) 68%, #fff 96%);
+}
+
+.effect-root.impact-heavy.impact-playing .impact-projectile {
+  animation: impact-projectile-heavy 98ms cubic-bezier(.12,.84,.18,1) both;
+}
+
+@keyframes impact-projectile-heavy {
+  0% { opacity: 0; transform: translate3d(-16px,-50%,0) scaleX(.28); }
+  8% { opacity: 1; }
+  72% { opacity: 1; transform: translate3d(610%,-50%,0) scaleX(1.08); }
+  100% { opacity: 0; transform: translate3d(720%,-50%,0) scaleX(1.52); }
+}
+
+.effect-root.impact-heavy .impact-target {
+  width: 64px;
+  height: 64px;
+}
+
+.effect-root.impact-heavy.impact-playing .impact-target {
+  animation: impact-target-heavy 320ms cubic-bezier(.12,.68,.18,1) 94ms both;
+}
+
+@keyframes impact-target-heavy {
+  0% { transform: translate(-50%,-50%) scale(1); }
+  7% { transform: translate(calc(-50% + 17px),-50%) scale(.72,1.18); }
+  22% { transform: translate(calc(-50% + 10px),-50%) scale(.86,1.08); }
+  46% { transform: translate(calc(-50% + 3px),-50%) scale(1.075,.965); }
+  68% { transform: translate(calc(-50% + 1px),-50%) scale(.97,1.02); }
+  84% { transform: translate(-50%,-50%) scale(1.012,.994); }
+  100% { transform: translate(-50%,-50%) scale(1); }
+}
+
+.effect-root.impact-heavy.impact-playing .impact-target span {
+  animation: impact-core-heavy 205ms cubic-bezier(.1,.72,.2,1) 96ms both;
+}
+
+@keyframes impact-core-heavy {
+  0% { transform: translateX(0) scale(1); }
+  12% { transform: translateX(8px) scale(.72,1.1); background:#36404a; }
+  54% { transform: translateX(2px) scale(1.04,.98); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+.effect-root.impact-heavy.impact-playing .impact-flash {
+  width: 22px;
+  height: 22px;
+  animation: impact-contact-heavy 44ms cubic-bezier(.06,.86,.16,1) 94ms both;
+}
+
+@keyframes impact-contact-heavy {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.12,.72); }
+  14% { opacity: 1; transform: translate(-50%,-50%) scale(.95,1.08); }
+  100% { opacity: 0; transform: translate(calc(-50% + 24px),-50%) scale(4.2,.26); }
+}
+
+.effect-root.impact-heavy.impact-playing .impact-ring {
+  border-color: rgba(205,232,250,.66);
+  animation: impact-pressure-heavy 218ms cubic-bezier(.06,.74,.14,1) 98ms both;
+}
+
+@keyframes impact-pressure-heavy {
+  0% { opacity: .72; transform: translate(-50%,-50%) scale(.24,.62); }
+  100% { opacity: 0; transform: translate(calc(-50% + 55px),-50%) scale(4.6,.9); }
+}
+
+.effect-root.impact-heavy.impact-playing .impact-ring::after {
+  animation: impact-pressure-secondary 226ms cubic-bezier(.08,.68,.16,1) 28ms both;
+}
+
+@keyframes impact-pressure-secondary {
+  0% { opacity: .36; transform: scale(.55,.75); }
+  100% { opacity: 0; transform: translateX(18px) scale(1.75,1.05); }
+}
+
+/* Heavy: 7 useful streaks, five strongly forward. */
+.effect-root.impact-heavy .impact-burst span:nth-child(n+8) { display: none; }
+.effect-root.impact-heavy .impact-burst span:nth-child(1) { --angle:-2deg;  --len:142px; --travel:122px; --dur:182ms; --delay:96ms;  --thickness:4px;   --alpha:1; }
+.effect-root.impact-heavy .impact-burst span:nth-child(2) { --angle:7deg;   --len:104px; --travel:96px;  --dur:176ms; --delay:101ms; --thickness:2.6px; --alpha:.9; }
+.effect-root.impact-heavy .impact-burst span:nth-child(3) { --angle:-13deg; --len:88px;  --travel:83px;  --dur:170ms; --delay:104ms; --thickness:2px;   --alpha:.82; }
+.effect-root.impact-heavy .impact-burst span:nth-child(4) { --angle:19deg;  --len:62px;  --travel:61px;  --dur:160ms; --delay:109ms; --thickness:1.7px; --alpha:.7; }
+.effect-root.impact-heavy .impact-burst span:nth-child(5) { --angle:-27deg; --len:48px;  --travel:46px;  --dur:150ms; --delay:108ms; --thickness:1.4px; --alpha:.58; }
+.effect-root.impact-heavy .impact-burst span:nth-child(6) { --angle:43deg;  --len:30px;  --travel:29px;  --dur:132ms; --delay:114ms; --thickness:1.2px; --alpha:.42; }
+.effect-root.impact-heavy .impact-burst span:nth-child(7) { --angle:-66deg; --len:23px;  --travel:22px;  --dur:120ms; --delay:111ms; --thickness:1px;   --alpha:.3; }
+
+.effect-root.impact-heavy .impact-debris i:nth-child(8) { display: none; }
+/* Hero chunk */
+.effect-root.impact-heavy .impact-debris i:nth-child(1) { --dx:124px; --dy:22px;  --rot:248deg; --dur:390ms; --delay:104ms; --w:15px; --h:7px; --radius:2px; --alpha:.92; --debris-color:#9eb3c2; }
+.effect-root.impact-heavy .impact-debris i:nth-child(2) { --dx:96px;  --dy:-28px; --rot:382deg; --dur:342ms; --delay:111ms; --w:8px;  --h:5px; --alpha:.82; --debris-color:#c4d3de; }
+.effect-root.impact-heavy .impact-debris i:nth-child(3) { --dx:79px;  --dy:46px;  --rot:294deg; --dur:365ms; --delay:118ms; --w:7px;  --h:4px; --alpha:.76; }
+.effect-root.impact-heavy .impact-debris i:nth-child(4) { --dx:65px;  --dy:-52px; --rot:436deg; --dur:330ms; --delay:121ms; --w:5px;  --h:4px; --alpha:.68; }
+.effect-root.impact-heavy .impact-debris i:nth-child(5) { --dx:51px;  --dy:64px;  --rot:318deg; --dur:384ms; --delay:126ms; --w:4px;  --h:3px; --alpha:.58; }
+.effect-root.impact-heavy .impact-debris i:nth-child(6) { --dx:39px;  --dy:-69px; --rot:510deg; --dur:354ms; --delay:128ms; --w:3px;  --h:3px; --alpha:.46; }
+.effect-root.impact-heavy .impact-debris i:nth-child(7) { --dx:34px;  --dy:31px;  --rot:228deg; --dur:310ms; --delay:132ms; --w:3px;  --h:2px; --alpha:.38; }
+
+/* Keep the heavy kick short. The weight comes from target compression and debris, not camera abuse. */
+.stage.is-kicked:has(.impact-heavy) {
+  animation-duration: 118ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .effect-root.impact-light.impact-playing .impact-ring,
+  .effect-root.impact-heavy.impact-playing .impact-ring,
+  .effect-root.impact-light.impact-playing .impact-ring::after,
+  .effect-root.impact-heavy.impact-playing .impact-ring::after {
+    animation: none;
+  }
+}
