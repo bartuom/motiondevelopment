@@ -2,19 +2,23 @@ import { spawnTracked } from './effect-utils.js?v=p3.6.3';
 
 const ENVIRONMENT_SPEC = {
   label: 'Environment Emitter',
-  revision: 'P3.8.0 sustained live-update proof / v1',
-  summary: 'Long-running environment source proving start → live position/intensity update → stop without recreating the owning FXDeck EffectInstance.',
+  revision: 'P3.8.1 sustained multi-source proof / v1',
+  summary: 'Long-running environment source proving independent sustained sources plus live position/intensity updates without recreating the owning FXDeck EffectInstance.',
   rateDelay: 0.12,
   startCount: 2,
-  baseQuantity: 2,
   particleLife: { min: 1.0, max: 1.8 },
   particleSize: { min: 5, max: 15 },
   particleSpeed: { min: 0.7, max: 1.6 },
   spread: 26
 };
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function rateQuantityForIntensity(intensity) {
-  return Math.max(1, Math.min(5, Math.round(1 + Math.max(0, intensity) * 1.5)));
+  const normalized = clamp((Math.max(0, intensity) - 0.5) / 1.5, 0, 1);
+  return Math.max(1, Math.min(10, Math.round(1 + normalized * 9)));
 }
 
 function emitterOptions(spec, intensity, directionDegrees) {
@@ -124,17 +128,20 @@ function environmentDefinition() {
       );
       if (!source || instance.state !== 'playing') return;
 
+      const initialQuantity = rateQuantityForIntensity(intensity);
       instance.resolved = {
         topology: 'explicit-sustained-emitter',
         position: { ...params.position },
         intensity,
         direction: { ...params.direction },
         directionDegrees: params.directionDegrees,
-        rateQuantity: rateQuantityForIntensity(intensity),
+        rateQuantity: initialQuantity,
         rateDelay: spec.rateDelay,
+        emissionPerSecond: initialQuantity / spec.rateDelay,
         livePosition: true,
         liveIntensity: true,
         liveDirection: false,
+        intensityUpdateMode: 'live emission density; existing particles age out naturally',
         emitterId: source.id,
         updates: 0
       };
@@ -155,6 +162,7 @@ function environmentDefinition() {
           update.rateQuantity = rateQuantity;
           instance.resolved.intensity = nextIntensity;
           instance.resolved.rateQuantity = rateQuantity;
+          instance.resolved.emissionPerSecond = rateQuantity / spec.rateDelay;
         }
 
         if ('direction' in patch) {
