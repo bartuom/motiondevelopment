@@ -85,3 +85,7 @@
   box-shadow:inset 0 0 0 5px rgba(103,214,147,.09),0 0 15px rgba(103,214,147,.28);
 }
 .fxdeck-env-source-marker.is-active b{color:#d4ffe2;border:1px solid rgba(177,241,199,.18)}
+
+/* Environment source markers are diagnostic overlays, not authored VFX. */
+body[data-hud-mode="off"] .fxdeck-env-source-marker{display:none!important}
+body.is-environment-effect .impact-target{display:none!important}
