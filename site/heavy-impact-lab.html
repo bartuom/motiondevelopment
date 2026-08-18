@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.5.0</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.5.1</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.5 adds queue-aware production quality. Gameplay-critical burst layers keep priority while lower-value smoke/debris can shed particles under scheduler backlog. Synthetic backend stress remains matched by explicitly disabling quality shedding.</p>
+      <p class="intro">P3.5.1 makes queue-aware quality proactive: admission uses projected backlog including the incoming burst, so lower-value smoke/debris can be reduced before the scheduler crosses pressure thresholds. Hero layers remain protected.</p>
     </header>
 
     <section class="workbench">
@@ -40,7 +40,7 @@
         <div class="control">
           <p class="label">Effect</p>
           <select id="effect-select">
-            <option value="explosion" selected>Explosion — queue-aware quality probe</option>
+            <option value="explosion" selected>Explosion — projected-backlog quality probe</option>
             <option value="heavyImpact">Heavy Impact — production one-shot</option>
           </select>
         </div>
@@ -60,7 +60,7 @@
             <option value="emitter">Per-play emitter — reference</option>
             <option value="shared">Shared direct — synchronous reference</option>
           </select>
-          <p class="control-note">Production scheduled bursts now carry semantic priority and queue backpressure. Hero layers are protected; low-value layers shed first when backlog rises.</p>
+          <p class="control-note">Production scheduled bursts carry semantic priority and projected-backlog admission. Hero layers are protected; low-value layers shed before backlog crosses the next pressure tier.</p>
         </div>
 
         <div class="control">
@@ -103,8 +103,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P3.5 focus</p>
-          <p>Explosion proved the second-effect architecture but its scheduled ×6 test accumulated roughly 176–224 queued particles and ~870 peak particles. P3.5 protects core/fireball, prioritizes sparks, then progressively reduces debris and smoke as backlog rises. The goal is lower queue/particle pressure without visibly weakening the hero read.</p>
+          <p class="label">P3.5.1 focus</p>
+          <p>P3.5.0 improved Explosion frame pacing but admitted 870/870 particles because quality pressure was detected only after bursts entered the queue. P3.5.1 evaluates queue pressure against the projected backlog before admission, so debris/smoke can shed proactively while core/fireball remain intact.</p>
         </div>
       </aside>
 
@@ -130,7 +130,7 @@
           </div>
           <div class="caption">
             <strong id="caption-title">explosion / v1 / default</strong>
-            <span id="caption-note">queue-aware quality / shared-scheduled production default</span>
+            <span id="caption-note">projected-backlog quality / shared-scheduled production default</span>
           </div>
         </div>
       </section>
@@ -168,7 +168,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.5.0</dd></div>
+            <div><dt>Build</dt><dd>P3.5.1</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>p95 frame</dt><dd id="metric-p95">--</dd></div>
@@ -203,14 +203,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.5.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.5.1.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.5.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.5.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.5.1"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.5.1"></script>
 </body>
 </html>
