@@ -1,29 +1,29 @@
 const HEAVY_IMPACT_SPEC = {
   label: 'Heavy Impact',
-  revision: 'P2 vertical slice / v1',
-  summary: 'Composite directional gameplay hit: contact flash, sparks, debris, pressure wave, target kick and screen kick from one FXDeck.play() call.',
-  duration: 620,
+  revision: 'P2.2 visual hierarchy / v1',
+  summary: 'Composite directional gameplay hit with a tighter visual hierarchy: short contact flash, aligned hero sparks, smaller debris, directional pressure wave, target kick and screen kick.',
+  duration: 560,
   timings: {
     contactFlash: 0,
     sparks: 0,
-    debris: 18,
-    pressureWave: 32,
-    targetKick: 40,
-    screenKick: 52
+    debris: 14,
+    pressureWave: 26,
+    targetKick: 36,
+    screenKick: 48
   },
   sparks: {
-    baseCount: 34,
-    speed: { min: 10, max: 24 },
-    size: { min: 8, max: 18 },
-    life: { min: .24, max: .52 },
-    spread: 38
+    baseCount: 22,
+    speed: { min: 12, max: 27 },
+    size: { min: 6, max: 13 },
+    life: { min: .18, max: .38 },
+    spread: 28
   },
   debris: {
-    baseCount: 16,
-    speed: { min: 5, max: 13 },
-    size: { min: 2.5, max: 6.5 },
-    life: { min: .34, max: .72 },
-    spread: 62
+    baseCount: 10,
+    speed: { min: 5.5, max: 11 },
+    size: { min: 1.8, max: 4 },
+    life: { min: .24, max: .48 },
+    spread: 46
   }
 };
 
@@ -32,12 +32,14 @@ function scaledRange(range, scale) {
 }
 
 function sparkEmitter(spec, resolved) {
+  const halfSpread = spec.spread * .5;
+
   return {
     autoPlay: true,
     startCount: resolved.count,
     size: { width: 0, height: 0, mode: 'percent' },
     rate: { quantity: 0, delay: 0 },
-    life: { count: 1, duration: 0.08, wait: false },
+    life: { count: 1, duration: 0.06, wait: false },
     particles: {
       color: { value: '#ffffff' },
       shape: {
@@ -52,14 +54,20 @@ function sparkEmitter(spec, resolved) {
         }
       },
       opacity: {
-        value: { min: .78, max: 1 },
-        animation: { enable: true, speed: 2.4, sync: false, startValue: 'max', destroy: 'min' }
+        value: { min: .72, max: .98 },
+        animation: { enable: true, speed: 3.4, sync: false, startValue: 'max', destroy: 'min' }
       },
       size: {
         value: spec.size,
-        animation: { enable: true, speed: 4.2, sync: false, startValue: 'max', destroy: 'min' }
+        animation: { enable: true, speed: 5.8, sync: false, startValue: 'max', destroy: 'min' }
       },
-      rotate: { value: { min: 0, max: 360 }, direction: 'random' },
+      rotate: {
+        value: {
+          min: resolved.directionDegrees - halfSpread,
+          max: resolved.directionDegrees + halfSpread
+        },
+        direction: 'random'
+      },
       move: {
         enable: true,
         direction: 'right',
@@ -80,22 +88,22 @@ function debrisEmitter(spec, resolved) {
     startCount: resolved.count,
     size: { width: 0, height: 0, mode: 'percent' },
     rate: { quantity: 0, delay: 0 },
-    life: { count: 1, duration: 0.08, wait: false },
+    life: { count: 1, duration: 0.06, wait: false },
     particles: {
-      color: { value: ['#f4efe8', '#b9aca0', '#746b63'] },
+      color: { value: ['#d8d0c8', '#8e8177', '#514b46'] },
       shape: { type: 'square' },
       opacity: {
-        value: { min: .65, max: .95 },
-        animation: { enable: true, speed: 1.8, sync: false, startValue: 'max', destroy: 'min' }
+        value: { min: .55, max: .86 },
+        animation: { enable: true, speed: 2.4, sync: false, startValue: 'max', destroy: 'min' }
       },
       size: {
         value: spec.size,
-        animation: { enable: true, speed: 2.4, sync: false, startValue: 'max', destroy: 'min' }
+        animation: { enable: true, speed: 3, sync: false, startValue: 'max', destroy: 'min' }
       },
       rotate: {
         value: { min: 0, max: 360 },
         direction: 'random',
-        animation: { enable: true, speed: 35, sync: false }
+        animation: { enable: true, speed: 32, sync: false }
       },
       move: {
         enable: true,
@@ -183,8 +191,8 @@ function heavyImpactDefinition() {
         debris,
         timings: { ...spec.timings },
         duration: spec.duration,
-        targetKickPx: 10 * intensity,
-        screenKickPx: 5 * Math.min(1.5, intensity)
+        targetKickPx: 8.5 * intensity,
+        screenKickPx: 4.5 * Math.min(1.5, intensity)
       };
 
       // P2 intentionally sequences the real effect directly. Repeated patterns
