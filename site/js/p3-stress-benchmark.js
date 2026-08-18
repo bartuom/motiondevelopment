@@ -20,7 +20,8 @@ const PATH_LABELS = {
 
 const PROFILE_LABELS = {
   uniform: 'uniform',
-  heterogeneous: 'heterogeneous'
+  heterogeneous: 'heterogeneous',
+  both: 'both'
 };
 
 const HETERO_INTENSITY_WEIGHTS = [.55, .75, .9, 1.1, 1.25, 1.45];
@@ -355,48 +356,75 @@ function resultSummary(label, result) {
   return `${label} submit ${result.submitCpuMs.toFixed(1)}ms / span ${result.populationSpanMs.toFixed(1)}ms / worst ${result.worstPopulationFrameMs.toFixed(1)}ms / population spikes ${result.populationSpikes20.toFixed(0)} / steady ${result.avgFps.toFixed(1)} avg ${result.low1.toFixed(1)} low / peak ${result.peakParticles.toFixed(0)}`;
 }
 
-async function runStressCompare() {
-  if (!stressButton || stressButton.disabled) return;
-  const lab = await waitForLab();
-  const requested = Number(stressLoadInput?.value ?? 800);
-  const preset = STRESS_PRESETS[requested] ?? STRESS_PRESETS[800];
-  const profile = stressProfileInput?.value === 'heterogeneous' ? 'heterogeneous' : 'uniform';
-  const originalPath = lab.particleAdapter.getBurstMode();
-  const scheduler = lab.particleAdapter.getStats();
+async function runProfileCompare(lab, preset, profile, scheduler) {
   const results = { emitter: [], shared: [], scheduled: [] };
   const roundOrders = [
     ['emitter', 'shared', 'scheduled'],
     ['shared', 'scheduled', 'emitter'],
     ['scheduled', 'emitter', 'shared']
   ];
-
-  setUiBusy(true);
   const profileDetail = profile === 'heterogeneous'
     ? 'per-point intensity weights 0.55–1.45 normalized to the same total + varied color/direction/speed/size/opacity'
     : 'identical stationary particle options at every point';
+
   log(`${BUILD} STRESS COMPARE START: profile ${PROFILE_LABELS[profile]} / ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds / ${profileDetail} / integrated scheduler ${scheduler.schedulerBudgetMs ?? '?'}ms budget, chunk ${scheduler.schedulerChunkSize ?? '?'}, immediate ${scheduler.schedulerImmediateCount ?? '?'}`);
 
-  try {
-    for (let round = 1; round <= ROUNDS; round += 1) {
-      const order = roundOrders[round - 1];
-      log(`STRESS ROUND ${round}/${ROUNDS}: ${order.map((path) => PATH_LABELS[path]).join(' → ')}`);
+  for (let round = 1; round <= ROUNDS; round += 1) {
+    const order = roundOrders[round - 1];
+    log(`STRESS ROUND ${round}/${ROUNDS} [${PROFILE_LABELS[profile]}]: ${order.map((path) => PATH_LABELS[path]).join(' → ')}`);
 
-      for (const path of order) {
-        const result = await runLeg(lab, path, preset, round, profile);
-        results[path].push(result);
-        await sleep(180);
-      }
+    for (const path of order) {
+      const result = await runLeg(lab, path, preset, round, profile);
+      results[path].push(result);
+      await sleep(180);
+    }
+  }
+
+  const emitter = aggregate(results.emitter);
+  const shared = aggregate(results.shared);
+  const scheduled = aggregate(results.scheduled);
+  const tolerance = Math.max(4, Math.round(preset.particles * .02));
+  const peaks = [emitter.peakParticles, shared.peakParticles, scheduled.peakParticles];
+  const workloadMatched = [emitter, shared, scheduled].every((item) => item.allTargetsReached) && Math.max(...peaks) - Math.min(...peaks) <= tolerance;
+  const cleanupClean = [emitter, shared, scheduled].every((item) => item.allCleanupClean);
+
+  log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}, ${PROFILE_LABELS[profile]}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-scheduled', scheduled)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
+
+  return { emitter, shared, scheduled, workloadMatched, cleanupClean };
+}
+
+async function runStressCompare() {
+  if (!stressButton || stressButton.disabled) return;
+  const lab = await waitForLab();
+  const requested = Number(stressLoadInput?.value ?? 800);
+  const preset = STRESS_PRESETS[requested] ?? STRESS_PRESETS[800];
+  const requestedProfile = ['uniform', 'heterogeneous', 'both'].includes(stressProfileInput?.value)
+    ? stressProfileInput.value
+    : 'both';
+  const profiles = requestedProfile === 'both' ? ['uniform', 'heterogeneous'] : [requestedProfile];
+  const originalPath = lab.particleAdapter.getBurstMode();
+  const scheduler = lab.particleAdapter.getStats();
+  const profileResults = {};
+
+  setUiBusy(true);
+
+  try {
+    for (const profile of profiles) {
+      profileResults[profile] = await runProfileCompare(lab, preset, profile, scheduler);
+      await sleep(260);
     }
 
-    const emitter = aggregate(results.emitter);
-    const shared = aggregate(results.shared);
-    const scheduled = aggregate(results.scheduled);
-    const tolerance = Math.max(4, Math.round(preset.particles * .02));
-    const peaks = [emitter.peakParticles, shared.peakParticles, scheduled.peakParticles];
-    const workloadMatched = [emitter, shared, scheduled].every((item) => item.allTargetsReached) && Math.max(...peaks) - Math.min(...peaks) <= tolerance;
-    const cleanupClean = [emitter, shared, scheduled].every((item) => item.allCleanupClean);
-
-    log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}, ${PROFILE_LABELS[profile]}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-scheduled', scheduled)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
+    if (profileResults.uniform && profileResults.heterogeneous) {
+      const uniform = profileResults.uniform.scheduled;
+      const hetero = profileResults.heterogeneous.scheduled;
+      const deltaSubmit = hetero.submitCpuMs - uniform.submitCpuMs;
+      const deltaSpan = hetero.populationSpanMs - uniform.populationSpanMs;
+      const deltaWorst = hetero.worstPopulationFrameMs - uniform.worstPopulationFrameMs;
+      const deltaSpikes = hetero.populationSpikes20 - uniform.populationSpikes20;
+      const deltaAvg = hetero.avgFps - uniform.avgFps;
+      const deltaLow = hetero.low1 - uniform.low1;
+      log(`${BUILD} HETEROGENEITY DELTA (shared-scheduled, heterogeneous - uniform): ${deltaSubmit >= 0 ? '+' : ''}${deltaSubmit.toFixed(1)}ms submit / ${deltaSpan >= 0 ? '+' : ''}${deltaSpan.toFixed(1)}ms span / ${deltaWorst >= 0 ? '+' : ''}${deltaWorst.toFixed(1)}ms worst frame / ${deltaSpikes >= 0 ? '+' : ''}${deltaSpikes.toFixed(0)} population spikes / ${deltaAvg >= 0 ? '+' : ''}${deltaAvg.toFixed(1)} steady avg / ${deltaLow >= 0 ? '+' : ''}${deltaLow.toFixed(1)} steady low | uniform ${profileResults.uniform.workloadMatched && profileResults.uniform.cleanupClean ? 'VALID' : 'INVALID'} | heterogeneous ${profileResults.heterogeneous.workloadMatched && profileResults.heterogeneous.cleanupClean ? 'VALID' : 'INVALID'}`);
+    }
   } catch (error) {
     log(`${BUILD} STRESS COMPARE FAIL: ${error.message}`);
     console.error(error);
@@ -422,7 +450,7 @@ if (stressButton) {
 waitForLab()
   .then((lab) => {
     const stats = lab.particleAdapter.getStats();
-    log(`${BUILD} ready: uniform baseline + heterogeneous per-point stress; integrated scheduled mode ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
+    log(`${BUILD} ready: uniform + heterogeneous + combined profile stress; integrated scheduled mode ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
   })
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
