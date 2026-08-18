@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FXDeck P2 Heavy Impact vertical slice lab.">
+  <title>FXDeck Heavy Impact Lab</title>
+  <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.0.0">
+</head>
+<body>
+  <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
+    <div class="fxdeck-project-nav__inner">
+      <a class="fxdeck-project-nav__brand" href="./webfx-lab.html">FXDeck</a>
+      <div class="fxdeck-project-nav__links">
+        <a href="./webfx-lab.html">P0 Spike</a>
+        <a href="./fxdeck-core-lab.html">P1 Core</a>
+        <a href="./heavy-impact-lab.html" aria-current="page">P2 Heavy Impact</a>
+        <a class="is-legacy" href="./">Portfolio</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <header class="header">
+      <div>
+        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.0.0</p>
+        <h1>Heavy Impact</h1>
+      </div>
+      <p class="intro">First production-style vertical slice: one FXDeck.play() call orchestrates particles, DOM cue layers and game integration hooks.</p>
+    </header>
+
+    <section class="workbench">
+      <aside class="pane controls-pane">
+        <div class="pane-heading">
+          <p class="label">01 / Input</p>
+          <h2>Gameplay call</h2>
+        </div>
+
+        <div class="control">
+          <p class="label">Effect</p>
+          <select disabled><option>heavyImpact</option></select>
+        </div>
+        <div class="control">
+          <p class="label">Authored version</p>
+          <select disabled><option>v1 — Heavy Impact</option></select>
+        </div>
+        <div class="control">
+          <p class="label">Authored variant</p>
+          <select disabled><option>default</option></select>
+        </div>
+
+        <div class="control">
+          <div class="range-row"><span>Runtime intensity</span><strong id="intensity-value">1.0</strong></div>
+          <input id="intensity" type="range" min="0.5" max="2" value="1" step="0.1">
+        </div>
+
+        <div class="control">
+          <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
+          <input id="direction" type="range" min="0" max="359" value="18" step="1">
+          <p class="control-note">The same normalized direction drives sparks, debris, target recoil and screen kick.</p>
+        </div>
+
+        <div class="actions">
+          <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
+          <button id="play-overlap" class="secondary" type="button">Overlap ×6</button>
+          <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
+        </div>
+
+        <div class="input-note">
+          <p class="label">P2 constraint</p>
+          <p>No generic timeline/layer framework yet. This effect is allowed to expose repetition so P3 can extract only abstractions that are proven useful.</p>
+        </div>
+      </aside>
+
+      <section class="canvas-pane">
+        <div class="canvas-toolbar">
+          <div>
+            <p class="label">02 / Preview</p>
+            <strong>Composite gameplay cue</strong>
+          </div>
+          <span>Click to move target + impact</span>
+        </div>
+
+        <div id="impact-stage" class="stage">
+          <div class="grid" aria-hidden="true"></div>
+          <div class="impact-backdrop" aria-hidden="true"></div>
+          <div id="heavy-impact-particles" class="particles" aria-hidden="true"></div>
+          <div id="impact-dom-layer" class="impact-dom-layer" aria-hidden="true"></div>
+          <div id="impact-target" class="impact-target" aria-hidden="true">
+            <span class="target-core"></span>
+            <span class="target-ring"></span>
+          </div>
+          <div class="caption">
+            <strong>heavyImpact / v1 / default</strong>
+            <span>flash → sparks → debris → pressure wave → target kick → screen kick</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="pane inspector-pane">
+        <div class="pane-heading">
+          <p class="label">03 / Output</p>
+          <h2>Resolved cue</h2>
+        </div>
+
+        <p class="summary">A single short-lived EffectInstance owns the complete hit lifecycle and cleans all spawned particle resources when it completes or is stopped.</p>
+
+        <section class="inspector-section">
+          <p class="label">Authored timing</p>
+          <dl class="timeline-list">
+            <div><dt>0 ms</dt><dd>Contact flash</dd></div>
+            <div><dt>0 ms</dt><dd>Directional sparks</dd></div>
+            <div><dt>18 ms</dt><dd>Directional debris</dd></div>
+            <div><dt>32 ms</dt><dd>Pressure wave</dd></div>
+            <div><dt>40 ms</dt><dd>Target kick hook</dd></div>
+            <div><dt>52 ms</dt><dd>Screen kick hook</dd></div>
+            <div><dt>620 ms</dt><dd>Lifecycle cleanup</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-section resolved-section">
+          <p class="label">Resolved for current play</p>
+          <dl class="definition-grid">
+            <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
+            <div><dt>Direction</dt><dd id="resolved-direction">--</dd></div>
+            <div><dt>Sparks</dt><dd id="resolved-sparks">--</dd></div>
+            <div><dt>Debris</dt><dd id="resolved-debris">--</dd></div>
+            <div><dt>Target kick</dt><dd id="resolved-target-kick">--</dd></div>
+            <div><dt>Screen kick</dt><dd id="resolved-screen-kick">--</dd></div>
+            <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-section runtime-section">
+          <p class="label">Runtime state</p>
+          <dl class="definition-grid">
+            <div><dt>Build</dt><dd>P2.0.0</dd></div>
+            <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
+            <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
+            <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
+            <div><dt>Canvas scale</dt><dd id="metric-scale">--</dd></div>
+          </dl>
+        </section>
+      </aside>
+    </section>
+
+    <section class="diagnostics">
+      <article class="diagnostic-card api-card">
+        <p class="label">Public API / current call</p>
+        <pre id="api-preview" class="api"></pre>
+      </article>
+
+      <article class="diagnostic-card log-card">
+        <div class="log-heading">
+          <p class="label">P2 runtime log</p>
+          <div class="log-tools">
+            <span id="p2-log-status" class="log-status" aria-live="polite"></span>
+            <button id="copy-p2-log" type="button">Copy log</button>
+            <button id="clear-p2-log" type="button">Clear</button>
+          </div>
+        </div>
+        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.0.0.</pre>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p2.0.0"></script>
+</body>
+</html>
