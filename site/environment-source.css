@@ -86,6 +86,6 @@
 }
 .fxdeck-env-source-marker.is-active b{color:#d4ffe2;border:1px solid rgba(177,241,199,.18)}
 
-/* Environment source markers are diagnostic overlays, not authored VFX. */
+/* Source markers and the generic impact reticle are Lab diagnostics, not Environment VFX. */
 body[data-hud-mode="off"] .fxdeck-env-source-marker{display:none!important}
-body.is-environment-effect .impact-target{display:none!important}
+body:has(#effect-select option[value="environmentEmitter"]:checked) .impact-target{display:none!important}
