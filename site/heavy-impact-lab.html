@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.4.0</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.5.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.4 moves beyond the Heavy Impact vertical slice. Explosion is the second real gameplay effect and deliberately reuses the production shared-scheduled burst path, EffectInstance lifecycle, runtime parameters and the first small helpers proven by two effects.</p>
+      <p class="intro">P3.5 adds queue-aware production quality. Gameplay-critical burst layers keep priority while lower-value smoke/debris can shed particles under scheduler backlog. Synthetic backend stress remains matched by explicitly disabling quality shedding.</p>
     </header>
 
     <section class="workbench">
@@ -40,8 +40,8 @@
         <div class="control">
           <p class="label">Effect</p>
           <select id="effect-select">
-            <option value="explosion" selected>Explosion — second-effect proof</option>
-            <option value="heavyImpact">Heavy Impact — vertical slice</option>
+            <option value="explosion" selected>Explosion — queue-aware quality probe</option>
+            <option value="heavyImpact">Heavy Impact — production one-shot</option>
           </select>
         </div>
         <div class="control">
@@ -60,7 +60,7 @@
             <option value="emitter">Per-play emitter — reference</option>
             <option value="shared">Shared direct — synchronous reference</option>
           </select>
-          <p class="control-note">Semantic one-shot bursts default to shared-scheduled. Emitter and shared-direct remain explicit reference/debug paths.</p>
+          <p class="control-note">Production scheduled bursts now carry semantic priority and queue backpressure. Hero layers are protected; low-value layers shed first when backlog rises.</p>
         </div>
 
         <div class="control">
@@ -70,6 +70,7 @@
             <option value="800" selected>800 particles / 24 emission points</option>
             <option value="1200">1200 particles / 32 emission points</option>
           </select>
+          <p class="control-note">Synthetic Stress Compare explicitly disables backpressure so all paths still receive the same requested workload.</p>
         </div>
 
         <div class="control">
@@ -89,7 +90,7 @@
         <div class="control">
           <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
           <input id="direction" type="range" min="0" max="359" value="18" step="1">
-          <p class="control-note">Direction is available to every effect. Heavy Impact uses it tightly; Explosion uses it as a broad directional blast bias.</p>
+          <p class="control-note">Heavy Impact uses direction tightly. Explosion uses it as a broad blast bias.</p>
         </div>
 
         <div class="actions">
@@ -102,8 +103,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P3.4 focus</p>
-          <p>The cancellation gate passed. The architectural question now is whether a second effect can be authored mostly from the capabilities already extracted. Explosion intentionally adds a different composition—core sprite, fireball, sparks, debris and smoke—without adding a new runtime subsystem.</p>
+          <p class="label">P3.5 focus</p>
+          <p>Explosion proved the second-effect architecture but its scheduled ×6 test accumulated roughly 176–224 queued particles and ~870 peak particles. P3.5 protects core/fireball, prioritizes sparks, then progressively reduces debris and smoke as backlog rises. The goal is lower queue/particle pressure without visibly weakening the hero read.</p>
         </div>
       </aside>
 
@@ -129,7 +130,7 @@
           </div>
           <div class="caption">
             <strong id="caption-title">explosion / v1 / default</strong>
-            <span id="caption-note">second real effect / shared-scheduled production default</span>
+            <span id="caption-note">queue-aware quality / shared-scheduled production default</span>
           </div>
         </div>
       </section>
@@ -140,7 +141,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p id="effect-summary" class="summary">Explosion reuses the same runtime and burst scheduler as Heavy Impact while composing a different cue.</p>
+        <p id="effect-summary" class="summary">Explosion uses semantic layer priorities so low-value particles can be reduced under runtime queue pressure without cutting the hero core/fireball.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -167,10 +168,16 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.4.0</dd></div>
+            <div><dt>Build</dt><dd>P3.5.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
+            <div><dt>p95 frame</dt><dd id="metric-p95">--</dd></div>
+            <div><dt>p99 frame</dt><dd id="metric-p99">--</dd></div>
+            <div><dt>Worst frame</dt><dd id="metric-worst">--</dd></div>
+            <div><dt>Frame-time debt</dt><dd id="metric-debt">0.0 ms</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
+            <div><dt>Queue pressure</dt><dd id="metric-queue-pressure">none / peak none</dd></div>
+            <div><dt>Quality shed/requested</dt><dd id="metric-quality-shed">0 / 0</dd></div>
             <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
             <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
             <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -196,14 +203,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.4.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.5.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.4.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.4.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.5.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.5.0"></script>
 </body>
 </html>
