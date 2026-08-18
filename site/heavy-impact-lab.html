@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
   <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.6.1">
   <link rel="stylesheet" href="./fireball-projectile.css?v=p3.6.4">
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.6.4">
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.7.3">
 </head>
 <body data-workspace-mode="play">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -26,10 +26,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.7.2</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.7.3</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.7.2 makes Effect Grid self-contained: choose the real effect, intensity, base direction and particle spawn topology directly in Debug. Shared scheduled/direct Emission Points and per-play emitter paths can now be compared on the same grid.</p>
+      <p class="intro">P3.7.3 gives Effect Grid an effect-aware safe world around the cell layout so radial travel and impacts remain renderable instead of hitting logical canvas edges. The runtime HUD is also lighter and more transparent.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -191,7 +191,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.7.2</span>
+              <span class="runtime-hud__build">P3.7.3</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -272,7 +272,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.7.2.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.7.3.</pre>
           </section>
 
           <section class="debug-section">
@@ -294,7 +294,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.7.2"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.7.3"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
