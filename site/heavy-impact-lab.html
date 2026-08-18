@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.2.1</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.3.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.2.1 adds heterogeneous Emission Point stress so the integrated shared scheduler is measured not only with identical particles, but also with per-point intensity, color, direction, speed, size and opacity variation at the same total particle count.</p>
+      <p class="intro">P3.3 promotes frame-budgeted shared-scheduled emission to the production default for semantic one-shot bursts after matched uniform, heterogeneous and real Heavy Impact tests. This build adds the cancellation gate required before moving to the second production effect.</p>
     </header>
 
     <section class="workbench">
@@ -53,11 +53,11 @@
         <div class="control">
           <p class="label">Particle burst path</p>
           <select id="particle-path">
-            <option value="emitter">Per-play emitter — baseline</option>
+            <option value="scheduled" selected>Shared scheduled — production default</option>
+            <option value="emitter">Per-play emitter — reference</option>
             <option value="shared">Shared direct — synchronous reference</option>
-            <option value="scheduled">Shared scheduled — P3.2 candidate</option>
           </select>
-          <p class="control-note">Heavy Impact can be played manually through all three adapter strategies. Shared scheduled uses one global frame-budgeted queue.</p>
+          <p class="control-note">Semantic one-shot bursts now default to shared-scheduled. Emitter and shared-direct remain explicit reference/debug paths; explicit sustained/moving emitter work can still use the emitter API directly.</p>
         </div>
 
         <div class="control">
@@ -77,7 +77,7 @@
             <option value="uniform">Uniform — same parameters at every point</option>
             <option value="heterogeneous">Heterogeneous — per-point runtime variation</option>
           </select>
-          <p class="control-note">Heterogeneous keeps the total count fixed while each point gets normalized intensity weights (0.55–1.45) plus different color, direction, speed, size and opacity. Shape/lifetime stay fixed so common runtime variation is isolated without changing renderer type. “Both” runs the uniform baseline first, then the heterogeneous profile and reports the scheduler delta.</p>
+          <p class="control-note">Heterogeneous keeps the total count fixed while each point gets normalized intensity weights plus different color, direction, speed, size and opacity.</p>
         </div>
 
         <div class="control">
@@ -93,6 +93,7 @@
 
         <div class="actions">
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
+          <button id="run-cancel-gate" class="primary" type="button">Cancel / Stop Gate</button>
           <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
           <button id="play-ab" class="secondary" type="button">Heavy Impact A/B</button>
           <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
@@ -100,8 +101,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P3.2.1 focus</p>
-          <p>The scheduler already preserves unique particle options per burst. The default “Both” profile now measures the same 800-particle/24-point workload twice—uniform and heterogeneous—so we can see whether per-point variation itself changes population hitch, steady-state cost or scheduler viability.</p>
+          <p class="label">P3.3 focus</p>
+          <p>Shared-scheduled has passed matched uniform/heterogeneous stress and the real Heavy Impact A/B. The remaining runtime gate verifies that stopping one EffectInstance cancels only its owned queued work and that stopAll leaves no delayed scheduler/debris respawn. After this passes, the next architectural proof is a second real effect instead of more Heavy Impact tuning.</p>
         </div>
       </aside>
 
@@ -127,7 +128,7 @@
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
-            <span>real cue A/B + uniform/heterogeneous integrated backend stress</span>
+            <span>production shared-scheduled default + ownership/cancellation gate + retained reference benchmarks</span>
           </div>
         </div>
       </section>
@@ -138,7 +139,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged. Shared bursts keep independent authored/runtime particle options; the scheduled path only controls when their particles are populated, not whether emission points may differ from one another.</p>
+        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged. One-shot particle bursts now resolve through the frame-budgeted shared scheduler by default; backend topology remains hidden behind ParticleAdapter.burst().</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -170,7 +171,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.2.1</dd></div>
+            <div><dt>Build</dt><dd>P3.3.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -192,21 +193,21 @@
 
       <article class="diagnostic-card log-card">
         <div class="log-heading">
-          <p class="label">Runtime / A-B log</p>
+          <p class="label">Runtime / validation log</p>
           <div class="log-tools">
             <span id="p2-log-status" class="log-status" aria-live="polite"></span>
             <button id="copy-p2-log" type="button">Copy log</button>
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.2.1.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.3.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.2.1"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.2.1"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.3.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.3.0"></script>
 </body>
 </html>
