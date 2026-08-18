@@ -47,8 +47,12 @@ export class DomSpriteAdapter {
   move(id, cssPosition) {
     const handle = this.handles.get(id);
     if (!handle?.element || !Number.isFinite(cssPosition?.x) || !Number.isFinite(cssPosition?.y)) return false;
-    handle.element.style.left = `${cssPosition.x}px`;
-    handle.element.style.top = `${cssPosition.y}px`;
+
+    // Moving gameplay visuals must stay on the compositor path. Updating left/top every
+    // frame forces layout/paint on mobile; CSS classes consume these variables inside
+    // translate3d() instead.
+    handle.element.style.setProperty('--fxdeck-visual-x', `${cssPosition.x}px`);
+    handle.element.style.setProperty('--fxdeck-visual-y', `${cssPosition.y}px`);
     return true;
   }
 
