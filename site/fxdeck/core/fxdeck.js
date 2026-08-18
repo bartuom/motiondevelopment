@@ -1,5 +1,35 @@
 import { EffectInstance } from './effect-instance.js';
 
+const DIRECTION_EPSILON = 1e-8;
+
+function wrapDegrees(value) {
+  return ((value % 360) + 360) % 360;
+}
+
+export function normalizeDirection(input = 0) {
+  if (Number.isFinite(input)) {
+    const degrees = wrapDegrees(input);
+    const radians = degrees * Math.PI / 180;
+    return {
+      vector: { x: Math.cos(radians), y: Math.sin(radians) },
+      degrees
+    };
+  }
+
+  if (input && Number.isFinite(input.x) && Number.isFinite(input.y)) {
+    const length = Math.hypot(input.x, input.y);
+    if (length <= DIRECTION_EPSILON) {
+      throw new TypeError('FXDeck.play() direction vector must have non-zero length.');
+    }
+
+    const vector = { x: input.x / length, y: input.y / length };
+    const degrees = wrapDegrees(Math.atan2(vector.y, vector.x) * 180 / Math.PI);
+    return { vector, degrees };
+  }
+
+  throw new TypeError('FXDeck.play() direction must be degrees or a non-zero { x, y } vector.');
+}
+
 export class FXDeckRuntime {
   constructor({ adapters = {} } = {}) {
     this.adapters = adapters;
@@ -110,10 +140,13 @@ export class FXDeckRuntime {
       throw new TypeError('FXDeck.play() requires position { x, y } in CSS/gameplay pixels.');
     }
 
+    const normalizedDirection = normalizeDirection(params.direction ?? 0);
+
     return {
       ...params,
       position: { x: position.x, y: position.y },
-      direction: Number.isFinite(params.direction) ? params.direction : 0,
+      direction: normalizedDirection.vector,
+      directionDegrees: normalizedDirection.degrees,
       intensity: Number.isFinite(params.intensity) ? Math.max(0, params.intensity) : 1
     };
   }
