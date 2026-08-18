@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.7.1';
+const BUILD = 'P3.7.2';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,14 +68,15 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.7.1 makes real-effect scaling the primary Debug workflow. Backend isolation is now an Advanced tier, grid changes cleanly respawn the selected batch, and Loop defaults to replace rather than accidental accumulation.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.0)/g, BUILD);
+  if (intro) intro.textContent = 'P3.7.2 makes Effect Grid self-contained: choose the real effect, intensity, base direction and particle spawn topology directly in Debug. Shared scheduled/direct Emission Points and per-play emitter paths can now be compared on the same grid.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[01])/g, BUILD);
 }
 
 async function loadEffectGridLab() {
   try {
     await import('./effect-grid-lab.js?v=p3.7.1');
     await import('./effect-grid-canvas-projection.js?v=p3.7.1');
+    await import('./effect-grid-runtime-controls.js?v=p3.7.2');
   } catch (error) {
     appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
     console.error(error);
