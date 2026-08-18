@@ -1,6 +1,13 @@
 .runtime-hud{
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
-  background:rgba(8,11,13,.93)!important;
-  box-shadow:0 8px 22px rgba(0,0,0,.18)!important;
+  background:rgba(8,11,13,.68)!important;
+  border-color:rgba(255,255,255,.10)!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
+}
+.runtime-hud__header{
+  background:transparent!important;
+}
+.hud-stat{
+  background:rgba(8,11,13,.22)!important;
 }
