@@ -3,60 +3,75 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="WebFX lab for testing a reusable browser VFX runtime on top of tsParticles.">
-  <title>WebFX Lab</title>
+  <meta name="description" content="FXDeck technology spike for validating tsParticles as a gameplay VFX backend.">
+  <title>FXDeck Technology Spike</title>
   <link rel="stylesheet" href="./webfx-lab.css">
 </head>
 <body>
   <main class="lab-shell">
     <header class="lab-header">
       <div>
-        <p class="eyebrow">Motion Development / Experimental</p>
-        <h1>WebFX Lab</h1>
-        <p class="intro">First runtime spike: tsParticles 4.3.2 behind a tiny effect registry with explicit effect versions.</p>
+        <p class="eyebrow">FXDeck / P0 Technology Spike</p>
+        <h1>FXDeck Lab</h1>
+        <p class="intro">Backend validation before framework work: exact spawn, moving emitter, burst stress, cleanup, resize, image particles and DOM/particle compositing.</p>
       </div>
-      <a class="back-link" href="./">Back to portfolio</a>
+      <a class="back-link" href="./">Legacy portfolio</a>
     </header>
 
     <section class="lab-panel">
       <aside class="lab-sidebar">
         <div class="control-group">
-          <span class="control-label">Effect</span>
-          <div class="segmented" id="effect-controls">
-            <button type="button" data-effect="burst" class="is-active">Burst</button>
-            <button type="button" data-effect="fountain">Fountain</button>
+          <span class="control-label">Spike test</span>
+          <div class="test-list" id="test-controls">
+            <button type="button" data-test="oneshot" class="is-active"><span>01</span>One-shot burst</button>
+            <button type="button" data-test="position"><span>02</span>Exact position</button>
+            <button type="button" data-test="moving"><span>03</span>Moving emitter</button>
+            <button type="button" data-test="stress"><span>04</span>30× stress</button>
+            <button type="button" data-test="image"><span>05</span>Image particles</button>
+            <button type="button" data-test="composite"><span>06</span>Composite FX</button>
           </div>
         </div>
 
-        <div class="control-group">
-          <span class="control-label">Version</span>
-          <div class="segmented" id="version-controls"></div>
-        </div>
-
         <dl class="meta-list">
-          <div><dt>Runtime</dt><dd>tsParticles 4.3.2</dd></div>
-          <div><dt>Bundle</dt><dd>Full / lab only</dd></div>
-          <div><dt>Target FPS</dt><dd>60</dd></div>
-          <div><dt>Dependencies</dt><dd>1</dd></div>
+          <div><dt>Backend</dt><dd>tsParticles 4.3.2</dd></div>
+          <div><dt>Bundle</dt><dd>Full / spike only</dd></div>
+          <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
+          <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
+          <div><dt>Tracked emitters</dt><dd id="metric-emitters">0</dd></div>
+          <div><dt>Last result</dt><dd id="metric-result">idle</dd></div>
         </dl>
 
-        <button class="play-button" id="play-effect" type="button">Play effect</button>
+        <div class="action-row">
+          <button class="play-button" id="run-test" type="button">Run selected test</button>
+          <button class="stop-button" id="stop-all" type="button">Stop / cleanup</button>
+        </div>
       </aside>
 
-      <div class="stage" id="webfx-stage">
+      <div class="stage" id="fxdeck-stage">
         <div class="stage-grid" aria-hidden="true"></div>
-        <div id="webfx-particles" class="particles-layer" aria-hidden="true"></div>
-        <div class="origin-marker" aria-hidden="true"><span></span></div>
+        <div id="fxdeck-particles" class="particles-layer" aria-hidden="true"></div>
+        <div id="dom-fx-layer" class="dom-fx-layer" aria-hidden="true">
+          <div class="contact-flash"></div>
+          <div class="pressure-wave"></div>
+        </div>
+        <div class="spawn-marker" id="spawn-marker" aria-hidden="true"><span></span></div>
+        <div class="moving-target" id="moving-target" aria-hidden="true"></div>
         <div class="stage-caption">
-          <strong id="active-name">Burst</strong>
-          <span id="active-description">One-shot directional gameplay burst.</span>
+          <strong id="active-name">01 / One-shot burst</strong>
+          <span id="active-description">Validates runtime emitter creation and cleanup.</span>
         </div>
       </div>
     </section>
 
-    <section class="notes">
-      <h2>What this proves</h2>
-      <p>The portfolio stays untouched. This page tests a future WebFX API where effects are registered by id and version, while tsParticles handles particle simulation and rendering.</p>
+    <section class="results-panel">
+      <div>
+        <p class="control-label">P0 gate</p>
+        <h2>What must work before FXDeck Core</h2>
+      </div>
+      <div class="gate-grid">
+        <span>Exact gameplay position</span><span>Moving source</span><span>Repeated one-shots</span><span>Emitter cleanup</span><span>Resize</span><span>Image particles</span><span>DOM layering</span><span>60 FPS target</span>
+      </div>
+      <pre id="spike-log" class="spike-log">FXDeck spike ready.</pre>
     </section>
   </main>
 
