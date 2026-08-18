@@ -1,4 +1,4 @@
-const BUILD = 'P3.7.0';
+const BUILD = 'P3.7.1';
 
 const stage = document.querySelector('#impact-stage');
 const logOutput = document.querySelector('#p2-log');
@@ -60,9 +60,6 @@ waitForGrid()
     setFixedCanvasBox();
     projectCanvasAcrossWorld();
 
-    // The canvas layout box stays viewport-sized. Only its compositor transform stretches
-    // it across the larger logical grid world, so tsParticles' ResizeObserver cannot
-    // allocate a world-sized DPR backing store when the user zooms out.
     const worldObserver = new MutationObserver(scheduleProjection);
     worldObserver.observe(world, { attributes: true, attributeFilter: ['style'] });
 
