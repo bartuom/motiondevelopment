@@ -1,9 +1,11 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
-import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.4.0';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.4.0';
-import { registerExplosion } from '../fxdeck/effects/explosion.js?v=p3.4.0';
+import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.5.0';
+import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.5.0';
+import { registerExplosion } from '../fxdeck/effects/explosion.js?v=p3.5.0';
 
-const BUILD = 'P3.4.0';
+const BUILD = 'P3.5.0';
+const FRAME_BUDGET_MS = 1000 / 60;
+const PRESSURE_RANK = { none: 0, medium: 1, high: 2, critical: 3 };
 
 const stage = document.querySelector('#impact-stage');
 const kickLayer = document.querySelector('#impact-kick-layer');
@@ -33,14 +35,23 @@ const copyLogButton = document.querySelector('#copy-p2-log');
 const clearLogButton = document.querySelector('#clear-p2-log');
 const logStatus = document.querySelector('#p2-log-status');
 const apiPreview = document.querySelector('#api-preview');
-const activeMetric = document.querySelector('#metric-instances');
-const particleMetric = document.querySelector('#metric-particles');
-const emitterMetric = document.querySelector('#metric-emitters');
-const burstGroupMetric = document.querySelector('#metric-burst-groups');
-const scaleMetric = document.querySelector('#metric-scale');
-const fpsMetric = document.querySelector('#metric-fps');
-const lowMetric = document.querySelector('#metric-low');
-const spikeMetric = document.querySelector('#metric-spikes');
+
+const metrics = {
+  active: document.querySelector('#metric-instances'),
+  particles: document.querySelector('#metric-particles'),
+  emitters: document.querySelector('#metric-emitters'),
+  groups: document.querySelector('#metric-burst-groups'),
+  scale: document.querySelector('#metric-scale'),
+  fps: document.querySelector('#metric-fps'),
+  low: document.querySelector('#metric-low'),
+  spikes: document.querySelector('#metric-spikes'),
+  p95: document.querySelector('#metric-p95'),
+  p99: document.querySelector('#metric-p99'),
+  worst: document.querySelector('#metric-worst'),
+  debt: document.querySelector('#metric-debt'),
+  pressure: document.querySelector('#metric-queue-pressure'),
+  shed: document.querySelector('#metric-quality-shed')
+};
 
 const inspector = {
   effect: document.querySelector('#resolved-effect'),
@@ -95,22 +106,39 @@ function pathLabel(path) {
 }
 
 function formatVector(vector) {
-  const fmt = (v) => (Math.abs(v) < .0005 ? '0.000' : v.toFixed(3));
+  const fmt = (value) => (Math.abs(value) < .0005 ? '0.000' : value.toFixed(3));
   return `{ x: ${fmt(vector.x)}, y: ${fmt(vector.y)} }`;
+}
+
+function percentile(sorted, q) {
+  if (!sorted.length) return 0;
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * q) - 1));
+  return sorted[index];
 }
 
 function summarizeFrames(samples) {
   const valid = samples.filter((dt) => Number.isFinite(dt) && dt > 0 && dt < 250);
-  if (!valid.length) return { avgFps: 0, low1: 0, spikes20: 0 };
+  if (!valid.length) {
+    return { avgFps: 0, low1: 0, spikes20: 0, p95Ms: 0, p99Ms: 0, worstMs: 0, debtMs: 0 };
+  }
+
   const avgMs = valid.reduce((sum, dt) => sum + dt, 0) / valid.length;
   const sorted = [...valid].sort((a, b) => a - b);
-  const p99Index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * .99) - 1));
-  const p99Ms = sorted[p99Index];
+  const p95Ms = percentile(sorted, .95);
+  const p99Ms = percentile(sorted, .99);
   return {
     avgFps: 1000 / avgMs,
     low1: 1000 / p99Ms,
-    spikes20: valid.filter((dt) => dt > 20).length
+    spikes20: valid.filter((dt) => dt > 20).length,
+    p95Ms,
+    p99Ms,
+    worstMs: sorted[sorted.length - 1],
+    debtMs: valid.reduce((sum, dt) => sum + Math.max(0, dt - FRAME_BUDGET_MS), 0)
   };
+}
+
+function strongerPressure(a = 'none', b = 'none') {
+  return (PRESSURE_RANK[b] ?? 0) > (PRESSURE_RANK[a] ?? 0) ? b : a;
 }
 
 function resourceState(stats) {
@@ -205,6 +233,7 @@ function startPerfCapture(label, durationMs = 1500, onComplete = null) {
     peakEmitters: 0,
     peakBurstGroups: 0,
     peakQueuedParticles: 0,
+    peakPressure: 'none',
     onComplete
   };
   log(`PERF ${label}: capture started (${durationMs} ms, ${pathLabel(state.perfCapture.path)})`);
@@ -222,9 +251,13 @@ function recordFrame(now, stats) {
   state.lastFrameAt = now;
 
   const rolling = summarizeFrames(state.frameTimes);
-  fpsMetric.textContent = rolling.avgFps ? rolling.avgFps.toFixed(1) : '--';
-  lowMetric.textContent = rolling.low1 ? rolling.low1.toFixed(1) : '--';
-  spikeMetric.textContent = String(rolling.spikes20);
+  metrics.fps.textContent = rolling.avgFps ? rolling.avgFps.toFixed(1) : '--';
+  metrics.low.textContent = rolling.low1 ? rolling.low1.toFixed(1) : '--';
+  metrics.spikes.textContent = String(rolling.spikes20);
+  if (metrics.p95) metrics.p95.textContent = rolling.p95Ms ? `${rolling.p95Ms.toFixed(1)} ms` : '--';
+  if (metrics.p99) metrics.p99.textContent = rolling.p99Ms ? `${rolling.p99Ms.toFixed(1)} ms` : '--';
+  if (metrics.worst) metrics.worst.textContent = rolling.worstMs ? `${rolling.worstMs.toFixed(1)} ms` : '--';
+  if (metrics.debt) metrics.debt.textContent = `${rolling.debtMs.toFixed(1)} ms`;
 
   const capture = state.perfCapture;
   if (!capture) return;
@@ -233,31 +266,38 @@ function recordFrame(now, stats) {
   capture.peakEmitters = Math.max(capture.peakEmitters, stats.particles?.emitters ?? 0);
   capture.peakBurstGroups = Math.max(capture.peakBurstGroups, stats.particles?.burstGroups ?? 0);
   capture.peakQueuedParticles = Math.max(capture.peakQueuedParticles, stats.particles?.queuedParticles ?? 0);
+  capture.peakPressure = strongerPressure(capture.peakPressure, stats.particles?.qualityPeakPressure ?? stats.particles?.queuePressure ?? 'none');
 
   if (now - capture.startedAt < capture.durationMs) return;
 
   const frameResult = summarizeFrames(capture.samples);
   const finalStats = state.fx?.getStats?.() ?? stats;
+  const particleStats = finalStats.particles ?? {};
   const result = {
     label: capture.label,
     path: capture.path,
-    avgFps: frameResult.avgFps,
-    low1: frameResult.low1,
-    spikes20: frameResult.spikes20,
+    ...frameResult,
     peakInstances: capture.peakInstances,
     peakEmitters: capture.peakEmitters,
     peakBurstGroups: capture.peakBurstGroups,
     peakQueuedParticles: capture.peakQueuedParticles,
+    peakPressure: strongerPressure(capture.peakPressure, particleStats.qualityPeakPressure ?? 'none'),
     peakParticles: capture.peakParticles,
+    qualityRequested: particleStats.qualityRequestedParticles ?? 0,
+    qualityAdmitted: particleStats.qualityAdmittedParticles ?? 0,
+    qualityShed: particleStats.qualityShedParticles ?? 0,
     finalInstances: finalStats.activeInstances ?? 0,
-    finalEmitters: finalStats.particles?.emitters ?? 0,
-    finalBurstGroups: finalStats.particles?.burstGroups ?? 0,
-    finalQueuedParticles: finalStats.particles?.queuedParticles ?? 0,
-    finalParticles: finalStats.particles?.particles ?? 0
+    finalEmitters: particleStats.emitters ?? 0,
+    finalBurstGroups: particleStats.burstGroups ?? 0,
+    finalQueuedParticles: particleStats.queuedParticles ?? 0,
+    finalParticles: particleStats.particles ?? 0
   };
 
   const finalResources = `${result.finalInstances}/${result.finalEmitters}/${result.finalParticles}`;
-  log(`PERF ${capture.label}: avg ${result.avgFps.toFixed(1)} FPS / 1% low ${result.low1.toFixed(1)} / >20ms ${result.spikes20} / peaks ${result.peakInstances} instances, ${result.peakEmitters} emitters, ${result.peakBurstGroups} shared groups, ${result.peakParticles} particles, ${result.peakQueuedParticles} queued / final ${finalResources}, groups ${result.finalBurstGroups}, queued ${result.finalQueuedParticles}`);
+  const qualityText = result.path === 'scheduled'
+    ? ` / quality ${result.qualityAdmitted}/${result.qualityRequested} admitted, ${result.qualityShed} shed, pressure ${result.peakPressure}`
+    : '';
+  log(`PERF ${capture.label}: avg ${result.avgFps.toFixed(1)} FPS / 1% low ${result.low1.toFixed(1)} / p95 ${result.p95Ms.toFixed(1)}ms / p99 ${result.p99Ms.toFixed(1)}ms / worst ${result.worstMs.toFixed(1)}ms / debt ${result.debtMs.toFixed(1)}ms / >20ms ${result.spikes20} / peaks ${result.peakInstances} instances, ${result.peakEmitters} emitters, ${result.peakBurstGroups} groups, ${result.peakParticles} particles, ${result.peakQueuedParticles} queued${qualityText} / final ${finalResources}, groups ${result.finalBurstGroups}, queued ${result.finalQueuedParticles}`);
 
   const onComplete = capture.onComplete;
   state.perfCapture = null;
@@ -425,8 +465,8 @@ function timelineEntries(effectId, spec) {
   if (effectId === 'heavyImpact') {
     return [
       [spec.timings.contactFlash, 'Contact flash'],
-      [spec.timings.sparks, 'Aligned hero sparks'],
-      [spec.timings.debris, 'Directional debris'],
+      [spec.timings.sparks, 'Hero sparks'],
+      [spec.timings.debris, 'Medium-priority debris'],
       [spec.timings.pressureWave, 'Directional pressure wave'],
       [spec.timings.targetKick, 'Target kick hook'],
       [spec.timings.screenKick, 'Screen kick hook'],
@@ -436,11 +476,11 @@ function timelineEntries(effectId, spec) {
 
   return [
     [spec.timings.flash, 'Explosion flash hook'],
-    [spec.timings.core, 'Core sprite + fireball'],
-    [spec.timings.sparks, 'Broad directional sparks'],
-    [spec.timings.debris, 'Blast debris'],
+    [spec.timings.core, 'Hero core sprite + fireball'],
+    [spec.timings.sparks, 'High-priority sparks'],
+    [spec.timings.debris, 'Medium-priority debris'],
     [spec.timings.screenKick, 'Screen kick hook'],
-    [spec.timings.smoke, 'Smoke tail'],
+    [spec.timings.smoke, 'Low-priority smoke'],
     [spec.duration, 'Lifecycle cleanup']
   ];
 }
@@ -459,8 +499,8 @@ function resolvedPreview() {
       intensity,
       direction,
       layers: [
-        ['Sparks', `${Math.max(1, Math.round(spec.sparks.baseCount * intensity))} particles`],
-        ['Debris', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
+        ['Sparks / hero', `${Math.max(1, Math.round(spec.sparks.baseCount * intensity))} particles`],
+        ['Debris / medium', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
         ['Pressure wave', `${spec.timings.pressureWave} ms hook`],
         ['Contact flash', `${spec.timings.contactFlash} ms hook`],
         ['Target kick', `${(8.5 * intensity).toFixed(1)} px`]
@@ -475,11 +515,11 @@ function resolvedPreview() {
     intensity,
     direction,
     layers: [
-      ['Core sprite', '1 image particle'],
-      ['Fireball', `${Math.max(1, Math.round(spec.fireball.baseCount * countScale))} particles`],
-      ['Sparks', `${Math.max(1, Math.round(spec.sparks.baseCount * countScale))} particles`],
-      ['Debris', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
-      ['Smoke', `${Math.max(1, Math.round(spec.smoke.baseCount * Math.max(.75, intensity)))} particles`]
+      ['Core / hero', '1 image particle'],
+      ['Fireball / hero', `${Math.max(1, Math.round(spec.fireball.baseCount * countScale))} particles`],
+      ['Sparks / high', `${Math.max(1, Math.round(spec.sparks.baseCount * countScale))} particles`],
+      ['Debris / medium', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
+      ['Smoke / low', `${Math.max(1, Math.round(spec.smoke.baseCount * Math.max(.75, intensity)))} particles`]
     ],
     screenKick: 6.2 * Math.min(1.6, intensity)
   };
@@ -497,8 +537,8 @@ function updateEffectUi() {
   previewNote.textContent = 'Click to move target + play selected effect';
   captionTitle.textContent = `${effectId} / v1 / default`;
   captionNote.textContent = effectId === 'explosion'
-    ? 'second real effect / shared-scheduled production default'
-    : 'vertical slice / shared-scheduled production default';
+    ? 'queue-aware quality / shared-scheduled production default'
+    : 'priority-aware one-shot / shared-scheduled production default';
   effectSummary.textContent = state.definition.summary;
   effectTimeline.replaceChildren(...timelineEntries(effectId, spec).map(([ms, text]) => {
     const row = document.createElement('div');
@@ -601,15 +641,20 @@ function runABBenchmark() {
   const effectId = selectedEffectId();
   state.benchmark.restorePath = originalPath;
   setBenchmarkBusy(true);
-  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; per-play-emitter first, shared-scheduled second`);
+  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; emitter reference first, production shared-scheduled + queue-aware quality second`);
 
   runOverlapLeg('emitter', `${effectId} A/B emitter`, (emitterResult) => {
     scheduleBenchmarkTask(() => {
       runOverlapLeg('scheduled', `${effectId} A/B shared-scheduled`, (scheduledResult) => {
         const avgDelta = scheduledResult.avgFps - emitterResult.avgFps;
         const lowDelta = scheduledResult.low1 - emitterResult.low1;
+        const worstDelta = scheduledResult.worstMs - emitterResult.worstMs;
+        const debtDelta = scheduledResult.debtMs - emitterResult.debtMs;
         const particleDelta = scheduledResult.peakParticles - emitterResult.peakParticles;
-        log(`EFFECT A/B RESULT ${effectId}: emitter ${emitterResult.avgFps.toFixed(1)} avg / ${emitterResult.low1.toFixed(1)} low / ${emitterResult.spikes20} spikes / ${emitterResult.peakEmitters} emitters / ${emitterResult.peakParticles} particles | scheduled ${scheduledResult.avgFps.toFixed(1)} avg / ${scheduledResult.low1.toFixed(1)} low / ${scheduledResult.spikes20} spikes / ${scheduledResult.peakBurstGroups} groups / ${scheduledResult.peakParticles} particles / peak queued ${scheduledResult.peakQueuedParticles} | Δ scheduled-emitter ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg FPS, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${particleDelta >= 0 ? '+' : ''}${particleDelta} peak particles`);
+        const retained = scheduledResult.qualityRequested > 0
+          ? scheduledResult.qualityAdmitted / scheduledResult.qualityRequested * 100
+          : 100;
+        log(`EFFECT A/B RESULT ${effectId}: emitter ${emitterResult.avgFps.toFixed(1)} avg / ${emitterResult.low1.toFixed(1)} low / p95 ${emitterResult.p95Ms.toFixed(1)} / p99 ${emitterResult.p99Ms.toFixed(1)} / worst ${emitterResult.worstMs.toFixed(1)}ms / debt ${emitterResult.debtMs.toFixed(1)}ms / ${emitterResult.spikes20} spikes / ${emitterResult.peakEmitters} emitters / ${emitterResult.peakParticles} particles | scheduled ${scheduledResult.avgFps.toFixed(1)} avg / ${scheduledResult.low1.toFixed(1)} low / p95 ${scheduledResult.p95Ms.toFixed(1)} / p99 ${scheduledResult.p99Ms.toFixed(1)} / worst ${scheduledResult.worstMs.toFixed(1)}ms / debt ${scheduledResult.debtMs.toFixed(1)}ms / ${scheduledResult.spikes20} spikes / ${scheduledResult.peakBurstGroups} groups / ${scheduledResult.peakParticles} particles / peak queued ${scheduledResult.peakQueuedParticles} / quality ${scheduledResult.qualityAdmitted}/${scheduledResult.qualityRequested} admitted (${retained.toFixed(0)}%), ${scheduledResult.qualityShed} shed, pressure ${scheduledResult.peakPressure} | Δ scheduled-emitter ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg FPS, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${worstDelta >= 0 ? '+' : ''}${worstDelta.toFixed(1)}ms worst, ${debtDelta >= 0 ? '+' : ''}${debtDelta.toFixed(1)}ms debt, ${particleDelta >= 0 ? '+' : ''}${particleDelta} peak particles`);
         finishBenchmark();
       }, effectId);
     }, 320);
@@ -661,8 +706,8 @@ async function runCancellationGate() {
     await wait(140);
     await nextFrame();
     assertResourcesClean(state.fx.getStats(), 'stopAll late-respawn check');
-    log('PASS CANCEL GATE phase 2: FXDeck.stopAll() cleared instances/groups/particles/queue and delayed Heavy Impact work did not respawn');
-    log(`${BUILD} CANCEL GATE: PASS — per-instance ownership, queued-work cancellation and stopAll late-respawn protection are clean`);
+    log('PASS CANCEL GATE phase 2: FXDeck.stopAll() cleared instances/groups/particles/queue and delayed work did not respawn');
+    log(`${BUILD} CANCEL GATE: PASS — ownership and cancellation remain clean with priority-aware scheduler`);
   } catch (error) {
     state.fx.stopAll('cancel-gate-failed');
     screenKickController.reset();
@@ -706,7 +751,10 @@ async function bootstrap() {
     burstMode: particlePathInput.value,
     sharedFrameBudgetMs: 6,
     sharedChunkSize: 8,
-    sharedImmediateCount: 8
+    sharedImmediateCount: 8,
+    backpressureMedium: 96,
+    backpressureHigh: 160,
+    backpressureCritical: 240
   }).init();
 
   const fx = new FXDeckRuntime({ adapters: { particles: particleAdapter } });
@@ -783,12 +831,15 @@ async function bootstrap() {
 
   function metricsLoop(now) {
     const stats = fx.getStats();
-    activeMetric.textContent = String(stats.activeInstances);
-    particleMetric.textContent = String(stats.particles?.particles ?? 0);
-    emitterMetric.textContent = String(stats.particles?.emitters ?? 0);
-    burstGroupMetric.textContent = String(stats.particles?.burstGroups ?? 0);
-    const scale = stats.particles?.scale ?? { x: 1, y: 1 };
-    scaleMetric.textContent = `${scale.x.toFixed(2)}×${scale.y.toFixed(2)}`;
+    const particleStats = stats.particles ?? {};
+    metrics.active.textContent = String(stats.activeInstances);
+    metrics.particles.textContent = String(particleStats.particles ?? 0);
+    metrics.emitters.textContent = String(particleStats.emitters ?? 0);
+    metrics.groups.textContent = String(particleStats.burstGroups ?? 0);
+    const scale = particleStats.scale ?? { x: 1, y: 1 };
+    metrics.scale.textContent = `${scale.x.toFixed(2)}×${scale.y.toFixed(2)}`;
+    if (metrics.pressure) metrics.pressure.textContent = `${particleStats.queuePressure ?? 'none'} / peak ${particleStats.qualityPeakPressure ?? 'none'}`;
+    if (metrics.shed) metrics.shed.textContent = `${particleStats.qualityShedParticles ?? 0} / ${particleStats.qualityRequestedParticles ?? 0}`;
     recordFrame(now, stats);
     requestAnimationFrame(metricsLoop);
   }
@@ -800,10 +851,12 @@ async function bootstrap() {
   requestAnimationFrame(metricsLoop);
 
   const schedulerStats = particleAdapter.getStats();
+  const thresholds = schedulerStats.backpressureThresholds;
   log(`PASS ${BUILD} bootstrap: Heavy Impact + Explosion registered through the same FXDeck runtime`);
-  log(`${BUILD} production one-shot default: shared-scheduled (${schedulerStats.schedulerBudgetMs}ms CPU budget/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate seed ${schedulerStats.schedulerImmediateCount})`);
-  log('P3.3 cancellation gate was accepted; P3.4 focus is second-effect reuse and custom-code pressure');
-  log('Explosion layers: core sprite + fireball + sparks + debris + smoke + screen kick; no new runtime subsystem added');
+  log(`${BUILD} queue-aware scheduler: ${schedulerStats.schedulerBudgetMs}ms/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate ${schedulerStats.schedulerImmediateCount}, backpressure ${thresholds.medium}/${thresholds.high}/${thresholds.critical} queued particles`);
+  log('Production burst priorities: hero > high > medium > low; hero is never shed, low-value layers shed first under backlog');
+  log('Synthetic Stress keeps backpressure disabled so backend workload remains matched; real Effect A/B exercises production quality policy');
+  log('Frame telemetry now reports p95/p99/worst frame and frame-time debt in addition to FPS/1% low/>20ms count');
 }
 
 bootstrap().catch((error) => {
