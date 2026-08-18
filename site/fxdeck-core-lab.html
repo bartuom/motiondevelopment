@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FXDeck P1 minimal core validation lab.">
+  <title>FXDeck Core Lab</title>
+  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.0.0">
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <p class="eyebrow">FXDeck / P1 Minimal Core</p>
+        <h1>FXDeck Core Lab</h1>
+        <p class="intro">The P0 backend is frozen. This page validates the first real FXDeck API: registry, version/variant resolution, effect instances, cleanup, coordinate conversion and the tsParticles adapter.</p>
+      </div>
+      <nav class="links">
+        <a href="./webfx-lab.html">P0 raw benchmark</a>
+        <a href="./">Legacy portfolio</a>
+      </nav>
+    </header>
+
+    <section class="panel">
+      <aside class="sidebar">
+        <div class="control">
+          <p class="label">Effect</p>
+          <select disabled><option>testBurst</option></select>
+        </div>
+
+        <div class="control">
+          <p class="label">Version</p>
+          <select id="version">
+            <option value="v1">v1</option>
+            <option value="v2" selected>v2</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <p class="label">Variant</p>
+          <select id="variant">
+            <option value="default" selected>default</option>
+            <option value="heavy">heavy</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <div class="range-row"><span>Intensity</span><strong id="intensity-value">1.0</strong></div>
+          <input id="intensity" type="range" min="0.5" max="2" value="1" step="0.1">
+        </div>
+
+        <div class="control">
+          <div class="range-row"><span>Direction</span><strong id="direction-value">0°</strong></div>
+          <input id="direction" type="range" min="0" max="359" value="0" step="1">
+        </div>
+
+        <div class="actions">
+          <button id="play-effect" class="primary" type="button">FXDeck.play()</button>
+          <button id="play-ten" class="secondary" type="button">Play ×10</button>
+          <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
+        </div>
+
+        <dl class="meta">
+          <div><dt>Build</dt><dd>P1.0.0</dd></div>
+          <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
+          <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
+          <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
+          <div><dt>Canvas scale</dt><dd id="metric-scale">--</dd></div>
+        </dl>
+      </aside>
+
+      <div id="fxdeck-stage" class="stage">
+        <div class="grid" aria-hidden="true"></div>
+        <div id="fxdeck-core-particles" class="particles" aria-hidden="true"></div>
+        <div id="spawn-marker" class="marker" aria-hidden="true"><span></span></div>
+        <div class="caption">
+          <strong>Click anywhere to play through FXDeck</strong>
+          <span>No direct addEmitter(), DPR conversion or manual emitter naming in the effect.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="lower">
+      <article class="card">
+        <p class="label">Public API being tested</p>
+        <h2>Current call</h2>
+        <pre id="api-preview" class="api"></pre>
+        <div class="gate">
+          <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>version</span><span>variant</span><span>EffectInstance</span><span>ParticleAdapter</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="label">P1 runtime log</p>
+        <h2>Lifecycle</h2>
+        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.0.0.</pre>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
+  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.0.0"></script>
+</body>
+</html>
