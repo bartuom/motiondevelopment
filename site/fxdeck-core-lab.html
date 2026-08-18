@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P1 minimal core validation lab.">
   <title>FXDeck Core Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=1">
-  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.1.0">
+  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.2.0">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -25,7 +25,7 @@
       <div>
         <p class="eyebrow">FXDeck / P1 Minimal Core</p>
         <h1>FXDeck Core Lab</h1>
-        <p class="intro">Version = an authored revision of an effect. Variant = an authored alternative inside that revision. Runtime parameters such as intensity, direction and position modify the selected definition only for a single play call.</p>
+        <p class="intro">Version = an authored revision of an effect. Variant = an authored alternative inside that revision. Position, intensity and true 360° direction are per-play runtime inputs normalized by FXDeck Core before the effect receives them.</p>
       </div>
     </header>
 
@@ -58,14 +58,9 @@
         </div>
 
         <div class="control">
-          <p class="label">Runtime direction</p>
-          <select id="direction">
-            <option value="0" selected>0° — Right</option>
-            <option value="90">90° — Down</option>
-            <option value="180">180° — Left</option>
-            <option value="270">270° — Up</option>
-          </select>
-          <p class="control-note">P1 only validates direction propagation with four buckets. True vector direction comes with the Heavy Impact slice.</p>
+          <div class="range-row"><span>Runtime direction</span><strong id="direction-value">25°</strong></div>
+          <input id="direction" type="range" min="0" max="359" value="25" step="1">
+          <p class="control-note">Full 360° input. FXDeck normalizes this to a unit vector; the effect uses that vector as the axis of its authored directional cone.</p>
         </div>
 
         <div class="actions">
@@ -75,7 +70,7 @@
         </div>
 
         <dl class="meta">
-          <div><dt>Build</dt><dd>P1.1.0</dd></div>
+          <div><dt>Build</dt><dd>P1.2.0</dd></div>
           <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
           <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
           <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -89,7 +84,7 @@
         <div id="spawn-marker" class="marker" aria-hidden="true"><span></span></div>
         <div class="caption">
           <strong>Click anywhere to play the selected EffectDefinition</strong>
-          <span>V1 uses primitive circles. V2 is a rebuilt SVG-spark revision. Heavy is an authored V2 variant.</span>
+          <span>Direction is now continuous: try 25°, 73°, 211° or any other angle.</span>
         </div>
       </div>
     </section>
@@ -113,6 +108,7 @@
             <div><dt>Base speed</dt><dd id="def-speed">--</dd></div>
             <div><dt>Particle size</dt><dd id="def-size">--</dd></div>
             <div><dt>Lifetime</dt><dd id="def-life">--</dd></div>
+            <div><dt>Direction spread</dt><dd id="def-spread">--</dd></div>
             <div><dt>Effect lifecycle</dt><dd id="def-stop">--</dd></div>
           </dl>
         </div>
@@ -130,7 +126,7 @@
         </div>
       </div>
 
-      <p class="definition-explainer"><strong>Version/variant select authored data.</strong> Intensity, direction and position are runtime inputs; they do not create a new version of the effect.</p>
+      <p class="definition-explainer"><strong>Version/variant select authored data.</strong> Intensity, direction and position are runtime inputs; direction is normalized to a unit vector and does not create a new authored version.</p>
     </section>
 
     <section class="lower">
@@ -139,20 +135,20 @@
         <h2>Current call</h2>
         <pre id="api-preview" class="api"></pre>
         <div class="gate">
-          <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>version</span><span>variant</span><span>EffectInstance</span><span>ParticleAdapter</span>
+          <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>version</span><span>variant</span><span>true direction</span><span>EffectInstance</span><span>ParticleAdapter</span>
         </div>
       </article>
 
       <article class="card">
         <p class="label">P1 runtime log</p>
         <h2>Lifecycle</h2>
-        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.1.0.</pre>
+        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.2.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.1.0"></script>
+  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.2.0"></script>
 </body>
 </html>
