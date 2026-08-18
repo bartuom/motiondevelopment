@@ -221,17 +221,18 @@ function createHooks() {
     },
 
     pressureWave({ position, direction, directionDegrees, intensity }) {
-      const offset = 6 * Math.min(1.5, intensity);
+      const offset = 11 * Math.min(1.4, intensity);
       const wave = createTransient('impact-wave', {
         x: position.x + direction.x * offset,
         y: position.y + direction.y * offset
       });
-      const endScale = 1 + Math.min(1.25, intensity) * .32;
+      const endScale = 1.08 + Math.min(1.25, intensity) * .4;
       return animateTransient(wave, [
-        { opacity: .5, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.22)` },
-        { opacity: .2, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${endScale * .72})`, offset: .56 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.18)` },
+        { opacity: .9, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.34)`, offset: .12 },
+        { opacity: .48, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${endScale * .72})`, offset: .46 },
         { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${endScale})` }
-      ], { duration: 220, easing: 'cubic-bezier(.1,.72,.16,1)', fill: 'forwards' });
+      ], { duration: 190, easing: 'cubic-bezier(.08,.74,.14,1)', fill: 'forwards' });
     },
 
     targetKick({ direction, distance }) {
@@ -413,7 +414,7 @@ async function bootstrap() {
   requestAnimationFrame(metricsLoop);
   log('PASS P2 bootstrap: heavyImpact/v1/default registered');
   log('P2.2.1 cache-bust: Heavy Impact effect module is loaded from a versioned URL');
-  log('P2.2 visual hierarchy: aligned hero sparks, lower density, smaller debris, shorter flash and directional pressure wave');
+  log('P2.3 pressure wave readability: larger directional arc, brighter leading edge, stronger short peak and larger forward offset');
   log('Overlap ×6 records avg FPS / 1% low / >20ms frames / peak resources / final cleanup state');
   log('Cue timing: flash 0ms / sparks 0ms / debris 14ms / wave 26ms / target 36ms / screen 48ms / cleanup 560ms');
 }
