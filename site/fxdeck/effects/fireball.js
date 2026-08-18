@@ -2,10 +2,11 @@ import { runHook, spawnTracked } from './effect-utils.js?v=p3.6.0';
 
 const FIREBALL_SPEC = {
   label: 'Fireball',
-  revision: 'P3.6 moving-source proof / v1',
-  summary: 'Moving projectile archetype: explicit moving head + trail emitters travel along runtime direction, then hand off to the existing Explosion cue at impact.',
+  revision: 'P3.6.2 multi-instance timing fix / v1',
+  summary: 'Moving projectile archetype: explicit moving head + trail emitters travel along runtime direction, then hand off to the existing Explosion cue at impact. Travel time advances from rendered frames so spawn hitches cannot fast-forward the projectile out of view.',
   travelDuration: 560,
   travelDistance: 250,
+  maxFrameAdvanceMs: 34,
   head: {
     rate: { quantity: 1, delay: .018 },
     size: { min: 24, max: 34 },
@@ -33,7 +34,7 @@ function movingEmitter(rate, particles, durationSeconds = 2) {
   };
 }
 
-function headEmitter(spec, intensity) {
+function headEmitter(spec, intensity, durationSeconds) {
   const sizeScale = .9 + Math.min(1.5, intensity) * .16;
   return movingEmitter(spec.rate, {
     color: { value: '#ffffff' },
@@ -58,10 +59,10 @@ function headEmitter(spec, intensity) {
     },
     move: { enable: false },
     life: { count: 1, duration: { value: spec.life, sync: false } }
-  });
+  }, durationSeconds);
 }
 
-function trailEmitter(spec, intensity, directionDegrees) {
+function trailEmitter(spec, intensity, directionDegrees, durationSeconds) {
   const speedScale = Math.max(.75, Math.sqrt(intensity));
   return movingEmitter(spec.rate, {
     color: { value: ['#fff1a3', '#ffb347', '#ff6a2e', '#d83a22'] },
@@ -84,7 +85,7 @@ function trailEmitter(spec, intensity, directionDegrees) {
       outModes: { default: 'destroy' }
     },
     life: { count: 1, duration: { value: spec.life, sync: false } }
-  });
+  }, durationSeconds);
 }
 
 function fireballDefinition() {
@@ -115,6 +116,7 @@ function fireballDefinition() {
         x: start.x + params.direction.x * distance,
         y: start.y + params.direction.y * distance
       };
+      const emitterLifetimeSeconds = Math.max(2, duration / 1000 + 1.5);
 
       instance.resolved = {
         intensity,
@@ -124,8 +126,12 @@ function fireballDefinition() {
         end,
         distance,
         travelDuration: duration,
+        maxFrameAdvanceMs: spec.maxFrameAdvanceMs,
         impactEffect: 'explosion',
-        currentPosition: { ...start }
+        currentPosition: { ...start },
+        progress: 0,
+        hitchClamps: 0,
+        maxRawFrameGapMs: 0
       };
 
       runHook(instance, params.hooks, 'fireballLaunch', {
@@ -136,15 +142,16 @@ function fireballDefinition() {
       });
 
       const [head, trail] = await Promise.all([
-        spawnTracked(instance, particleAdapter, headEmitter(spec.head, intensity), start),
-        spawnTracked(instance, particleAdapter, trailEmitter(spec.trail, intensity, params.directionDegrees), start)
+        spawnTracked(instance, particleAdapter, headEmitter(spec.head, intensity, emitterLifetimeSeconds), start),
+        spawnTracked(instance, particleAdapter, trailEmitter(spec.trail, intensity, params.directionDegrees, emitterLifetimeSeconds), start)
       ]);
 
       if (!head || !trail || instance.state !== 'playing') return;
 
-      const startedAt = performance.now();
       let raf = 0;
       let impacted = false;
+      let lastFrameAt = null;
+      let elapsedVisualMs = 0;
 
       const stopMotion = () => {
         if (raf) cancelAnimationFrame(raf);
@@ -155,6 +162,8 @@ function fireballDefinition() {
       const impact = () => {
         if (impacted || instance.state !== 'playing') return;
         impacted = true;
+        instance.resolved.progress = 1;
+        instance.resolved.currentPosition = { ...end };
         head.stop();
         trail.stop();
 
@@ -170,11 +179,27 @@ function fireballDefinition() {
 
       const frame = (now) => {
         if (instance.state !== 'playing') return;
-        const t = Math.min(1, Math.max(0, (now - startedAt) / duration));
+
+        if (lastFrameAt == null) {
+          lastFrameAt = now;
+        } else {
+          const rawDelta = Math.max(0, now - lastFrameAt);
+          lastFrameAt = now;
+          const visualDelta = Math.min(rawDelta, spec.maxFrameAdvanceMs);
+          elapsedVisualMs += visualDelta;
+
+          if (rawDelta > spec.maxFrameAdvanceMs) {
+            instance.resolved.hitchClamps += 1;
+            instance.resolved.maxRawFrameGapMs = Math.max(instance.resolved.maxRawFrameGapMs, rawDelta);
+          }
+        }
+
+        const t = Math.min(1, Math.max(0, elapsedVisualMs / duration));
         const point = {
           x: start.x + (end.x - start.x) * t,
           y: start.y + (end.y - start.y) * t
         };
+        instance.resolved.progress = t;
         instance.resolved.currentPosition = point;
         head.move(point);
         trail.move(point);
