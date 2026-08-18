@@ -1,13 +1,22 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
-import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.3.0';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.3.0';
+import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.4.0';
+import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.4.0';
+import { registerExplosion } from '../fxdeck/effects/explosion.js?v=p3.4.0';
 
-const BUILD = 'P3.3.0';
+const BUILD = 'P3.4.0';
 
 const stage = document.querySelector('#impact-stage');
 const kickLayer = document.querySelector('#impact-kick-layer');
 const domLayer = document.querySelector('#impact-dom-layer');
 const target = document.querySelector('#impact-target');
+const effectInput = document.querySelector('#effect-select');
+const authoredVersionLabel = document.querySelector('#authored-version-label');
+const previewTitle = document.querySelector('#preview-title');
+const previewNote = document.querySelector('#preview-note');
+const captionTitle = document.querySelector('#caption-title');
+const captionNote = document.querySelector('#caption-note');
+const effectSummary = document.querySelector('#effect-summary');
+const effectTimeline = document.querySelector('#effect-timeline');
 const playButton = document.querySelector('#play-impact');
 const overlapButton = document.querySelector('#play-overlap');
 const abButton = document.querySelector('#play-ab');
@@ -34,14 +43,16 @@ const lowMetric = document.querySelector('#metric-low');
 const spikeMetric = document.querySelector('#metric-spikes');
 
 const inspector = {
+  effect: document.querySelector('#resolved-effect'),
   direction: document.querySelector('#resolved-direction'),
   intensity: document.querySelector('#resolved-intensity'),
   path: document.querySelector('#resolved-path'),
-  sparks: document.querySelector('#resolved-sparks'),
-  debris: document.querySelector('#resolved-debris'),
-  targetKick: document.querySelector('#resolved-target-kick'),
   screenKick: document.querySelector('#resolved-screen-kick'),
-  position: document.querySelector('#resolved-position')
+  position: document.querySelector('#resolved-position'),
+  layers: ['a', 'b', 'c', 'd', 'e'].map((key) => ({
+    label: document.querySelector(`#resolved-layer-${key}-label`),
+    value: document.querySelector(`#resolved-layer-${key}`)
+  }))
 };
 
 const state = {
@@ -73,6 +84,10 @@ function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
+function selectedEffectId() {
+  return effectInput?.value === 'heavyImpact' ? 'heavyImpact' : 'explosion';
+}
+
 function pathLabel(path) {
   if (path === 'scheduled') return 'shared-scheduled';
   if (path === 'shared') return 'shared-direct';
@@ -87,12 +102,10 @@ function formatVector(vector) {
 function summarizeFrames(samples) {
   const valid = samples.filter((dt) => Number.isFinite(dt) && dt > 0 && dt < 250);
   if (!valid.length) return { avgFps: 0, low1: 0, spikes20: 0 };
-
   const avgMs = valid.reduce((sum, dt) => sum + dt, 0) / valid.length;
   const sorted = [...valid].sort((a, b) => a - b);
   const p99Index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * .99) - 1));
   const p99Ms = sorted[p99Index];
-
   return {
     avgFps: 1000 / avgMs,
     low1: 1000 / p99Ms,
@@ -124,6 +137,7 @@ function assertResourcesClean(stats, label) {
 
 function setBenchmarkBusy(busy) {
   state.benchmark.running = busy;
+  effectInput.disabled = busy;
   overlapButton.disabled = busy;
   abButton.disabled = busy;
   playButton.disabled = busy;
@@ -133,8 +147,8 @@ function setBenchmarkBusy(busy) {
   if (stressButton) stressButton.disabled = busy;
   if (cancelGateButton) cancelGateButton.disabled = busy;
   overlapButton.textContent = busy ? 'Benchmark running…' : 'Overlap ×6 + perf';
-  abButton.textContent = busy ? 'A/B running…' : 'Heavy Impact A/B';
-  if (cancelGateButton) cancelGateButton.textContent = busy ? 'Runtime gate running…' : 'Cancel / Stop Gate';
+  abButton.textContent = busy ? 'A/B running…' : 'Effect A/B';
+  if (cancelGateButton) cancelGateButton.textContent = busy ? 'Runtime gate running…' : 'Runtime Cancel Gate';
 }
 
 function cancelBenchmarkTimers() {
@@ -214,7 +228,6 @@ function recordFrame(now, stats) {
 
   const capture = state.perfCapture;
   if (!capture) return;
-
   capture.peakInstances = Math.max(capture.peakInstances, stats.activeInstances ?? 0);
   capture.peakParticles = Math.max(capture.peakParticles, stats.particles?.particles ?? 0);
   capture.peakEmitters = Math.max(capture.peakEmitters, stats.particles?.emitters ?? 0);
@@ -264,7 +277,6 @@ function createScreenKickController(element) {
     x *= decay;
     y *= decay;
     element.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
-
     if (Math.hypot(x, y) < .05) {
       x = 0;
       y = 0;
@@ -280,7 +292,7 @@ function createScreenKickController(element) {
     x += -direction.x * distance;
     y += -direction.y * distance;
     const magnitude = Math.hypot(x, y);
-    const maxKick = 12;
+    const maxKick = 14;
     if (magnitude > maxKick) {
       x = (x / magnitude) * maxKick;
       y = (y / magnitude) * maxKick;
@@ -387,65 +399,166 @@ function createHooks() {
       return () => animation.cancel();
     },
 
+    explosionFlash({ position, intensity }) {
+      const flash = createTransient('impact-flash', position);
+      flash.style.width = '118px';
+      flash.style.height = '118px';
+      flash.style.borderRadius = '50%';
+      flash.style.background = 'radial-gradient(circle, rgba(255,255,255,.98) 0%, rgba(255,238,162,.95) 15%, rgba(255,145,56,.72) 38%, rgba(255,70,35,.28) 62%, transparent 78%)';
+      flash.style.boxShadow = '0 0 34px rgba(255,125,45,.36)';
+      const end = 1.05 + Math.min(1.4, intensity) * .35;
+      return animateTransient(flash, [
+        { opacity: 0, transform: 'translate(-50%, -50%) scale(.18)' },
+        { opacity: 1, transform: 'translate(-50%, -50%) scale(.56)', offset: .12 },
+        { opacity: .58, transform: `translate(-50%, -50%) scale(${end * .82})`, offset: .42 },
+        { opacity: 0, transform: `translate(-50%, -50%) scale(${end})` }
+      ], { duration: 240, easing: 'cubic-bezier(.08,.74,.14,1)', fill: 'forwards' });
+    },
+
     screenKick({ direction, distance }) {
       screenKickController.kick(direction, distance);
     }
   };
 }
 
+function timelineEntries(effectId, spec) {
+  if (effectId === 'heavyImpact') {
+    return [
+      [spec.timings.contactFlash, 'Contact flash'],
+      [spec.timings.sparks, 'Aligned hero sparks'],
+      [spec.timings.debris, 'Directional debris'],
+      [spec.timings.pressureWave, 'Directional pressure wave'],
+      [spec.timings.targetKick, 'Target kick hook'],
+      [spec.timings.screenKick, 'Screen kick hook'],
+      [spec.duration, 'Lifecycle cleanup']
+    ];
+  }
+
+  return [
+    [spec.timings.flash, 'Explosion flash hook'],
+    [spec.timings.core, 'Core sprite + fireball'],
+    [spec.timings.sparks, 'Broad directional sparks'],
+    [spec.timings.debris, 'Blast debris'],
+    [spec.timings.screenKick, 'Screen kick hook'],
+    [spec.timings.smoke, 'Smoke tail'],
+    [spec.duration, 'Lifecycle cleanup']
+  ];
+}
+
 function resolvedPreview() {
+  const effectId = selectedEffectId();
   const params = currentParams();
   const spec = state.definition?.spec;
   if (!spec) return null;
   const intensity = Math.max(.25, params.intensity);
   const direction = normalizeDirection(params.direction);
+
+  if (effectId === 'heavyImpact') {
+    return {
+      effectId,
+      intensity,
+      direction,
+      layers: [
+        ['Sparks', `${Math.max(1, Math.round(spec.sparks.baseCount * intensity))} particles`],
+        ['Debris', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
+        ['Pressure wave', `${spec.timings.pressureWave} ms hook`],
+        ['Contact flash', `${spec.timings.contactFlash} ms hook`],
+        ['Target kick', `${(8.5 * intensity).toFixed(1)} px`]
+      ],
+      screenKick: 4.5 * Math.min(1.5, intensity)
+    };
+  }
+
+  const countScale = Math.max(.55, intensity);
   return {
+    effectId,
     intensity,
     direction,
-    sparks: Math.max(1, Math.round(spec.sparks.baseCount * intensity)),
-    debris: Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity))),
-    targetKick: 8.5 * intensity,
-    screenKick: 4.5 * Math.min(1.5, intensity)
+    layers: [
+      ['Core sprite', '1 image particle'],
+      ['Fireball', `${Math.max(1, Math.round(spec.fireball.baseCount * countScale))} particles`],
+      ['Sparks', `${Math.max(1, Math.round(spec.sparks.baseCount * countScale))} particles`],
+      ['Debris', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
+      ['Smoke', `${Math.max(1, Math.round(spec.smoke.baseCount * Math.max(.75, intensity)))} particles`]
+    ],
+    screenKick: 6.2 * Math.min(1.6, intensity)
   };
+}
+
+function updateEffectUi() {
+  if (!state.fx) return;
+  const effectId = selectedEffectId();
+  state.definition = state.fx.resolve(effectId, { version: 'v1', variant: 'default' }).definition;
+  const label = state.definition.label;
+  const spec = state.definition.spec;
+
+  authoredVersionLabel.textContent = `v1 — ${label}`;
+  previewTitle.textContent = `${label} production probe`;
+  previewNote.textContent = 'Click to move target + play selected effect';
+  captionTitle.textContent = `${effectId} / v1 / default`;
+  captionNote.textContent = effectId === 'explosion'
+    ? 'second real effect / shared-scheduled production default'
+    : 'vertical slice / shared-scheduled production default';
+  effectSummary.textContent = state.definition.summary;
+  effectTimeline.replaceChildren(...timelineEntries(effectId, spec).map(([ms, text]) => {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = `${ms} ms`;
+    dd.textContent = text;
+    row.append(dt, dd);
+    return row;
+  }));
+  updateApiPreview();
 }
 
 function updateInspector() {
   const resolved = resolvedPreview();
   if (!resolved) return;
+  inspector.effect.textContent = `${resolved.effectId}/v1/default`;
   inspector.direction.textContent = `${resolved.direction.degrees.toFixed(0)}° → ${formatVector(resolved.direction.vector)}`;
   inspector.intensity.textContent = `${resolved.intensity.toFixed(1)}×`;
   inspector.path.textContent = pathLabel(state.particleAdapter?.getBurstMode?.() ?? particlePathInput.value);
-  inspector.sparks.textContent = `${resolved.sparks} particles`;
-  inspector.debris.textContent = `${resolved.debris} particles`;
-  inspector.targetKick.textContent = `${resolved.targetKick.toFixed(1)} px`;
+  resolved.layers.forEach(([label, value], index) => {
+    const row = inspector.layers[index];
+    if (!row) return;
+    row.label.textContent = label;
+    row.value.textContent = value;
+  });
   inspector.screenKick.textContent = `${resolved.screenKick.toFixed(1)} px`;
   inspector.position.textContent = `${Math.round(state.position.x)}, ${Math.round(state.position.y)} CSS px`;
 }
 
 function updateApiPreview() {
-  apiPreview.textContent = `FXDeck.play("heavyImpact", {\n  version: "v1",\n  variant: "default",\n  position: { x: ${Math.round(state.position.x)}, y: ${Math.round(state.position.y)} },\n  direction: ${Number(directionInput.value)},\n  intensity: ${Number(intensityInput.value).toFixed(1)}\n});`;
+  const effectId = selectedEffectId();
+  apiPreview.textContent = `FXDeck.play("${effectId}", {\n  version: "v1",\n  variant: "default",\n  position: { x: ${Math.round(state.position.x)}, y: ${Math.round(state.position.y)} },\n  direction: ${Number(directionInput.value)},\n  intensity: ${Number(intensityInput.value).toFixed(1)}\n});`;
   updateInspector();
 }
 
-function playAt(position = state.position, directionOverride = null) {
+function readySummary(effectId, resolved) {
+  if (effectId === 'heavyImpact') {
+    return `sparks ${resolved.sparks.count}, debris ${resolved.debris.count}, duration ${resolved.duration}ms`;
+  }
+  return `core ${resolved.core.count}, fireball ${resolved.fireball.count}, sparks ${resolved.sparks.count}, debris ${resolved.debris.count}, smoke ${resolved.smoke.count}, duration ${resolved.duration}ms`;
+}
+
+function playAt(position = state.position, directionOverride = null, effectOverride = null) {
   state.position = { ...position };
   setTargetPosition(state.position);
   const params = currentParams(state.position);
   if (Number.isFinite(directionOverride)) params.direction = directionOverride;
-  const instance = state.fx.play('heavyImpact', params);
+  const effectId = effectOverride ?? selectedEffectId();
+  const instance = state.fx.play(effectId, params);
   const normalized = normalizeDirection(params.direction);
-  log(`PLAY ${instance.id} heavyImpact/v1/default [${pathLabel(state.particleAdapter.getBurstMode())}] @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)} direction ${normalized.degrees.toFixed(0)}°`);
+  log(`PLAY ${instance.id} ${effectId}/v1/default [${pathLabel(state.particleAdapter.getBurstMode())}] @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)} direction ${normalized.degrees.toFixed(0)}°`);
   instance.ready
-    .then(() => {
-      const r = instance.resolved;
-      log(`READY ${instance.id}: sparks ${r.sparks.count}, debris ${r.debris.count}, duration ${r.duration}ms`);
-    })
+    .then(() => log(`READY ${instance.id}: ${readySummary(effectId, instance.resolved)}`))
     .catch((error) => log(`ERROR ${instance.id}: ${error.message}`));
   updateApiPreview();
   return instance;
 }
 
-function runOverlapLeg(path, label, onComplete) {
+function runOverlapLeg(path, label, onComplete, effectId = selectedEffectId()) {
   const base = Number(directionInput.value);
   const position = { ...state.position };
   const offsets = [-24, -14, -5, 6, 16, 27];
@@ -467,53 +580,44 @@ function runOverlapLeg(path, label, onComplete) {
     }
 
     startPerfCapture(label, 1500, onComplete);
-    log(`OVERLAP ×6 directions: ${offsets.map((offset) => `${(base + offset + 360) % 360}°`).join(', ')}`);
+    log(`OVERLAP ×6 ${effectId} directions: ${offsets.map((offset) => `${(base + offset + 360) % 360}°`).join(', ')}`);
     offsets.forEach((offset, index) => {
-      scheduleBenchmarkTask(() => playAt(position, (base + offset + 360) % 360), index * 36);
+      scheduleBenchmarkTask(() => playAt(position, (base + offset + 360) % 360, effectId), index * 36);
     });
   }, 120);
 }
 
 function playOverlap() {
-  if (state.benchmark.running) {
-    log('PERF Overlap ×6: ignored because a benchmark is already running');
-    return;
-  }
+  if (state.benchmark.running) return log('PERF Overlap ×6: ignored because a benchmark is already running');
   setBenchmarkBusy(true);
   const path = particlePathInput.value;
-  runOverlapLeg(path, `Overlap ×6 [${pathLabel(path)}]`, () => finishBenchmark());
+  const effectId = selectedEffectId();
+  runOverlapLeg(path, `Overlap ×6 ${effectId} [${pathLabel(path)}]`, () => finishBenchmark(), effectId);
 }
 
 function runABBenchmark() {
-  if (state.benchmark.running) {
-    log('PERF Heavy Impact A/B: ignored because a benchmark is already running');
-    return;
-  }
-
+  if (state.benchmark.running) return log('PERF Effect A/B: ignored because a benchmark is already running');
   const originalPath = particlePathInput.value;
+  const effectId = selectedEffectId();
   state.benchmark.restorePath = originalPath;
   setBenchmarkBusy(true);
-  log(`HEAVY IMPACT A/B START: intensity ${Number(intensityInput.value).toFixed(1)}; per-play-emitter first, shared-scheduled second`);
+  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; per-play-emitter first, shared-scheduled second`);
 
-  runOverlapLeg('emitter', 'Heavy A/B emitter', (emitterResult) => {
+  runOverlapLeg('emitter', `${effectId} A/B emitter`, (emitterResult) => {
     scheduleBenchmarkTask(() => {
-      runOverlapLeg('scheduled', 'Heavy A/B shared-scheduled', (scheduledResult) => {
+      runOverlapLeg('scheduled', `${effectId} A/B shared-scheduled`, (scheduledResult) => {
         const avgDelta = scheduledResult.avgFps - emitterResult.avgFps;
         const lowDelta = scheduledResult.low1 - emitterResult.low1;
         const particleDelta = scheduledResult.peakParticles - emitterResult.peakParticles;
-        log(`HEAVY IMPACT A/B RESULT: emitter ${emitterResult.avgFps.toFixed(1)} avg / ${emitterResult.low1.toFixed(1)} low / ${emitterResult.spikes20} spikes / ${emitterResult.peakEmitters} emitters / ${emitterResult.peakParticles} particles | scheduled ${scheduledResult.avgFps.toFixed(1)} avg / ${scheduledResult.low1.toFixed(1)} low / ${scheduledResult.spikes20} spikes / ${scheduledResult.peakBurstGroups} groups / ${scheduledResult.peakParticles} particles / peak queued ${scheduledResult.peakQueuedParticles} | Δ scheduled-emitter ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg FPS, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${particleDelta >= 0 ? '+' : ''}${particleDelta} peak particles`);
+        log(`EFFECT A/B RESULT ${effectId}: emitter ${emitterResult.avgFps.toFixed(1)} avg / ${emitterResult.low1.toFixed(1)} low / ${emitterResult.spikes20} spikes / ${emitterResult.peakEmitters} emitters / ${emitterResult.peakParticles} particles | scheduled ${scheduledResult.avgFps.toFixed(1)} avg / ${scheduledResult.low1.toFixed(1)} low / ${scheduledResult.spikes20} spikes / ${scheduledResult.peakBurstGroups} groups / ${scheduledResult.peakParticles} particles / peak queued ${scheduledResult.peakQueuedParticles} | Δ scheduled-emitter ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg FPS, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${particleDelta >= 0 ? '+' : ''}${particleDelta} peak particles`);
         finishBenchmark();
-      });
+      }, effectId);
     }, 320);
-  });
+  }, effectId);
 }
 
 async function runCancellationGate() {
-  if (state.benchmark.running) {
-    log(`${BUILD} CANCEL GATE: ignored because a benchmark is already running`);
-    return;
-  }
-
+  if (state.benchmark.running) return log(`${BUILD} CANCEL GATE: ignored because a benchmark is already running`);
   const originalPath = particlePathInput.value;
   state.benchmark.restorePath = originalPath;
   setBenchmarkBusy(true);
@@ -527,17 +631,13 @@ async function runCancellationGate() {
     await nextFrame();
     await nextFrame();
     assertResourcesClean(state.fx.getStats(), 'Cancel gate reset');
-
     log(`${BUILD} CANCEL GATE START: production shared-scheduled path / Heavy Impact intensity 2.0`);
 
     const single = state.fx.play('heavyImpact', cancellationParams());
     await single.ready;
     const singleQueued = state.fx.getStats();
-    if ((singleQueued.particles?.queuedParticles ?? 0) <= 0) {
-      throw new Error(`single-instance precondition missed active scheduler work: ${resourceText(singleQueued)}`);
-    }
+    if ((singleQueued.particles?.queuedParticles ?? 0) <= 0) throw new Error(`single-instance precondition missed active scheduler work: ${resourceText(singleQueued)}`);
     log(`CANCEL GATE phase 1 pre-stop: ${resourceText(singleQueued)}`);
-
     state.fx.stop(single, 'cancel-gate-instance-stop');
     await nextFrame();
     await nextFrame();
@@ -551,13 +651,9 @@ async function runCancellationGate() {
     const offsets = [-24, -14, -5, 6, 16, 27];
     const instances = offsets.map((offset) => state.fx.play('heavyImpact', cancellationParams((base + offset + 360) % 360)));
     await Promise.all(instances.map((instance) => instance.ready));
-
     const overlapQueued = state.fx.getStats();
-    if ((overlapQueued.particles?.queuedParticles ?? 0) <= 0) {
-      throw new Error(`stopAll precondition missed active scheduler work: ${resourceText(overlapQueued)}`);
-    }
+    if ((overlapQueued.particles?.queuedParticles ?? 0) <= 0) throw new Error(`stopAll precondition missed active scheduler work: ${resourceText(overlapQueued)}`);
     log(`CANCEL GATE phase 2 pre-stopAll: ${resourceText(overlapQueued)}`);
-
     state.fx.stopAll('cancel-gate-stop-all');
     await nextFrame();
     await nextFrame();
@@ -603,7 +699,10 @@ async function bootstrap() {
     engine: globalThis.tsParticles,
     stage,
     hostId: 'heavy-impact-particles',
-    preload: [{ src: './assets/fxdeck-spark.svg', width: 32, height: 10 }],
+    preload: [
+      { src: './assets/fxdeck-spark.svg', width: 32, height: 10 },
+      { src: './assets/fxdeck-explosion-core.svg', width: 128, height: 128 }
+    ],
     burstMode: particlePathInput.value,
     sharedFrameBudgetMs: 6,
     sharedChunkSize: 8,
@@ -612,9 +711,9 @@ async function bootstrap() {
 
   const fx = new FXDeckRuntime({ adapters: { particles: particleAdapter } });
   registerHeavyImpact(fx);
+  registerExplosion(fx);
   state.fx = fx;
   state.particleAdapter = particleAdapter;
-  state.definition = fx.resolve('heavyImpact', { version: 'v1', variant: 'default' }).definition;
 
   globalThis.FXDeck = fx;
   globalThis.FXDeckLab = {
@@ -637,9 +736,7 @@ async function bootstrap() {
     clear: clearLog
   };
 
-  playButton.addEventListener('click', () => {
-    if (!state.benchmark.running) playAt();
-  });
+  playButton.addEventListener('click', () => { if (!state.benchmark.running) playAt(); });
   overlapButton.addEventListener('click', playOverlap);
   abButton.addEventListener('click', runABBenchmark);
   cancelGateButton?.addEventListener('click', runCancellationGate);
@@ -656,6 +753,12 @@ async function bootstrap() {
     playAt({ x: event.clientX - rect.left, y: event.clientY - rect.top });
   });
 
+  effectInput.addEventListener('change', () => {
+    fx.stopAll('effect-switch');
+    screenKickController.reset();
+    updateEffectUi();
+    log(`EFFECT → ${selectedEffectId()}`);
+  });
   intensityInput.addEventListener('input', () => {
     intensityValue.textContent = Number(intensityInput.value).toFixed(1);
     updateApiPreview();
@@ -664,9 +767,7 @@ async function bootstrap() {
     directionValue.textContent = `${directionInput.value}°`;
     updateApiPreview();
   });
-  particlePathInput.addEventListener('change', () => {
-    setParticlePath(particlePathInput.value, { writeLog: true });
-  });
+  particlePathInput.addEventListener('change', () => setParticlePath(particlePathInput.value, { writeLog: true }));
   copyLogButton.addEventListener('click', copyLog);
   clearLogButton.addEventListener('click', clearLog);
 
@@ -695,15 +796,14 @@ async function bootstrap() {
   setTargetPosition(state.position);
   intensityValue.textContent = Number(intensityInput.value).toFixed(1);
   directionValue.textContent = `${directionInput.value}°`;
-  updateApiPreview();
+  updateEffectUi();
   requestAnimationFrame(metricsLoop);
 
   const schedulerStats = particleAdapter.getStats();
-  log(`PASS ${BUILD} bootstrap: Heavy Impact registered through burst abstraction`);
+  log(`PASS ${BUILD} bootstrap: Heavy Impact + Explosion registered through the same FXDeck runtime`);
   log(`${BUILD} production one-shot default: shared-scheduled (${schedulerStats.schedulerBudgetMs}ms CPU budget/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate seed ${schedulerStats.schedulerImmediateCount})`);
-  log('Emitter and shared-direct remain explicit reference/debug paths; Heavy Impact A/B still compares emitter vs shared-scheduled');
-  log('Cancel / Stop Gate validates per-instance queue ownership, stopAll cleanup and protection against delayed respawn');
-  log('Pressure wave remains a visual placeholder; P3 focus is runtime architecture and measured cost');
+  log('P3.3 cancellation gate was accepted; P3.4 focus is second-effect reuse and custom-code pressure');
+  log('Explosion layers: core sprite + fireball + sparks + debris + smoke + screen kick; no new runtime subsystem added');
 }
 
 bootstrap().catch((error) => {
