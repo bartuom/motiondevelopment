@@ -67,7 +67,13 @@ export function installLiveUpdate(fx) {
 
     const handler = handlers.get(instance);
     if (!handler) {
-      pending.set(instance, { patch: structuredClone(patch) });
+      const queued = pending.get(instance)?.patch ?? {};
+      pending.set(instance, {
+        patch: {
+          ...queued,
+          ...structuredClone(patch)
+        }
+      });
       return instance;
     }
 
