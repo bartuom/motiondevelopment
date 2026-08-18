@@ -1,4 +1,4 @@
-const BUILD = 'P3.8.0';
+const BUILD = 'P3.8.1';
 
 const primary = {
   effect: document.querySelector('#effect-select'),
@@ -64,7 +64,7 @@ function topologyLabel(effectId, path) {
 
 function pathDescription(effectId, path) {
   if (isSustained(effectId)) {
-    return 'Environment Emitter is a sustained-source proof and currently uses one explicit emitter per FXDeck source. One-shot burst topology selection is intentionally disabled for this effect.';
+    return 'Environment Emitter creates one explicit sustained emitter per FXDeck source. Grid cells therefore represent independent long-running sources; one-shot burst topology selection is intentionally disabled.';
   }
 
   const topology = path === 'scheduled'
@@ -227,7 +227,7 @@ function install({ panel, grid }) {
     readout.textContent = parts.join(' • ');
   }
 
-  appendLog(`${BUILD} Grid setup ready: one-shot topology comparison retained; sustained Environment uses explicit emitter + live FXDeck.update()`);
+  appendLog(`${BUILD} Grid setup ready: one-shot topology comparison retained; sustained Environment grid = independent explicit sources`);
 }
 
 waitForGrid()
