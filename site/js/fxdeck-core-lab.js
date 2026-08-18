@@ -1,4 +1,4 @@
-import { FXDeckRuntime } from '../fxdeck/core/fxdeck.js';
+import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
 import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js';
 import { registerTestBurst } from '../fxdeck/effects/test-burst.js';
 
@@ -12,6 +12,7 @@ const variantSelect = document.querySelector('#variant');
 const intensityInput = document.querySelector('#intensity');
 const intensityValue = document.querySelector('#intensity-value');
 const directionInput = document.querySelector('#direction');
+const directionValue = document.querySelector('#direction-value');
 const activeMetric = document.querySelector('#metric-instances');
 const particleMetric = document.querySelector('#metric-particles');
 const emitterMetric = document.querySelector('#metric-emitters');
@@ -28,6 +29,7 @@ const inspector = {
   speed: document.querySelector('#def-speed'),
   size: document.querySelector('#def-size'),
   life: document.querySelector('#def-life'),
+  spread: document.querySelector('#def-spread'),
   stop: document.querySelector('#def-stop'),
   resolvedIntensity: document.querySelector('#resolved-intensity'),
   resolvedCount: document.querySelector('#resolved-count'),
@@ -63,17 +65,14 @@ function currentParams(position = state.position) {
   };
 }
 
-function directionName(degrees) {
-  const angle = ((degrees % 360) + 360) % 360;
-  if (angle >= 315 || angle < 45) return 'right';
-  if (angle < 135) return 'down';
-  if (angle < 225) return 'left';
-  return 'up';
-}
-
 function formatRange(range, digits = 1) {
   const format = (value) => Number(value).toFixed(digits).replace(/\.0$/, '');
   return `${format(range.min)}–${format(range.max)}`;
+}
+
+function formatVector(vector) {
+  const format = (value) => Math.abs(value) < .0005 ? '0.000' : value.toFixed(3);
+  return `{ x: ${format(vector.x)}, y: ${format(vector.y)} }`;
 }
 
 function getResolvedDefinition(params = currentParams()) {
@@ -94,6 +93,7 @@ function updateInspector() {
     min: spec.speed.min * speedScale,
     max: spec.speed.max * speedScale
   };
+  const normalizedDirection = normalizeDirection(params.direction);
 
   inspector.title.textContent = `testBurst / ${definition.version} / ${definition.variant} — ${definition.label}`;
   inspector.summary.textContent = definition.summary;
@@ -103,12 +103,13 @@ function updateInspector() {
   inspector.speed.textContent = formatRange(spec.speed);
   inspector.size.textContent = formatRange(spec.size);
   inspector.life.textContent = `${formatRange(spec.life, 2)} s`;
+  inspector.spread.textContent = `${spec.spread}° cone`;
   inspector.stop.textContent = `${spec.stopAfter} ms auto-stop`;
 
   inspector.resolvedIntensity.textContent = `${intensity.toFixed(1)}×`;
   inspector.resolvedCount.textContent = `${runtimeCount} (${spec.baseCount} × ${intensity.toFixed(1)})`;
   inspector.resolvedSpeed.textContent = `${formatRange(runtimeSpeed)} px/frame-scale`;
-  inspector.resolvedDirection.textContent = `${params.direction}° → ${directionName(params.direction)}`;
+  inspector.resolvedDirection.textContent = `${normalizedDirection.degrees.toFixed(0)}° → ${formatVector(normalizedDirection.vector)}`;
   inspector.resolvedPosition.textContent = `${Math.round(params.position.x)}, ${Math.round(params.position.y)} CSS px`;
   inspector.resolvedId.textContent = `testBurst/${definition.version}/${definition.variant}`;
 }
@@ -125,6 +126,19 @@ function syncVariantAvailability() {
   heavy.disabled = v1;
   if (v1 && variantSelect.value === 'heavy') variantSelect.value = 'default';
   updateApiPreview();
+}
+
+function validateDirectionContract() {
+  const angleProbe = normalizeDirection(25);
+  const vectorProbe = normalizeDirection({ x: 3, y: 4 });
+  const angleLength = Math.hypot(angleProbe.vector.x, angleProbe.vector.y);
+
+  if (Math.abs(angleLength - 1) > 1e-9) throw new Error('Direction angle normalization did not produce a unit vector.');
+  if (Math.abs(vectorProbe.vector.x - .6) > 1e-9 || Math.abs(vectorProbe.vector.y - .8) > 1e-9) {
+    throw new Error('Direction vector normalization failed for {x:3,y:4}.');
+  }
+
+  log(`PASS direction contract: 25° → ${formatVector(angleProbe.vector)}; {x:3,y:4} → ${formatVector(vectorProbe.vector)}`);
 }
 
 async function bootstrap() {
@@ -144,15 +158,17 @@ async function bootstrap() {
   const fx = new FXDeckRuntime({ adapters: { particles: particleAdapter } });
   registerTestBurst(fx);
   state.fx = fx;
+  validateDirectionContract();
 
   globalThis.FXDeck = fx;
-  globalThis.FXDeckP1 = { fx, particleAdapter };
+  globalThis.FXDeckP1 = { fx, particleAdapter, normalizeDirection };
 
   function playAt(position = state.position) {
     const params = currentParams(position);
     const definition = fx.resolve('testBurst', params).definition;
+    const normalizedDirection = normalizeDirection(params.direction);
     const instance = fx.play('testBurst', params);
-    log(`PLAY ${instance.id} ${instance.version}/${instance.variant} "${definition.label}" @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)}`);
+    log(`PLAY ${instance.id} ${instance.version}/${instance.variant} "${definition.label}" @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)} direction ${normalizedDirection.degrees.toFixed(0)}° ${formatVector(normalizedDirection.vector)}`);
     instance.ready.catch((error) => log(`ERROR ${instance.id}: ${error.message}`));
     return instance;
   }
@@ -186,7 +202,10 @@ async function bootstrap() {
     intensityValue.textContent = Number(intensityInput.value).toFixed(1);
     updateApiPreview();
   });
-  directionInput.addEventListener('change', updateApiPreview);
+  directionInput.addEventListener('input', () => {
+    directionValue.textContent = `${directionInput.value}°`;
+    updateApiPreview();
+  });
 
   window.addEventListener('resize', () => {
     particleAdapter.resize();
@@ -208,10 +227,11 @@ async function bootstrap() {
   setMarker(state.position);
   syncVariantAvailability();
   intensityValue.textContent = Number(intensityInput.value).toFixed(1);
+  directionValue.textContent = `${directionInput.value}°`;
   requestAnimationFrame(metricsLoop);
   log('PASS P1 bootstrap: FXDeck Core + TsParticlesAdapter ready');
   log('EffectDefinition inspector is reading metadata from the runtime registry');
-  log('Console API available as window.FXDeck');
+  log('Console API available as window.FXDeck; direction accepts degrees or a non-zero {x,y} vector');
 }
 
 bootstrap().catch((error) => {
