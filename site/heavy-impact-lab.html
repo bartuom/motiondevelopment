@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P2 Heavy Impact vertical slice lab.">
   <title>FXDeck Heavy Impact Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.1.0">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.2.0">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.1.0</p>
+        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.2.0</p>
         <h1>Heavy Impact</h1>
       </div>
-      <p class="intro">First production-style vertical slice: one FXDeck.play() call orchestrates particles, DOM cue layers and game integration hooks.</p>
+      <p class="intro">Visual-hierarchy pass: fewer aligned hero sparks, smaller debris, shorter flash and a directional pressure wave while preserving the same FXDeck.play() contract.</p>
     </header>
 
     <section class="workbench">
@@ -68,8 +68,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P2 constraint</p>
-          <p>No generic timeline/layer framework yet. This effect is allowed to expose repetition so P3 can extract only abstractions that are proven useful.</p>
+          <p class="label">P2.2 focus</p>
+          <p>One impact should read as contact first, then a small set of hero sparks, secondary debris and a pressure response. Overlap remains a stress test, not the target look.</p>
         </div>
       </aside>
 
@@ -95,7 +95,7 @@
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
-            <span>flash → sparks → debris → pressure wave → target kick → screen kick</span>
+            <span>contact → aligned hero sparks → debris → directional wave → recoil</span>
           </div>
         </div>
       </section>
@@ -112,12 +112,12 @@
           <p class="label">Authored timing</p>
           <dl class="timeline-list">
             <div><dt>0 ms</dt><dd>Contact flash</dd></div>
-            <div><dt>0 ms</dt><dd>Directional sparks</dd></div>
-            <div><dt>18 ms</dt><dd>Directional debris</dd></div>
-            <div><dt>32 ms</dt><dd>Pressure wave</dd></div>
-            <div><dt>40 ms</dt><dd>Target kick hook</dd></div>
-            <div><dt>52 ms</dt><dd>Screen kick hook</dd></div>
-            <div><dt>620 ms</dt><dd>Lifecycle cleanup</dd></div>
+            <div><dt>0 ms</dt><dd>Aligned hero sparks</dd></div>
+            <div><dt>14 ms</dt><dd>Directional debris</dd></div>
+            <div><dt>26 ms</dt><dd>Directional pressure wave</dd></div>
+            <div><dt>36 ms</dt><dd>Target kick hook</dd></div>
+            <div><dt>48 ms</dt><dd>Screen kick hook</dd></div>
+            <div><dt>560 ms</dt><dd>Lifecycle cleanup</dd></div>
           </dl>
         </section>
 
@@ -137,7 +137,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P2.1.0</dd></div>
+            <div><dt>Build</dt><dd>P2.2.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -165,13 +165,13 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.1.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.2.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p2.1.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p2.2.0"></script>
 </body>
 </html>
