@@ -1,0 +1,460 @@
+/* Spell 04 polish pass
+   Arcane = precise / geometric / controlled.
+   Fire = organic / unstable / shedding energy.
+   Loaded after the base stylesheet so this pass stays isolated. */
+
+/* Shared cleanup */
+.effect-root.spell-arcane .spell-charge,
+.effect-root.spell-fire .spell-charge,
+.effect-root.spell-arcane .spell-projectile,
+.effect-root.spell-fire .spell-projectile,
+.effect-root.spell-arcane .spell-hit,
+.effect-root.spell-fire .spell-hit {
+  will-change: transform, opacity;
+}
+
+.effect-root.spell-arcane .spell-charge i,
+.effect-root.spell-fire .spell-charge i,
+.effect-root.spell-arcane .spell-trails span,
+.effect-root.spell-fire .spell-trails span,
+.effect-root.spell-arcane .spell-hit i,
+.effect-root.spell-fire .spell-hit i {
+  box-shadow: none;
+}
+
+/* =========================
+   ARCANE
+   Controlled, geometric, exact.
+   ========================= */
+.effect-root.spell-arcane .cast-point {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(195,178,255,.34);
+  border-radius: 4px;
+  transform: translate(-50%,-50%) rotate(45deg);
+}
+
+.effect-root.spell-arcane .cast-point::before,
+.effect-root.spell-arcane .cast-point::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(211,199,255,.28);
+  transform: translate(-50%,-50%);
+}
+.effect-root.spell-arcane .cast-point::before { width: 56px; height: 1px; }
+.effect-root.spell-arcane .cast-point::after { width: 1px; height: 56px; }
+
+.effect-root.spell-arcane .cast-point span {
+  inset: 14px;
+  border-radius: 2px;
+  background: rgba(173,145,255,.22);
+  box-shadow: inset 0 0 0 1px rgba(220,211,255,.28);
+}
+
+.effect-root.spell-arcane .spell-charge {
+  width: 72px;
+  height: 72px;
+}
+
+.effect-root.spell-arcane .spell-charge::before {
+  inset: 21px;
+  border-radius: 3px;
+  border: 1px solid rgba(225,217,255,.92);
+  background: rgba(176,151,255,.18);
+  box-shadow: 0 0 14px 3px rgba(134,94,255,.2);
+  transform: rotate(45deg);
+}
+
+.effect-root.spell-arcane .spell-charge::after {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  border: 1px solid rgba(166,139,255,.42);
+  border-radius: 5px;
+  transform: rotate(45deg);
+}
+
+.effect-root.spell-arcane .spell-charge i {
+  width: 4px;
+  height: 4px;
+  border-radius: 0;
+  background: #e8e0ff;
+}
+
+.effect-root.spell-arcane.spell-playing .spell-charge {
+  animation: arcane-charge 250ms cubic-bezier(.18,.76,.18,1) both;
+}
+
+.effect-root.spell-arcane.spell-playing .spell-charge::before {
+  animation: arcane-core-lock 250ms cubic-bezier(.15,.76,.2,1) both;
+}
+
+.effect-root.spell-arcane.spell-playing .spell-charge::after {
+  animation: arcane-glyph-lock 250ms cubic-bezier(.2,.72,.2,1) both;
+}
+
+.effect-root.spell-arcane.spell-playing .spell-charge i {
+  animation: arcane-particle-lock 250ms cubic-bezier(.2,.78,.18,1) both;
+}
+
+@keyframes arcane-charge {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.72); }
+  18% { opacity: .7; }
+  72% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  88% { opacity: 1; transform: translate(-50%,-50%) scale(.96); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(.7); }
+}
+
+@keyframes arcane-core-lock {
+  0% { transform: rotate(12deg) scale(.55); opacity: .35; }
+  58% { transform: rotate(45deg) scale(1.08); opacity: 1; }
+  78% { transform: rotate(45deg) scale(.94); opacity: 1; }
+  100% { transform: rotate(45deg) scale(.55); opacity: 0; }
+}
+
+@keyframes arcane-glyph-lock {
+  0% { transform: rotate(-16deg) scale(1.3); opacity: 0; }
+  34% { opacity: .75; }
+  76% { transform: rotate(45deg) scale(.92); opacity: .9; }
+  100% { transform: rotate(45deg) scale(.58); opacity: 0; }
+}
+
+@keyframes arcane-particle-lock {
+  0% { opacity: 0; transform: rotate(calc(var(--i)*72deg - 20deg)) translateX(43px) rotate(45deg) scale(.7); }
+  22% { opacity: .85; }
+  78% { opacity: 1; transform: rotate(calc(var(--i)*72deg + 42deg)) translateX(22px) rotate(45deg) scale(1); }
+  100% { opacity: 0; transform: rotate(calc(var(--i)*72deg + 52deg)) translateX(10px) rotate(45deg) scale(.45); }
+}
+
+.effect-root.spell-arcane .spell-projectile {
+  width: 34px;
+  height: 8px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(129,93,255,.06), #b89cff 52%, #fff 100%);
+  box-shadow: none;
+  clip-path: polygon(0 30%, 74% 30%, 100% 50%, 74% 70%, 0 70%);
+}
+
+.effect-root.spell-arcane.spell-playing .spell-projectile {
+  animation: arcane-flight 245ms cubic-bezier(.12,.78,.18,1) 236ms both;
+}
+
+@keyframes arcane-flight {
+  0% { opacity: 0; transform: translate(-50%,-50%) translateX(0) scaleX(.55); }
+  7% { opacity: 1; }
+  84% { opacity: 1; transform: translate(-50%,-50%) translateX(calc(var(--travel) * .9)) scaleX(1.06); }
+  100% { opacity: 0; transform: translate(-50%,-50%) translateX(var(--travel)) scaleX(.72); }
+}
+
+.effect-root.spell-arcane .spell-trails span {
+  width: var(--trail-len, 38px);
+  height: 2px;
+  border-radius: 0;
+  background: linear-gradient(90deg, transparent, rgba(156,124,255,.16), rgba(208,195,255,.75));
+}
+
+.effect-root.spell-arcane .spell-trails span:nth-child(1) { --trail-len:52px; --offset:-7px; --alpha:.7; }
+.effect-root.spell-arcane .spell-trails span:nth-child(2) { --trail-len:38px; --offset:6px; --alpha:.5; }
+.effect-root.spell-arcane .spell-trails span:nth-child(3) { --trail-len:27px; --offset:-2px; --alpha:.4; }
+.effect-root.spell-arcane .spell-trails span:nth-child(n+4) { display:none; }
+
+.effect-root.spell-arcane.spell-playing .spell-trails span {
+  animation: arcane-trail 220ms cubic-bezier(.15,.72,.18,1) calc(244ms + var(--i)*9ms) both;
+}
+
+@keyframes arcane-trail {
+  0% { opacity: 0; transform: translate(-50%,-50%) translate3d(0,var(--offset),0) scaleX(.25); }
+  16% { opacity: var(--alpha); }
+  70% { opacity: calc(var(--alpha) * .75); }
+  100% { opacity: 0; transform: translate(-50%,-50%) translate3d(calc(var(--travel) - 18px),var(--offset),0) scaleX(1.1); }
+}
+
+.effect-root.spell-arcane .spell-hit-ring {
+  width: 52px;
+  height: 52px;
+  border-radius: 4px;
+  border: 1px solid rgba(200,183,255,.9);
+  transform: translate(-50%,-50%) rotate(45deg) scale(.25);
+}
+
+.effect-root.spell-arcane .spell-hit-core {
+  width: 17px;
+  height: 17px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 12px 3px rgba(149,110,255,.34);
+  transform: translate(-50%,-50%) rotate(45deg);
+}
+
+.effect-root.spell-arcane .spell-hit i {
+  width: var(--ray-len, 48px);
+  height: var(--ray-size, 1px);
+  border-radius: 0;
+  background: linear-gradient(90deg,#fff,rgba(169,139,255,.66),transparent);
+}
+.effect-root.spell-arcane .spell-hit i:nth-child(1) { --angle:0deg;   --ray-len:82px; --ray-size:2px; }
+.effect-root.spell-arcane .spell-hit i:nth-child(2) { --angle:90deg;  --ray-len:44px; }
+.effect-root.spell-arcane .spell-hit i:nth-child(3) { --angle:180deg; --ray-len:24px; }
+.effect-root.spell-arcane .spell-hit i:nth-child(4) { --angle:270deg; --ray-len:36px; }
+.effect-root.spell-arcane .spell-hit i:nth-child(5) { --angle:45deg;  --ray-len:48px; }
+.effect-root.spell-arcane .spell-hit i:nth-child(6) { --angle:-45deg; --ray-len:31px; }
+.effect-root.spell-arcane .spell-hit i:nth-child(n+7) { display:none; }
+
+.effect-root.spell-arcane.spell-playing .spell-hit {
+  animation: arcane-hit-root 230ms cubic-bezier(.08,.72,.16,1) 470ms both;
+}
+.effect-root.spell-arcane.spell-playing .spell-hit-ring {
+  animation: arcane-hit-glyph 210ms cubic-bezier(.08,.72,.16,1) both;
+}
+.effect-root.spell-arcane.spell-playing .spell-hit-core {
+  animation: arcane-hit-core 82ms ease-out both;
+}
+.effect-root.spell-arcane.spell-playing .spell-hit i {
+  transform: rotate(var(--angle));
+  animation: arcane-hit-ray 170ms cubic-bezier(.08,.72,.16,1) calc(var(--i)*2ms) both;
+}
+
+@keyframes arcane-hit-root {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.55); }
+  8% { opacity:1; }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.45); }
+}
+@keyframes arcane-hit-glyph {
+  0% { opacity:.9; transform:translate(-50%,-50%) rotate(18deg) scale(.24); }
+  100% { opacity:0; transform:translate(-50%,-50%) rotate(45deg) scale(2.1); }
+}
+@keyframes arcane-hit-core {
+  0% { opacity:1; transform:translate(-50%,-50%) rotate(45deg) scale(.3); }
+  100% { opacity:0; transform:translate(-50%,-50%) rotate(45deg) scale(3); }
+}
+@keyframes arcane-hit-ray {
+  0% { opacity:0; transform:rotate(var(--angle)) translateX(4px) scaleX(.18); }
+  10% { opacity:.95; }
+  100% { opacity:0; transform:rotate(var(--angle)) translateX(34px) scaleX(.7); }
+}
+
+/* =========================
+   FIRE
+   Irregular, accelerating, shedding embers.
+   ========================= */
+.effect-root.spell-fire .cast-point {
+  width: 36px;
+  height: 46px;
+  border: 0;
+  border-radius: 54% 46% 58% 42%;
+  background: rgba(104,36,18,.16);
+  transform: translate(-50%,-50%) rotate(-7deg);
+}
+.effect-root.spell-fire .cast-point span {
+  inset: 10px 12px 12px 10px;
+  border-radius: 62% 38% 58% 42%;
+  background: rgba(255,104,31,.16);
+}
+
+.effect-root.spell-fire .spell-charge {
+  width: 74px;
+  height: 74px;
+}
+.effect-root.spell-fire .spell-charge::before {
+  inset: 17px 18px 15px 15px;
+  border-radius: 62% 38% 55% 45%;
+  background: radial-gradient(circle at 58% 54%, #fff5b5 0 16%, #ffb437 17% 38%, #f26022 39% 66%, rgba(153,43,24,.35) 67% 100%);
+  box-shadow: 0 0 10px 2px rgba(255,87,24,.24);
+  transform: rotate(-8deg);
+}
+.effect-root.spell-fire .spell-charge::after {
+  content:"";
+  position:absolute;
+  left:27px;
+  top:4px;
+  width:16px;
+  height:34px;
+  border-radius:70% 30% 60% 40%;
+  background:linear-gradient(180deg,rgba(255,177,54,0),rgba(255,107,24,.62));
+  transform:rotate(18deg);
+  opacity:0;
+}
+.effect-root.spell-fire .spell-charge i {
+  width: var(--ember-size, 4px);
+  height: var(--ember-size, 4px);
+  border-radius: 55% 45% 62% 38%;
+  background: var(--ember-color, #ffbd55);
+}
+.effect-root.spell-fire .spell-charge i:nth-child(1) { --ember-size:3px; --ember-color:#fff0a8; }
+.effect-root.spell-fire .spell-charge i:nth-child(2) { --ember-size:5px; --ember-color:#ffb339; }
+.effect-root.spell-fire .spell-charge i:nth-child(3) { --ember-size:2px; --ember-color:#ff7c28; }
+.effect-root.spell-fire .spell-charge i:nth-child(4) { --ember-size:4px; --ember-color:#ffd064; }
+.effect-root.spell-fire .spell-charge i:nth-child(5) { --ember-size:3px; --ember-color:#f35a22; }
+
+.effect-root.spell-fire.spell-playing .spell-charge {
+  animation: fire-charge 198ms cubic-bezier(.25,.76,.2,1) both;
+}
+.effect-root.spell-fire.spell-playing .spell-charge::before {
+  animation: fire-core-build 198ms cubic-bezier(.2,.76,.18,1) both;
+}
+.effect-root.spell-fire.spell-playing .spell-charge::after {
+  animation: fire-lick 198ms ease-out both;
+}
+.effect-root.spell-fire.spell-playing .spell-charge i:nth-child(1) { animation: fire-ember-charge-a 205ms ease-out both; }
+.effect-root.spell-fire.spell-playing .spell-charge i:nth-child(2) { animation: fire-ember-charge-b 205ms ease-out both; }
+.effect-root.spell-fire.spell-playing .spell-charge i:nth-child(3) { animation: fire-ember-charge-c 205ms ease-out both; }
+.effect-root.spell-fire.spell-playing .spell-charge i:nth-child(4) { animation: fire-ember-charge-d 205ms ease-out both; }
+.effect-root.spell-fire.spell-playing .spell-charge i:nth-child(5) { animation: fire-ember-charge-e 205ms ease-out both; }
+
+@keyframes fire-charge {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.48) rotate(-9deg); }
+  18% { opacity:.72; }
+  58% { opacity:1; transform:translate(-50%,-50%) scale(.95) rotate(4deg); }
+  78% { transform:translate(-50%,-50%) scale(1.12,.9) rotate(-3deg); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(.58,1.12) rotate(8deg); }
+}
+@keyframes fire-core-build {
+  0% { transform:rotate(-16deg) scale(.35,.55); opacity:.25; }
+  52% { transform:rotate(7deg) scale(1.1,.92); opacity:1; }
+  78% { transform:rotate(-5deg) scale(.92,1.12); }
+  100% { transform:rotate(12deg) scale(.45,1.35); opacity:0; }
+}
+@keyframes fire-lick {
+  0%,28% { opacity:0; transform:translateY(8px) rotate(18deg) scaleY(.4); }
+  55% { opacity:.75; }
+  100% { opacity:0; transform:translate(-3px,-15px) rotate(4deg) scaleY(1.2); }
+}
+@keyframes fire-ember-charge-a { from{opacity:0;transform:translate(-8px,18px) scale(.5)} 30%{opacity:1} to{opacity:0;transform:translate(-24px,-27px) scale(.2)} }
+@keyframes fire-ember-charge-b { from{opacity:0;transform:translate(10px,12px) scale(.5)} 24%{opacity:1} to{opacity:0;transform:translate(31px,-18px) scale(.25)} }
+@keyframes fire-ember-charge-c { from{opacity:0;transform:translate(-5px,5px) scale(.7)} 34%{opacity:.85} to{opacity:0;transform:translate(18px,-34px) scale(.2)} }
+@keyframes fire-ember-charge-d { from{opacity:0;transform:translate(7px,17px) scale(.5)} 22%{opacity:1} to{opacity:0;transform:translate(-15px,-31px) scale(.3)} }
+@keyframes fire-ember-charge-e { from{opacity:0;transform:translate(2px,10px) scale(.5)} 25%{opacity:.8} to{opacity:0;transform:translate(27px,-8px) scale(.18)} }
+
+.effect-root.spell-fire .spell-projectile {
+  width: 44px;
+  height: 17px;
+  border-radius: 65% 35% 58% 42%;
+  background: radial-gradient(ellipse at 76% 50%, #fff8b8 0 13%, #ffbb3d 14% 32%, #f36b24 48%, rgba(209,59,27,.12) 72%, transparent 74%);
+  box-shadow: none;
+  transform-origin: 80% 50%;
+}
+.effect-root.spell-fire .spell-projectile::before,
+.effect-root.spell-fire .spell-projectile::after {
+  content:"";
+  position:absolute;
+  right:26px;
+  top:50%;
+  width:31px;
+  height:8px;
+  border-radius:70% 0 0 70%;
+  transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,rgba(255,97,27,.7));
+}
+.effect-root.spell-fire .spell-projectile::after {
+  width:23px;
+  height:4px;
+  top:67%;
+  transform:translateY(-50%) rotate(7deg);
+  opacity:.65;
+}
+.effect-root.spell-fire.spell-playing .spell-projectile {
+  animation: fire-flight 216ms cubic-bezier(.12,.86,.16,1) 184ms both;
+}
+@keyframes fire-flight {
+  0% { opacity:0; transform:translate(-50%,-50%) translateX(0) scale(.58,.82) rotate(-5deg); }
+  6% { opacity:1; }
+  38% { transform:translate(-50%,-50%) translateX(calc(var(--travel)*.28)) scale(1.12,.84) rotate(3deg); }
+  72% { transform:translate(-50%,-50%) translateX(calc(var(--travel)*.7)) scale(.92,1.05) rotate(-2deg); }
+  94% { opacity:1; }
+  100% { opacity:0; transform:translate(-50%,-50%) translateX(var(--travel)) scale(1.32,.72) rotate(4deg); }
+}
+
+.effect-root.spell-fire .spell-trails span {
+  width: var(--fire-len, 32px);
+  height: var(--fire-h, 6px);
+  border-radius: 70% 10% 60% 20%;
+  background: linear-gradient(90deg,transparent,rgba(211,56,23,.12) 22%,rgba(255,102,25,.68) 70%,rgba(255,210,92,.35));
+}
+.effect-root.spell-fire .spell-trails span:nth-child(1) { --fire-len:49px; --fire-h:8px; --fy:-8px; --fr:-7deg; --fa:.8; }
+.effect-root.spell-fire .spell-trails span:nth-child(2) { --fire-len:37px; --fire-h:5px; --fy:7px;  --fr:8deg;  --fa:.62; }
+.effect-root.spell-fire .spell-trails span:nth-child(3) { --fire-len:26px; --fire-h:4px; --fy:-1px; --fr:-3deg; --fa:.48; }
+.effect-root.spell-fire .spell-trails span:nth-child(4) { --fire-len:19px; --fire-h:3px; --fy:12px; --fr:13deg; --fa:.36; }
+.effect-root.spell-fire .spell-trails span:nth-child(5) { --fire-len:14px; --fire-h:3px; --fy:-14px;--fr:-12deg;--fa:.28; }
+.effect-root.spell-fire.spell-playing .spell-trails span {
+  animation: fire-trail 220ms cubic-bezier(.12,.72,.2,1) calc(187ms + var(--i)*8ms) both;
+}
+@keyframes fire-trail {
+  0% { opacity:0; transform:translate(-50%,-50%) translate3d(-4px,var(--fy),0) rotate(var(--fr)) scaleX(.28); }
+  13% { opacity:var(--fa); }
+  58% { opacity:calc(var(--fa)*.78); }
+  100% { opacity:0; transform:translate(-50%,-50%) translate3d(calc(var(--travel) - 28px),var(--fy),0) rotate(var(--fr)) scaleX(.72); }
+}
+
+/* Remove the clean circular arcane language from Fire. */
+.effect-root.spell-fire .spell-hit-ring {
+  width: 54px;
+  height: 39px;
+  border: 0;
+  border-radius: 58% 42% 64% 36%;
+  background: radial-gradient(ellipse at 35% 50%, transparent 0 35%, rgba(255,143,46,.62) 37% 41%, transparent 44% 100%);
+  transform:translate(-50%,-50%) rotate(-12deg) scale(.25);
+}
+.effect-root.spell-fire .spell-hit-core {
+  width:28px;
+  height:24px;
+  border-radius:63% 37% 56% 44%;
+  background:radial-gradient(circle at 38% 44%,#fff8c4 0 13%,#ffbd43 14% 34%,#f15f24 52%,rgba(188,48,24,.2) 76%,transparent 78%);
+  box-shadow:none;
+}
+.effect-root.spell-fire .spell-hit i {
+  width:var(--fire-ray,48px);
+  height:var(--fire-ray-h,3px);
+  border-radius:65% 0 0 65%;
+  background:linear-gradient(90deg,#ffe6a0 0,#ff8b2e 35%,rgba(210,57,24,.3) 68%,transparent 100%);
+  transform:rotate(var(--fire-angle,0deg));
+}
+.effect-root.spell-fire .spell-hit i:nth-child(1) { --fire-angle:-5deg;  --fire-ray:92px; --fire-ray-h:5px; --fire-travel:68px; --fire-alpha:1; }
+.effect-root.spell-fire .spell-hit i:nth-child(2) { --fire-angle:14deg;  --fire-ray:64px; --fire-ray-h:4px; --fire-travel:54px; --fire-alpha:.82; }
+.effect-root.spell-fire .spell-hit i:nth-child(3) { --fire-angle:-24deg; --fire-ray:51px; --fire-ray-h:3px; --fire-travel:45px; --fire-alpha:.68; }
+.effect-root.spell-fire .spell-hit i:nth-child(4) { --fire-angle:36deg;  --fire-ray:33px; --fire-ray-h:3px; --fire-travel:30px; --fire-alpha:.5; }
+.effect-root.spell-fire .spell-hit i:nth-child(5) { --fire-angle:-49deg; --fire-ray:27px; --fire-ray-h:2px; --fire-travel:23px; --fire-alpha:.4; }
+.effect-root.spell-fire .spell-hit i:nth-child(6) { --fire-angle:63deg;  --fire-ray:19px; --fire-ray-h:2px; --fire-travel:17px; --fire-alpha:.3; }
+.effect-root.spell-fire .spell-hit i:nth-child(7) { --fire-angle:-72deg; --fire-ray:14px; --fire-ray-h:2px; --fire-travel:13px; --fire-alpha:.23; }
+.effect-root.spell-fire .spell-hit i:nth-child(8) { display:none; }
+
+.effect-root.spell-fire.spell-playing .spell-hit {
+  animation: fire-hit-root 240ms cubic-bezier(.06,.72,.14,1) 392ms both;
+}
+.effect-root.spell-fire.spell-playing .spell-hit-ring {
+  animation: fire-hit-wave 220ms cubic-bezier(.06,.72,.14,1) both;
+}
+.effect-root.spell-fire.spell-playing .spell-hit-core {
+  animation: fire-hit-core 92ms ease-out both;
+}
+.effect-root.spell-fire.spell-playing .spell-hit i {
+  animation: fire-hit-ray var(--fire-dur,180ms) cubic-bezier(.06,.74,.14,1) calc(var(--i)*3ms) both;
+}
+@keyframes fire-hit-root {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.46) rotate(-4deg); }
+  7% { opacity:1; }
+  44% { transform:translate(-50%,-50%) scale(1.08,.92) rotate(3deg); }
+  100% { opacity:0; transform:translate(calc(-50% + 23px),-50%) scale(1.42,.82) rotate(-2deg); }
+}
+@keyframes fire-hit-wave {
+  0% { opacity:.78; transform:translate(-50%,-50%) rotate(-12deg) scale(.24,.5); }
+  100% { opacity:0; transform:translate(calc(-50% + 45px),-50%) rotate(-4deg) scale(3.6,1.2); }
+}
+@keyframes fire-hit-core {
+  0% { opacity:1; transform:translate(-50%,-50%) scale(.28,.7) rotate(-8deg); }
+  100% { opacity:0; transform:translate(calc(-50% + 21px),-50%) scale(3.4,.46) rotate(6deg); }
+}
+@keyframes fire-hit-ray {
+  0% { opacity:0; transform:rotate(var(--fire-angle)) translateX(3px) scaleX(.18); }
+  8% { opacity:var(--fire-alpha); }
+  36% { opacity:var(--fire-alpha); }
+  100% { opacity:0; transform:rotate(var(--fire-angle)) translateX(var(--fire-travel)) scaleX(.28); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .effect-root.spell-arcane.spell-playing .spell-charge,
+  .effect-root.spell-fire.spell-playing .spell-charge {
+    animation-duration: 1ms;
+  }
+}
