@@ -1,8 +1,8 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.6.0';
 import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.6.0';
-import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.6.0';
+import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.6.2';
 
-const BUILD = 'P3.6.0';
+const BUILD = 'P3.6.2';
 const FRAME_BUDGET_MS = 1000 / 60;
 const PRESSURE_RANK = { none: 0, medium: 1, high: 2, critical: 3 };
 
@@ -897,7 +897,8 @@ async function bootstrap() {
   log(`PASS ${BUILD} bootstrap: Heavy Impact + Explosion + Fireball registered from production catalog`);
   log(`${BUILD} effect-owned assets: ${particlePreload.length} unique particle preload assets collected from registered definitions`);
   log('Fireball architecture: explicit moving head/trail emitters → runtime position updates → existing Explosion cue at impact');
-  log('Performance/backpressure diagnostics remain available but are not the P3.6 gate; current focus is completing runtime capabilities');
+  log('Fireball multi-instance timing: rendered-frame clock clamps long main-thread gaps so spawn contention cannot fast-forward projectiles to impact');
+  log('Performance/backpressure diagnostics remain available but are not the current gate; focus remains runtime capability correctness');
 }
 
 bootstrap().catch((error) => {
