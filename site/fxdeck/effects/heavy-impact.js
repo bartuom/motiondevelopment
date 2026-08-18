@@ -95,7 +95,7 @@ function debrisEmitter(spec, resolved) {
       rotate: {
         value: { min: 0, max: 360 },
         direction: 'random',
-        animation: { enable: true, speed: { min: 18, max: 55 }, sync: false }
+        animation: { enable: true, speed: 35, sync: false }
       },
       move: {
         enable: true,
