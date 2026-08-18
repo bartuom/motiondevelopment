@@ -26,10 +26,6 @@ const RARE_REWARD_SPEC = {
   }
 };
 
-const RARE_REWARD_ASSETS = [
-  { target: 'particles', src: './assets/fxdeck-reward-shard.svg', width: 28, height: 56 }
-];
-
 const CARD_HTML = `
   <div class="fxdeck-reward-aura"></div>
   <div class="fxdeck-reward-rays"></div>
@@ -80,11 +76,11 @@ function preflashOptions(spec, intensity) {
 function shardOptions(spec, intensity, directionDegrees) {
   const speedScale = Math.max(.75, Math.sqrt(intensity));
   return burstBase(scaledCount(spec.particles.shards, intensity), {
-    color: { value: '#ffffff' },
-    shape: { type: 'image', options: { image: { src: './assets/fxdeck-reward-shard.svg', width: 28, height: 56, replaceColor: false } } },
+    color: { value: ['#fff4bd', '#e8b7ff', '#b78dff', '#ffffff'] },
+    shape: { type: 'square' },
     opacity: { value: { min: .5, max: .95 }, animation: { enable: true, speed: 2.2, sync: false, startValue: 'max', destroy: 'min' } },
-    size: { value: { min: 6, max: 15 * Math.min(1.25, intensity) } },
-    rotate: { value: { min: 0, max: 360 }, direction: 'random', animation: { enable: true, speed: 55, sync: false } },
+    size: { value: { min: 4, max: 10 * Math.min(1.25, intensity) } },
+    rotate: { value: { min: 20, max: 70 }, direction: 'random', animation: { enable: true, speed: 55, sync: false } },
     move: { enable: true, direction: 'right', angle: { value: 330, offset: directionDegrees }, random: true, straight: false, speed: { min: 5.5 * speedScale, max: 13.5 * speedScale }, outModes: { default: 'destroy' } },
     life: { count: 1, duration: { value: { min: .42, max: .76 }, sync: false } }
   });
@@ -170,12 +166,11 @@ function animateCard(instance, root, spec, intensity, directionDegrees) {
   }, spec.timings.crest);
 
   instance.timeout(() => {
-    ownAnimation(instance, [rarity, title, subtitle, pips].filter(Boolean)[0], [{ opacity: 0 }, { opacity: 1 }], { duration: 1, fill: 'forwards' });
     [rarity, title, subtitle, pips].forEach((element, index) => {
       ownAnimation(instance, element, [
-        { opacity: 0, transform: 'translateY(12px)', filter: 'blur(3px)' },
-        { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }
-      ], { duration: 360 + index * 55, delay: index * 35, easing: 'cubic-bezier(.16,.72,.18,1)', fill: 'forwards' });
+        { opacity: 0, transform: 'translateY(12px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 340 + index * 55, delay: index * 35, easing: 'cubic-bezier(.16,.72,.18,1)', fill: 'forwards' });
     });
   }, spec.timings.title);
 
@@ -206,7 +201,7 @@ function animateCard(instance, root, spec, intensity, directionDegrees) {
   instance.timeout(() => {
     ownAnimation(instance, root, [
       { opacity: 1 },
-      { opacity: 0, transform: 'translate3d(var(--fxdeck-visual-x), var(--fxdeck-visual-y), 0) translate(-50%,-50%) scale(calc(var(--fxdeck-reward-scale) * .94))' }
+      { opacity: 0 }
     ], { duration: spec.duration - spec.timings.fade, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
   }, spec.timings.fade);
 }
@@ -223,7 +218,7 @@ function rareRewardDefinition() {
     summary: spec.summary,
     lifecycle: 'ui-reveal',
     spec: structuredClone(spec),
-    assets: structuredClone(RARE_REWARD_ASSETS),
+    assets: [],
 
     async play({ params, particles: particleAdapter, adapters, instance }) {
       if (!particleAdapter?.burst) throw new Error('rareReward requires the particles adapter.');
