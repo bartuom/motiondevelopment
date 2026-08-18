@@ -5,9 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="FXDeck P1 minimal core validation lab.">
   <title>FXDeck Core Lab</title>
+  <link rel="stylesheet" href="./fxdeck-project-nav.css?v=1">
   <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.0.0">
 </head>
 <body>
+  <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
+    <div class="fxdeck-project-nav__inner">
+      <a class="fxdeck-project-nav__brand" href="./webfx-lab.html">FXDeck</a>
+      <div class="fxdeck-project-nav__links">
+        <a href="./webfx-lab.html">P0 Spike</a>
+        <a href="./fxdeck-core-lab.html" aria-current="page">P1 Core</a>
+        <a class="is-legacy" href="./">Portfolio</a>
+      </div>
+    </div>
+  </nav>
+
   <main class="shell">
     <header class="header">
       <div>
@@ -15,10 +27,6 @@
         <h1>FXDeck Core Lab</h1>
         <p class="intro">The P0 backend is frozen. This page validates the first real FXDeck API: registry, version/variant resolution, effect instances, cleanup, coordinate conversion and the tsParticles adapter.</p>
       </div>
-      <nav class="links">
-        <a href="./webfx-lab.html">P0 raw benchmark</a>
-        <a href="./">Legacy portfolio</a>
-      </nav>
     </header>
 
     <section class="panel">
