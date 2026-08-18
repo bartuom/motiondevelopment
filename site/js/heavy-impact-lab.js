@@ -150,7 +150,7 @@ function createScreenKickController(element) {
     y += -direction.y * distance;
 
     const magnitude = Math.hypot(x, y);
-    const maxKick = 14;
+    const maxKick = 12;
     if (magnitude > maxKick) {
       x = (x / magnitude) * maxKick;
       y = (y / magnitude) * maxKick;
@@ -211,22 +211,27 @@ function createHooks() {
   return {
     contactFlash({ position, directionDegrees, intensity }) {
       const flash = createTransient('impact-flash', position);
+      const scale = Math.min(1.35, .76 + intensity * .2);
       return animateTransient(flash, [
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.35)` },
-        { opacity: 1, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${Math.min(1.65, .8 + intensity * .28)})`, offset: .16 },
-        { opacity: .7, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.92)`, offset: .42 },
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(1.35)` }
-      ], { duration: 150, easing: 'cubic-bezier(.18,.78,.18,1)', fill: 'forwards' });
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.28)` },
+        { opacity: .92, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${scale})`, offset: .14 },
+        { opacity: .4, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.94)`, offset: .44 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(1.16)` }
+      ], { duration: 110, easing: 'cubic-bezier(.12,.78,.18,1)', fill: 'forwards' });
     },
 
-    pressureWave({ position, intensity }) {
-      const wave = createTransient('impact-wave', position);
-      const scale = 1.1 + Math.min(1.2, intensity) * .5;
+    pressureWave({ position, direction, directionDegrees, intensity }) {
+      const offset = 6 * Math.min(1.5, intensity);
+      const wave = createTransient('impact-wave', {
+        x: position.x + direction.x * offset,
+        y: position.y + direction.y * offset
+      });
+      const endScale = 1 + Math.min(1.25, intensity) * .32;
       return animateTransient(wave, [
-        { opacity: .75, transform: 'translate(-50%, -50%) scale(.16)' },
-        { opacity: .28, transform: `translate(-50%, -50%) scale(${scale * .7})`, offset: .58 },
-        { opacity: 0, transform: `translate(-50%, -50%) scale(${scale})` }
-      ], { duration: 260, easing: 'cubic-bezier(.12,.72,.18,1)', fill: 'forwards' });
+        { opacity: .5, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.22)` },
+        { opacity: .2, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${endScale * .72})`, offset: .56 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${endScale})` }
+      ], { duration: 220, easing: 'cubic-bezier(.1,.72,.16,1)', fill: 'forwards' });
     },
 
     targetKick({ direction, distance }) {
@@ -234,10 +239,10 @@ function createHooks() {
       const dy = direction.y * distance;
       const animation = target.animate([
         { transform: 'translate(-50%, -50%) scale(1)' },
-        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.965)`, offset: .22 },
-        { transform: `translate(calc(-50% + ${dx * .28}px), calc(-50% + ${dy * .28}px)) scale(1.018)`, offset: .58 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.972)`, offset: .2 },
+        { transform: `translate(calc(-50% + ${dx * .24}px), calc(-50% + ${dy * .24}px)) scale(1.012)`, offset: .56 },
         { transform: 'translate(-50%, -50%) scale(1)' }
-      ], { duration: 250, easing: 'cubic-bezier(.18,.72,.22,1)' });
+      ], { duration: 220, easing: 'cubic-bezier(.18,.72,.22,1)' });
       return () => animation.cancel();
     },
 
@@ -263,8 +268,8 @@ function resolvedPreview() {
       min: spec.sparks.speed.min * speedScale,
       max: spec.sparks.speed.max * speedScale
     },
-    targetKick: 10 * intensity,
-    screenKick: 5 * Math.min(1.5, intensity)
+    targetKick: 8.5 * intensity,
+    screenKick: 4.5 * Math.min(1.5, intensity)
   };
 }
 
@@ -407,9 +412,9 @@ async function bootstrap() {
   updateApiPreview();
   requestAnimationFrame(metricsLoop);
   log('PASS P2 bootstrap: heavyImpact/v1/default registered');
-  log('P2.1 screen kick uses one accumulated inner gameplay-layer transform; overlapping hits no longer start competing stage animations');
-  log('Overlap ×6 now records avg FPS / 1% low / >20ms frames / peak resources / final cleanup state');
-  log('Cue timing: flash 0ms / sparks 0ms / debris 18ms / wave 32ms / target 40ms / screen 52ms / cleanup 620ms');
+  log('P2.2 visual hierarchy: aligned hero sparks, lower density, smaller debris, shorter flash and directional pressure wave');
+  log('Overlap ×6 records avg FPS / 1% low / >20ms frames / peak resources / final cleanup state');
+  log('Cue timing: flash 0ms / sparks 0ms / debris 14ms / wave 26ms / target 36ms / screen 48ms / cleanup 560ms');
 }
 
 bootstrap().catch((error) => {
