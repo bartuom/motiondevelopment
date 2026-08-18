@@ -12,9 +12,9 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion.
-- **Current build:** **P3.10.1**.
-- **Status:** ACTIVE — Football Card sports-art / reveal feel validation pending.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.10.1.
+- **Current build:** **P3.11.0**.
+- **Status:** ACTIVE — Critical Hit implementation complete; visual/readability validation pending. Football Card P3.10.1 sports-art validation also remains pending.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.11.0.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1.
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0.
 - **Primary real-effect test:** Runtime Lab Play + Debug / Tests → Effect Grid Lab.
@@ -165,34 +165,89 @@ NOT fantasy relic / astral card
 ```
 
 Visual changes:
-- card silhouette changed from soft rounded rectangle toward an angular sculpted shield/card shape;
-- front moved from dark navy/cyan cosmic styling to **ivory / warm white / metallic gold**;
-- gold foil becomes the main rarity language;
-- geometric metallic facets replace conic/radial cosmic energy patterns;
-- outer side ornaments appear after front reveal, evoking premium football icon-card framing without copying licensed EA assets;
-- back is now dark graphite / black + restrained gold foil rather than blue astral glow;
-- circular magical badge replaced visually by a more shield-like premium sports emblem;
-- player area is warmer/sepia and product-card-like rather than blue holographic;
-- rating / position / club / nationality / name / stats use dark sports-card typography on a light card face;
-- nationality placeholder now reads visually as a conventional white/red football flag block;
-- glow/aura was strongly reduced and made warm-gold;
-- impact flash is white/gold rather than white/gold/cyan cosmic light;
-- shimmer remains a narrow metallic foil sweep with quiet time between passes.
-
-Reference direction: premium football collectible/card-opening language such as Icon/TOTY/Live-style cards, while keeping FXDeck artwork fictional and original rather than copying licensed card templates/assets.
+- angular sculpted shield/card silhouette;
+- ivory / warm white / metallic gold front;
+- gold foil as primary rarity language;
+- geometric metallic facets instead of cosmic radial patterns;
+- restrained side ornaments after front reveal;
+- graphite/black + gold back;
+- warmer player area and conventional sports-card information hierarchy;
+- strongly reduced sustained glow/aura;
+- warm white/gold midpoint flash;
+- narrow metallic foil shimmer with quiet time between passes.
 
 ### P3.10.1 validation gate
 
 Do **not** benchmark yet. Validate only art/readability:
-1. Back card should immediately read as a premium football collectible, not tarot/fantasy/sci-fi.
-2. Idle shimmer should look like foil/specular material, not magical energy.
-3. After flip the card should be predominantly light ivory/gold with strong sports information hierarchy.
-4. Gold frame / side ornaments should sell rarity without hiding player/rating/name.
-5. Midpoint flash may be strong, but sustained aura must stay restrained.
-6. Final card should remain readable for several seconds without feeling like an active spell effect.
-7. Existing click / flip / staged info / settle / cleanup behavior must remain unchanged.
+1. Back card reads as premium football collectible, not tarot/fantasy/sci-fi.
+2. Idle shimmer reads as foil/specular material, not magical energy.
+3. Front is predominantly light ivory/gold with strong sports information hierarchy.
+4. Gold frame / side ornaments sell rarity without hiding player/rating/name.
+5. Midpoint flash may be strong, but sustained aura stays restrained.
+6. Final card remains readable for several seconds without feeling like an active spell effect.
+7. Existing click / flip / staged info / settle / cleanup behavior remains unchanged.
 
-If this visual direction is accepted, next work is effect-local polish only (player art, ornament refinement, audio, optional reactive foil/parallax), not Core redesign.
+---
+
+# Critical Hit
+
+## P3.11.0 — ultra-short readability cue
+
+Runtime identity:
+
+```js
+FXDeck.play("criticalHit", {
+  version: "v1",
+  variant: "default",
+  position: hitPosition,
+  direction: hitDirection,
+  intensity: 1.0
+});
+```
+
+Purpose: prove a very short gameplay cue whose **essential hit readability does not depend on particle scheduling latency**.
+
+Authored timing:
+- **0 ms** — immediate directional DOM slash;
+- **0 ms** — immediate compact contact flash;
+- **0 ms** — narrow hero streak burst;
+- **6 ms** — compact shard burst;
+- **18 ms** — target snap;
+- **24 ms** — restrained screen kick;
+- **34 ms** — small `CRIT` readability accent;
+- **260 ms** — hard lifecycle cleanup.
+
+Design decisions:
+- this is intentionally **not Heavy Impact with larger numbers**;
+- slash/flash are narrow, directional and asymmetric rather than radial/glowy;
+- particles are secondary decoration; the hit signal exists immediately even if the shared scheduler delays particle population under pressure;
+- hero streaks use a tight 18° fan; shards use a compact 42° fan;
+- intensity affects energy/count/speed with caps rather than linearly exploding cost;
+- no Core redesign or new generic abstraction was required.
+
+Implementation files:
+- `site/fxdeck/effects/critical-hit.js`;
+- `site/critical-hit.css`;
+- `site/js/critical-hit-runtime-bridge.js`;
+- Runtime Lab exposes build P3.11.0.
+
+Validation bridge note:
+- the old base Runtime Lab controller still contains a P3.6-era three-effect selector (`heavyImpact` / `explosion` / `fireball`);
+- Critical Hit therefore registers through its own cache-keyed Runtime Lab bridge and capture-phase play/pointer handlers for this validation build;
+- Effect Grid receives the Critical Hit option after runtime/grid initialization and can spawn the real effect generically;
+- do **not** extract a generic bridge/state framework from this unless Magic Burst or another real effect proves the same need;
+- fold Critical Hit into the production catalog/base harness only when doing the next deliberate cache-key/harness cleanup, rather than risking a stale catalog import during visual validation.
+
+### P3.11.0 validation gate
+
+Do not benchmark yet. Validate feel/readability first:
+1. At 0°, 90°, 180° and 270° the hit direction is immediately obvious.
+2. The first ~100 ms reads as a **critical strike**, not a small explosion or magic burst.
+3. Slash/flash dominate readability; particles support them instead of burying them.
+4. `intensity 0.5 / 1.0 / 2.0` changes energy without changing the effect identity.
+5. `CRIT` label stays secondary; remove/reduce it if it becomes the main readable element.
+6. Repeated clicks at different positions do not leave persistent DOM/particle resources.
+7. Visual duration feels sharp; if it feels soft/floaty, shorten the tail rather than adding more particles.
 
 ---
 
@@ -205,17 +260,19 @@ If this visual direction is accepted, next work is effect-local polish only (pla
 
 Shared scheduled path owns immediate seed, frame-budgeted queue, cancellation, per-burst ownership and semantic priority/backpressure machinery.
 
+Critical Hit explicitly treats scheduled particles as secondary visual support so gameplay readability survives scheduler pressure.
+
 ## Sustained path
 Environment uses one explicit sustained emitter per source. One-shot topology controls do not pretend to apply to it.
 
 ## DOM/SVG visuals
-`DomSpriteAdapter` owns independently positioned visuals. Composite card markup support (`html` / `textContent`) was added only after multiple real DOM archetypes proved the need.
+`DomSpriteAdapter` owns independently positioned visuals where a real effect requires it. Short hook-driven transients remain effect-local; do not promote them into a generic visual graph without repeated need.
 
 ---
 
 # Runtime Lab / Grid
 
-- One Runtime Lab for all production effects.
+- One Runtime Lab for production effects.
 - Play vs Debug / Tests; center Preview persists.
 - HUD Off = clean authored preview; no diagnostic reticles/labels.
 - Basic HUD = FPS / Particles / Visuals / Instances.
@@ -223,8 +280,8 @@ Environment uses one explicit sustained emitter per source. One-shot topology co
 - Effect Grid is the primary real-effect scale harness.
 - Grid supports presets, cell spacing, Fit, 10–200% zoom, wheel zoom, pan, direction patterns and Replace/Stack loop modes.
 - Virtual logical world uses safe overscan and a fixed viewport-sized tsParticles backing canvas to avoid giant DPR buffers.
-
-Large Football/Rare Reward cards use larger cell spacing when tested in Grid. Grid/performance is not the current Football Card gate.
+- Large Football/Rare Reward cards use larger cell spacing when tested in Grid.
+- Critical Hit Grid is available for scale/readability inspection, but performance is not the current P3.11.0 gate.
 
 ---
 
@@ -232,6 +289,7 @@ Large Football/Rare Reward cards use larger cell spacing when tested in Grid. Gr
 
 These numbers explain architecture; they are not the current gate.
 
+- P0 Galaxy S20+: ~150 and ~400 simple particles remained ~60 FPS; ~800 exposed first cliff at ~57.4 avg / 30 1% low.
 - Heavy Impact early: ~454 particles / 55.4 avg FPS / 20 low / 5 >20ms.
 - Heavy Impact later: ~229 particles / 59.3 avg / 30 low / 1 >20ms.
 - Matched backend tests showed shared-direct particle creation front-loads CPU cost.
@@ -249,17 +307,18 @@ Performance tuning stays deferred unless a representative final effect exposes a
 # Remaining P3 roadmap
 
 1. **P3.10.1 Football Card visual acceptance / effect-local polish.**
-2. Optional football-card polish only after visual acceptance:
+2. **P3.11.0 Critical Hit visual/readability acceptance / effect-local polish.**
+3. Optional football-card polish only after visual acceptance:
    - stronger generic footballer art;
    - audio beats;
    - subtle pointer-reactive foil/parallax;
    - additional authored rarity variants if useful.
-3. **Critical Hit** — ultra-short readability cue.
 4. **Magic Burst** — richer stylized motion/noise/color cue.
 5. Asset lifecycle hardening only if representative effects expose a real issue.
-6. Then production resize/DPR/device matrix/raw-vs-runtime overhead and deferred quality tuning.
+6. Production catalog/base Runtime Lab cache-key cleanup when folding accepted late-P3 effects into the canonical catalog.
+7. Then production resize/DPR/device matrix/raw-vs-runtime overhead and deferred quality tuning.
 
-P3 exits when representative one-shot, moving, sustained and UI/card interaction archetypes all use FXDeck without repeated Core redesign.
+P3 exits when representative one-shot, ultra-short hit, moving, sustained and UI/card interaction archetypes all use FXDeck without repeated Core redesign.
 
 ---
 
@@ -271,7 +330,7 @@ P3 exits when representative one-shot, moving, sustained and UI/card interaction
 - [x] Environment sustained-source baseline.
 - [x] Rare Reward fantasy UI reference.
 - [~] Football Card Reveal — interaction implemented; sports visual acceptance pending.
-- [ ] Critical Hit.
+- [~] Critical Hit — implementation complete; visual/readability acceptance pending.
 - [ ] Magic Burst.
 
 ---
@@ -293,20 +352,24 @@ P3 exits when representative one-shot, moving, sustained and UI/card interaction
 13. Football-card references guide category language only; do not copy licensed EA/FIFA card assets or exact templates.
 14. Performance work resumes only for real product-relevant blockers.
 15. Every user-testable iteration advances visible build/cache keys and lands on `main`.
+16. Critical Hit keeps its primary readability in immediate DOM hooks; scheduled particles are deliberately non-essential.
+17. No generic transient/timeline/state abstraction was added for Critical Hit because one real effect does not prove that abstraction yet.
 
 ---
 
 # Changelog — 2026-08-19
 
+- **P3.11.0 — Critical Hit effect:** added `criticalHit/v1/default` as a 260 ms directional gameplay cue.
+- **P3.11.0 — scheduler-independent readability:** immediate DOM slash/flash carries the hit signal; shared-scheduled particles remain secondary accents.
+- **P3.11.0 — authored layers:** hero streaks at 0 ms, shards at 6 ms, target snap at 18 ms, screen kick at 24 ms, small CRIT accent at 34 ms.
+- **P3.11.0 — no Core redesign:** implemented through existing EffectInstance ownership, semantic burst priorities and hook lifecycle.
+- **P3.11.0 — Runtime Lab:** added cache-keyed Critical Hit presentation/bridge and Effect Grid availability; visual/readability acceptance is now the gate.
 - **P3.10.1 — Football Card sports visual pivot:** replaced the dark astral/cosmic front with a premium ivory/gold collectible-card treatment.
 - **P3.10.1 — sculpted silhouette:** angular shield/card outline and restrained gold side ornamentation now appear as part of the front reveal.
 - **P3.10.1 — sports hierarchy:** rating, position, flag, club, player, name and stats moved toward conventional football collectible readability.
 - **P3.10.1 — restrained VFX:** aura/cyan language heavily reduced; metallic foil/shimmer and warm white/gold flash become the primary reveal materials.
 - **P3.10.1 — runtime unchanged:** interaction, reveal timing, ownership, Grid compatibility and public API remain the P3.10.0 implementation.
-- **P3.10.0 — Football Card Reveal:** added persistent back-card idle, click-driven reveal, 3D flip, staged football metadata, player/rating focus, rarity hit, settle and persistent final card.
-- **P3.10.0 — interactive lifecycle:** same EffectInstance reveals through `FXDeck.update(card,{state:"reveal"})`.
-- **P3.10.0 — intensity/direction semantics:** whole-reveal energy scaling + shimmer/reveal-light angle.
-- **P3.10.0 — Lab:** Spawn / click-to-reveal / Reveal active / Remove active.
+- **P3.10.0 — Football Card Reveal:** persistent back-card idle, click-driven reveal, 3D flip, staged football metadata, player/rating focus, rarity hit, settle and persistent final card.
 
 # Earlier accepted milestones
 
