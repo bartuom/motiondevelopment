@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P3 production runtime and Shared Emission Points benchmark lab.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.1.2">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.2.1">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.2.0</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.2.1</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.2 moves the successful frame-budgeted Emission Point experiment into TsParticlesAdapter as a real shared scheduler candidate, then benchmarks that integrated runtime against emitters and synchronous shared-direct particles.</p>
+      <p class="intro">P3.2.1 adds heterogeneous Emission Point stress so the integrated shared scheduler is measured not only with identical particles, but also with per-point intensity, color, direction, speed, size and opacity variation at the same total particle count.</p>
     </header>
 
     <section class="workbench">
@@ -57,7 +57,7 @@
             <option value="shared">Shared direct — synchronous reference</option>
             <option value="scheduled">Shared scheduled — P3.2 candidate</option>
           </select>
-          <p class="control-note">Heavy Impact can now be played manually through all three adapter strategies. Shared scheduled uses one global frame-budgeted queue.</p>
+          <p class="control-note">Heavy Impact can be played manually through all three adapter strategies. Shared scheduled uses one global frame-budgeted queue.</p>
         </div>
 
         <div class="control">
@@ -67,7 +67,16 @@
             <option value="800" selected>800 particles / 24 emission points</option>
             <option value="1200">1200 particles / 32 emission points</option>
           </select>
-          <p class="control-note">Synthetic compare now exercises the actual adapter modes: emitter vs shared-direct vs shared-scheduled. Same requested count/config/point layout, 3 rounds, median result.</p>
+          <p class="control-note">All backend strategies receive the same total requested particle count and the same emission-point layout.</p>
+        </div>
+
+        <div class="control">
+          <p class="label">Stress parameter profile</p>
+          <select id="stress-profile">
+            <option value="uniform">Uniform — same parameters at every point</option>
+            <option value="heterogeneous" selected>Heterogeneous — per-point runtime variation</option>
+          </select>
+          <p class="control-note">Heterogeneous keeps the total count fixed while each point gets normalized intensity weights (0.55–1.45) plus different color, direction, speed, size and opacity. Shape/lifetime stay fixed so the test isolates common per-point variation without changing renderer type.</p>
         </div>
 
         <div class="control">
@@ -90,8 +99,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P3.2 focus</p>
-          <p>P3.1.2 showed 800 matched particles at ~83 ms worst spawn frame for emitters, ~67 ms for shared-direct, and 16.7 ms / zero spawn spikes for the Lab-only budgeted experiment. P3.2 validates the same idea after moving scheduling into the actual adapter.</p>
+          <p class="label">P3.2.1 focus</p>
+          <p>The scheduler already preserves unique particle options per burst. This build tests whether that flexibility changes population hitch or steady-state cost when 24 shared emission points carry different runtime values instead of one uniform particle definition.</p>
         </div>
       </aside>
 
@@ -117,7 +126,7 @@
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
-            <span>real cue emitter-vs-scheduled A/B + matched integrated backend stress</span>
+            <span>real cue A/B + uniform/heterogeneous integrated backend stress</span>
           </div>
         </div>
       </section>
@@ -128,7 +137,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged. The adapter now owns an experimental shared scheduler: small immediate seed for responsiveness, then fair round-robin particle chunks under one global per-frame CPU budget.</p>
+        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged. Shared bursts keep independent authored/runtime particle options; the scheduled path only controls when their particles are populated, not whether emission points may differ from one another.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -160,7 +169,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.2.0</dd></div>
+            <div><dt>Build</dt><dd>P3.2.1</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -189,14 +198,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.2.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.2.1.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.2.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.2.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.2.1"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.2.1"></script>
 </body>
 </html>
