@@ -1,9 +1,9 @@
-import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.4.0';
+import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.5.0';
 
 const EXPLOSION_SPEC = {
   label: 'Explosion',
-  revision: 'P3.4 second-effect proof / v1',
-  summary: 'Directional gameplay explosion composed from a core sprite, hot fireball particles, sparks, debris, smoke and a screen impulse. Built on the same FXDeck burst/lifecycle path as Heavy Impact.',
+  revision: 'P3.5 queue-aware quality / v1',
+  summary: 'Directional gameplay explosion with semantic layer priorities: hero core/fireball, high sparks, medium debris and low smoke. Low-value layers can shed particles under scheduler backlog.',
   duration: 760,
   timings: {
     flash: 0,
@@ -66,25 +66,9 @@ function baseEmitter(count, particles) {
 function coreEmitter(spec, resolved) {
   return baseEmitter(resolved.count, {
     color: { value: '#ffffff' },
-    shape: {
-      type: 'image',
-      options: {
-        image: {
-          src: './assets/fxdeck-explosion-core.svg',
-          width: 128,
-          height: 128,
-          replaceColor: false
-        }
-      }
-    },
-    opacity: {
-      value: { min: .82, max: 1 },
-      animation: { enable: true, speed: 4.8, sync: false, startValue: 'max', destroy: 'min' }
-    },
-    size: {
-      value: spec.size,
-      animation: { enable: true, speed: 5.2, sync: false, startValue: 'max', destroy: 'min' }
-    },
+    shape: { type: 'image', options: { image: { src: './assets/fxdeck-explosion-core.svg', width: 128, height: 128, replaceColor: false } } },
+    opacity: { value: { min: .82, max: 1 }, animation: { enable: true, speed: 4.8, sync: false, startValue: 'max', destroy: 'min' } },
+    size: { value: spec.size, animation: { enable: true, speed: 5.2, sync: false, startValue: 'max', destroy: 'min' } },
     move: { enable: false },
     life: { count: 1, duration: { value: spec.life, sync: false } }
   });
@@ -94,23 +78,9 @@ function fireballEmitter(spec, resolved) {
   return baseEmitter(resolved.count, {
     color: { value: ['#fff6b0', '#ffcf57', '#ff8b3d', '#ff4d2e'] },
     shape: { type: 'circle' },
-    opacity: {
-      value: { min: .55, max: .92 },
-      animation: { enable: true, speed: 3.2, sync: false, startValue: 'max', destroy: 'min' }
-    },
-    size: {
-      value: spec.size,
-      animation: { enable: true, speed: 4.4, sync: false, startValue: 'max', destroy: 'min' }
-    },
-    move: {
-      enable: true,
-      direction: 'right',
-      angle: { value: 360, offset: 0 },
-      random: true,
-      straight: false,
-      speed: resolved.speed,
-      outModes: { default: 'destroy' }
-    },
+    opacity: { value: { min: .55, max: .92 }, animation: { enable: true, speed: 3.2, sync: false, startValue: 'max', destroy: 'min' } },
+    size: { value: spec.size, animation: { enable: true, speed: 4.4, sync: false, startValue: 'max', destroy: 'min' } },
+    move: { enable: true, direction: 'right', angle: { value: 360, offset: 0 }, random: true, straight: false, speed: resolved.speed, outModes: { default: 'destroy' } },
     life: { count: 1, duration: { value: spec.life, sync: false } }
   });
 }
@@ -118,38 +88,11 @@ function fireballEmitter(spec, resolved) {
 function sparkEmitter(spec, resolved) {
   return baseEmitter(resolved.count, {
     color: { value: ['#ffffff', '#ffd166', '#ff9f43'] },
-    shape: {
-      type: 'image',
-      options: {
-        image: {
-          src: './assets/fxdeck-spark.svg',
-          width: 32,
-          height: 10,
-          replaceColor: false
-        }
-      }
-    },
-    opacity: {
-      value: { min: .66, max: .98 },
-      animation: { enable: true, speed: 3.1, sync: false, startValue: 'max', destroy: 'min' }
-    },
-    size: {
-      value: spec.size,
-      animation: { enable: true, speed: 5.2, sync: false, startValue: 'max', destroy: 'min' }
-    },
-    rotate: {
-      value: { min: resolved.directionDegrees - 90, max: resolved.directionDegrees + 90 },
-      direction: 'random'
-    },
-    move: {
-      enable: true,
-      direction: 'right',
-      angle: { value: spec.spread, offset: resolved.directionDegrees },
-      random: true,
-      straight: false,
-      speed: resolved.speed,
-      outModes: { default: 'destroy' }
-    },
+    shape: { type: 'image', options: { image: { src: './assets/fxdeck-spark.svg', width: 32, height: 10, replaceColor: false } } },
+    opacity: { value: { min: .66, max: .98 }, animation: { enable: true, speed: 3.1, sync: false, startValue: 'max', destroy: 'min' } },
+    size: { value: spec.size, animation: { enable: true, speed: 5.2, sync: false, startValue: 'max', destroy: 'min' } },
+    rotate: { value: { min: resolved.directionDegrees - 90, max: resolved.directionDegrees + 90 }, direction: 'random' },
+    move: { enable: true, direction: 'right', angle: { value: spec.spread, offset: resolved.directionDegrees }, random: true, straight: false, speed: resolved.speed, outModes: { default: 'destroy' } },
     life: { count: 1, duration: { value: spec.life, sync: false } }
   });
 }
@@ -158,25 +101,10 @@ function debrisEmitter(spec, resolved) {
   return baseEmitter(resolved.count, {
     color: { value: ['#3c3530', '#6b5547', '#9b7659', '#c49a6c'] },
     shape: { type: 'square' },
-    opacity: {
-      value: { min: .5, max: .84 },
-      animation: { enable: true, speed: 1.8, sync: false, startValue: 'max', destroy: 'min' }
-    },
+    opacity: { value: { min: .5, max: .84 }, animation: { enable: true, speed: 1.8, sync: false, startValue: 'max', destroy: 'min' } },
     size: { value: spec.size },
-    rotate: {
-      value: { min: 0, max: 360 },
-      direction: 'random',
-      animation: { enable: true, speed: 38, sync: false }
-    },
-    move: {
-      enable: true,
-      direction: 'right',
-      angle: { value: spec.spread, offset: resolved.directionDegrees },
-      random: true,
-      straight: false,
-      speed: resolved.speed,
-      outModes: { default: 'destroy' }
-    },
+    rotate: { value: { min: 0, max: 360 }, direction: 'random', animation: { enable: true, speed: 38, sync: false } },
+    move: { enable: true, direction: 'right', angle: { value: spec.spread, offset: resolved.directionDegrees }, random: true, straight: false, speed: resolved.speed, outModes: { default: 'destroy' } },
     life: { count: 1, duration: { value: spec.life, sync: false } }
   });
 }
@@ -185,23 +113,9 @@ function smokeEmitter(spec, resolved) {
   return baseEmitter(resolved.count, {
     color: { value: ['#e7e0da', '#aaa29c', '#6c6967'] },
     shape: { type: 'circle' },
-    opacity: {
-      value: { min: .12, max: .32 },
-      animation: { enable: true, speed: .7, sync: false, startValue: 'max', destroy: 'min' }
-    },
-    size: {
-      value: spec.size,
-      animation: { enable: true, speed: 1.2, sync: false, startValue: 'min', destroy: 'none' }
-    },
-    move: {
-      enable: true,
-      direction: 'right',
-      angle: { value: spec.spread, offset: 270 },
-      random: true,
-      straight: false,
-      speed: resolved.speed,
-      outModes: { default: 'destroy' }
-    },
+    opacity: { value: { min: .12, max: .32 }, animation: { enable: true, speed: .7, sync: false, startValue: 'max', destroy: 'min' } },
+    size: { value: spec.size, animation: { enable: true, speed: 1.2, sync: false, startValue: 'min', destroy: 'none' } },
+    move: { enable: true, direction: 'right', angle: { value: spec.spread, offset: 270 }, random: true, straight: false, speed: resolved.speed, outModes: { default: 'destroy' } },
     life: { count: 1, duration: { value: spec.life, sync: false } }
   });
 }
@@ -260,6 +174,7 @@ function explosionDefinition() {
         sparks,
         debris,
         smoke,
+        priorities: { core: 'hero', fireball: 'hero', sparks: 'high', debris: 'medium', smoke: 'low' },
         timings: { ...spec.timings },
         duration: spec.duration,
         screenKickPx: 6.2 * Math.min(1.6, intensity)
@@ -267,28 +182,43 @@ function explosionDefinition() {
 
       runHook(instance, params.hooks, 'explosionFlash', payload);
 
-      const corePromise = burstTracked(instance, particleAdapter, coreEmitter(spec.core, core), params.position);
-      const fireballPromise = burstTracked(instance, particleAdapter, fireballEmitter(spec.fireball, fireball), params.position);
+      const corePromise = burstTracked(
+        instance,
+        particleAdapter,
+        coreEmitter(spec.core, core),
+        params.position,
+        { priority: 'hero' }
+      );
+      const fireballPromise = burstTracked(
+        instance,
+        particleAdapter,
+        fireballEmitter(spec.fireball, fireball),
+        params.position,
+        { priority: 'hero' }
+      );
 
       scheduleAsync(instance, spec.timings.sparks, () => burstTracked(
         instance,
         particleAdapter,
         sparkEmitter(spec.sparks, sparks),
-        params.position
+        params.position,
+        { priority: 'high' }
       ));
 
       scheduleAsync(instance, spec.timings.debris, () => burstTracked(
         instance,
         particleAdapter,
         debrisEmitter(spec.debris, debris),
-        params.position
+        params.position,
+        { priority: 'medium' }
       ));
 
       scheduleAsync(instance, spec.timings.smoke, () => burstTracked(
         instance,
         particleAdapter,
         smokeEmitter(spec.smoke, smoke),
-        params.position
+        params.position,
+        { priority: 'low' }
       ));
 
       instance.timeout(() => runHook(instance, params.hooks, 'screenKick', {
