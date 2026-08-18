@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P3 production runtime and Shared Emission Points benchmark lab.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.1.1">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.1.2">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.1.1</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.1.2</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">Heavy Impact remains the real-effect probe. P3.1.1 adds a three-round matched synthetic particle-only A/B benchmark so emitter and Shared Emission Point paths can be compared with less run-to-run noise.</p>
+      <p class="intro">Heavy Impact remains the real-effect probe. P3.1.2 measures the spawn hitch itself and compares per-play emitters, synchronous shared-direct particles and frame-budgeted shared creation at matched workloads.</p>
     </header>
 
     <section class="workbench">
@@ -66,7 +66,7 @@
             <option value="800" selected>800 particles / 24 emission points</option>
             <option value="1200">1200 particles / 32 emission points</option>
           </select>
-          <p class="control-note">Synthetic particle-only A/B: same requested count/config/point layout, 3 rounds with alternating order, final result reported as median.</p>
+          <p class="control-note">Synthetic particle-only compare: emitter vs shared-direct vs shared-budgeted. Same requested count/config/point layout, 3 rounds, median result.</p>
         </div>
 
         <div class="control">
@@ -84,13 +84,13 @@
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
           <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
           <button id="play-ab" class="secondary" type="button">Heavy Impact A/B</button>
-          <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress A/B</button>
+          <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
         <div class="input-note">
-          <p class="label">P3.1.1 focus</p>
-          <p>Use Synthetic Stress A/B for the backend decision. It alternates emitter/shared order over 3 rounds and reports a median result only after verifying matched particle workload and cleanup.</p>
+          <p class="label">P3.1.2 focus</p>
+          <p>The previous test proved equal steady rendering at 800 particles but exposed a ~92 ms synchronous shared-direct creation cost. This build measures worst frame during spawn and tests a 6 ms/frame shared creation budget without promoting it into production runtime yet.</p>
         </div>
       </aside>
 
@@ -116,7 +116,7 @@
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
-            <span>real cue A/B + 3-round matched particle-only stress A/B</span>
+            <span>real cue A/B + matched particle backend spawn-hitch comparison</span>
           </div>
         </div>
       </section>
@@ -127,7 +127,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged while ParticleAdapter can switch between per-play emitters and shared direct particles. P3.1.1 separately measures the backend under repeated matched synthetic load.</p>
+        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged. P3.1.2 keeps shared-budgeted experimental and Lab-only while measuring whether scheduling direct particle creation across frames removes the synchronous hitch.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -159,7 +159,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.1.1</dd></div>
+            <div><dt>Build</dt><dd>P3.1.2</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -188,14 +188,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.1.1.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.1.2.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.1.1"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.1.1"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.1.2"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.1.2"></script>
 </body>
 </html>
