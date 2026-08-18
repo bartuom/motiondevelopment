@@ -8,7 +8,7 @@ export class TsParticlesAdapter {
     stage,
     hostId,
     preload = [],
-    burstMode = 'emitter',
+    burstMode = 'scheduled',
     sharedFrameBudgetMs = 6,
     sharedChunkSize = 8,
     sharedImmediateCount = 8
@@ -79,9 +79,9 @@ export class TsParticlesAdapter {
 
   /**
    * Semantic one-shot burst operation.
-   * - emitter: tsParticles addEmitter(startCount), baseline path.
-   * - shared: synchronous direct push into the persistent container.
-   * - scheduled: shared persistent container plus one global frame-budgeted queue.
+   * - scheduled: production default; shared persistent container plus one global frame-budgeted queue.
+   * - emitter: tsParticles addEmitter(startCount), retained as baseline/reference and for explicit emitter use.
+   * - shared: synchronous direct push into the persistent container, retained as a diagnostic reference.
    */
   async burst(options, cssPosition, { mode = this.burstMode } = {}) {
     if (mode === 'emitter') return this.spawn(options, cssPosition);
