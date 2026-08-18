@@ -9,9 +9,9 @@ TESTS.performance = {
 };
 
 const PERF_TIERS = [
-  { id: 'NORMAL', count: 150, duration: 2200, gate: true, minAvgFps: 55, minOnePercentLow: 42, maxFrameMs: 55 },
-  { id: 'HEAVY', count: 400, duration: 2400, gate: true, minAvgFps: 50, minOnePercentLow: 30, maxFrameMs: 80 },
-  { id: 'EXTREME', count: 800, duration: 2600, gate: false, minAvgFps: 0, minOnePercentLow: 0, maxFrameMs: Infinity }
+  { id: 'NORMAL', count: 150, duration: 2200, gate: true, minAvgFps: 55, minOnePercentLow: 42 },
+  { id: 'HEAVY', count: 400, duration: 2400, gate: true, minAvgFps: 50, minOnePercentLow: 30 },
+  { id: 'EXTREME', count: 800, duration: 2600, gate: false, minAvgFps: 0, minOnePercentLow: 0 }
 ];
 
 function effectiveFps(frameMs) {
@@ -45,7 +45,7 @@ async function sampleFrameTimes(durationMs, runId) {
     Spike.trackRaf(tick);
   });
 
-  // Ignore the first two frames to reduce noise from the measurement start itself.
+  // Ignore the first two frames to reduce noise from measurement startup.
   const samples = deltas.slice(2);
   const sorted = [...samples].sort((a, b) => a - b);
   const averageMs = samples.length ? samples.reduce((sum, value) => sum + value, 0) / samples.length : Infinity;
@@ -100,10 +100,11 @@ async function runPerfTier(tier, runId) {
   Spike.sweepEmitters();
   const emitterGone = !Spike.container.getEmitter(name);
 
+  // A single worst frame can be caused by GC, browser UI or OS scheduling.
+  // Keep max frame time diagnostic, but gate on sustained average + 1% low.
   const thresholdsPass = !tier.gate || (
     metrics.averageFps >= tier.minAvgFps &&
-    metrics.onePercentLow >= tier.minOnePercentLow &&
-    metrics.maxFrameMs <= tier.maxFrameMs
+    metrics.onePercentLow >= tier.minOnePercentLow
   );
 
   log(`PERF ${tier.id} ~${tier.count}: ${formatPerf(metrics)}; peak particles ${peak}; emitter cleanup ${emitterGone ? 'yes' : 'NO'}${tier.gate ? `; gate ${thresholdsPass ? 'PASS' : 'FAIL'}` : '; headroom only'}`);
