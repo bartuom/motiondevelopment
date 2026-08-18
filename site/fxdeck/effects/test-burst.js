@@ -1,11 +1,3 @@
-function directionName(degrees) {
-  const angle = ((degrees % 360) + 360) % 360;
-  if (angle >= 315 || angle < 45) return 'right';
-  if (angle < 135) return 'bottom';
-  if (angle < 225) return 'left';
-  return 'top';
-}
-
 const TEST_BURST_PRESETS = {
   v1: {
     default: {
@@ -17,6 +9,7 @@ const TEST_BURST_PRESETS = {
       speed: { min: 5, max: 12 },
       size: { min: 2.5, max: 5.5 },
       life: { min: .45, max: .75 },
+      spread: 72,
       stopAfter: 1100,
       color: ['#ffffff', '#c9f2ff', '#61d2ff']
     }
@@ -25,31 +18,33 @@ const TEST_BURST_PRESETS = {
     default: {
       label: 'Spark Burst',
       revision: 'Second authored revision',
-      summary: 'Rebuilt around the preloaded SVG spark shape with more particles, more speed and longer readable trails.',
+      summary: 'Rebuilt around the preloaded SVG spark shape with more particles, more speed and a tighter directional cone.',
       shape: 'image',
       baseCount: 42,
       speed: { min: 7, max: 16 },
       size: { min: 7, max: 12 },
       life: { min: .55, max: .95 },
+      spread: 54,
       stopAfter: 1300,
       color: '#ffffff'
     },
     heavy: {
       label: 'Spark Burst / Heavy',
       revision: 'Variant of v2',
-      summary: 'Same v2 spark construction, authored as a denser, larger and longer-lived heavy variant.',
+      summary: 'Same v2 spark construction, authored as a denser, larger, longer-lived and more focused heavy variant.',
       shape: 'image',
       baseCount: 68,
       speed: { min: 9, max: 20 },
       size: { min: 10, max: 17 },
       life: { min: .75, max: 1.2 },
+      spread: 42,
       stopAfter: 1600,
       color: '#ffffff'
     }
   }
 };
 
-function emitterOptions(spec, { count, speed, direction }) {
+function emitterOptions(spec, { count, speed, directionDegrees }) {
   const image = spec.shape === 'image';
 
   return {
@@ -82,7 +77,8 @@ function emitterOptions(spec, { count, speed, direction }) {
       rotate: image ? { value: { min: 0, max: 360 }, direction: 'random' } : undefined,
       move: {
         enable: true,
-        direction,
+        direction: 'right',
+        angle: { value: spec.spread, offset: directionDegrees },
         random: true,
         straight: false,
         speed,
@@ -111,6 +107,7 @@ function burstDefinition({ version, variant = 'default', defaultEffect = false }
       speed: { ...spec.speed },
       size: { ...spec.size },
       life: { ...spec.life },
+      spread: spec.spread,
       stopAfter: spec.stopAfter
     },
 
@@ -125,7 +122,8 @@ function burstDefinition({ version, variant = 'default', defaultEffect = false }
           min: spec.speed.min * speedScale,
           max: spec.speed.max * speedScale
         },
-        direction: directionName(params.direction)
+        direction: { ...params.direction },
+        directionDegrees: params.directionDegrees
       };
 
       const handle = await particleAdapter.spawn(
@@ -138,6 +136,7 @@ function burstDefinition({ version, variant = 'default', defaultEffect = false }
         shape: spec.shape,
         size: { ...spec.size },
         life: { ...spec.life },
+        spread: spec.spread,
         stopAfter: spec.stopAfter
       };
 
