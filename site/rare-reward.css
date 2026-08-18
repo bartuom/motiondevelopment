@@ -13,7 +13,7 @@
   transform-origin:center;
   pointer-events:none;
   will-change:transform,opacity;
-  contain:layout paint style;
+  contain:layout style;
 }
 .fxdeck-reward-card{
   position:absolute;
