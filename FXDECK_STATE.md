@@ -10,10 +10,11 @@
 
 ## Current state
 
-- **Current milestone:** P1 — Minimal FXDeck Core
-- **Status:** ACTIVE — only automated browser lifecycle validation remains.
-- **Next action:** run the one-click `Run P1 validation` gate in Core Lab. If it reports `P1 VALIDATION: PASS`, mark P1 `DONE`, freeze the minimal Core API, and begin P2 Heavy Impact.
-- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.0
+- **Current milestone:** P2 — Heavy Impact Vertical Slice
+- **Status:** READY TO START
+- **Previous milestone:** P1 — Minimal FXDeck Core — **DONE** after automated browser validation reported `P1 VALIDATION: PASS` on 2026-08-18.
+- **Next implementation:** register `heavyImpact / v1 / default` and build the first coherent composite cue using only the minimum sequencing/helpers proven necessary by the effect.
+- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
 ## Product target
@@ -55,7 +56,7 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 
 ---
 
-## P1 — Minimal FXDeck Core — ACTIVE
+## P1 — Minimal FXDeck Core — DONE
 
 **Goal:** prove that a small FXDeck API can hide backend/lifecycle details without inventing a large framework first.
 
@@ -91,15 +92,16 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [x] Clicking the Core Lab stage reliably spawns the selected definition at the clicked position. **User visually validated 2026-08-18.**
 - [x] V1 / V2 / Heavy visibly resolve to different authored constructions/values shown in the inspector. **User visually validated 2026-08-18.**
 - [x] Arbitrary non-cardinal direction visibly steers the burst continuously and intensity visibly scales the effect. **User visually validated 2026-08-18; Core also self-checks normalized direction math.**
-- [ ] `Play ×10` completes with `0 active instances`, `0 emitters`, and `0 particles` after lifecycle completion. **Automated P1.3.0 validator added; awaiting browser PASS.**
-- [ ] `FXDeck.stopAll()` immediately clears active instances and backend resources. **Automated P1.3.0 validator added; awaiting browser PASS.**
+- [x] `Play ×10` completes with `0 active instances`, `0 emitters`, and `0 particles` after lifecycle completion. **P1.3.0 automated browser validator PASS, reported 2026-08-18.**
+- [x] `FXDeck.stopAll()` immediately clears active instances and backend resources. **P1.3.0 automated browser validator PASS, reported 2026-08-18.**
 - [x] No effect-level code needs tsParticles emitter naming, DPR conversion, or direct backend cleanup; those responsibilities remain in `EffectInstance`, `CoordinateAdapter`, and `TsParticlesAdapter`. **Code-reviewed 2026-08-18.**
+- [x] Core Lab runtime log is fully copyable from the UI and available through `window.FXDeckLog`, so PASS/FAIL traces can be pasted directly into debugging conversations.
 
-**P1 exit:** freeze the minimal API. Do **not** add timeline/layer systems merely because they might be useful later. Move immediately to Heavy Impact.
+**P1 exit result:** minimal API accepted and frozen for the Heavy Impact vertical slice. Do not expand Core speculatively; only concrete P2 failures may justify Core changes.
 
 ---
 
-## P2 — Heavy Impact Vertical Slice — PLANNED
+## P2 — Heavy Impact Vertical Slice — READY TO START
 
 **Goal:** build the first real gameplay VFX entirely through FXDeck and use it to discover what the runtime actually lacks.
 
@@ -149,7 +151,7 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [ ] **Critical Hit** — ultra-short timing and readable impact hierarchy.
 - [ ] **Rare Reward** — UI/DOM + particles.
 - [ ] **Magic Burst** — more complex motion/noise/color behavior.
-- [ ] **Environment emitter** — sustained/long-running lifecycle; evaluate live parameter updates only if this real use case demonstrates a need.
+- [ ] **Environment emitter** — sustained/long-running lifecycle; use this effect to decide whether live `EffectInstance` parameter updates are actually necessary.
 - [ ] Track custom code required per effect; identify regressions where a new effect needs large one-off infrastructure.
 - [ ] Validate representative effects on mobile quality targets.
 
@@ -183,6 +185,7 @@ Do not build these pre-emptively:
 - marketplace/cloud/account system
 - generic plugin abstraction for many particle engines
 - large timeline/track system before Heavy Impact proves a need
+- hot-swapping an authored effect definition on an already-playing short-lived effect instance
 
 ---
 
@@ -194,7 +197,8 @@ Do not build these pre-emptively:
 4. **Position, direction and intensity are runtime inputs.** They modify one play instance without creating a new authored version. Direction is normalized by Core to a unit vector; degrees are retained as a convenience representation.
 5. **Vertical-slice-first.** Heavy Impact must drive the next abstractions; the architecture must not expand speculatively.
 6. **Primary product KPI:** how much effect-specific custom code is required to add the next production effect while preserving quality, cleanup and performance.
-7. **Definition selection is per-play, not hot-swapped mid-instance.** Game code can choose `version`/`variant` on every `FXDeck.play()` call. An already-running `EffectInstance` keeps the definition it started with. Live parameter mutation will be added only if a real long-running effect proves it necessary.
+7. **Active definitions are immutable for P1/P2.** Version/variant can be selected independently on every new `play()` call. Live parameter mutation on long-running instances is deferred until a real sustained effect proves it useful.
+8. **Runtime diagnostics must be portable.** Lab logs should remain easy to copy/paste so browser failures can be debugged from complete traces rather than screenshots alone.
 
 ---
 
@@ -202,7 +206,8 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
-- **P1.3.0:** Added one-click automated P1 exit validation. The Lab now verifies authored definition resolution, normalized direction math, 10-instance lifecycle cleanup to `0/0/0`, and immediate `stopAll()` cleanup. Visual position/version/direction behavior was confirmed by the user; backend isolation was code-reviewed.
+- **P1.3.1 / P1 DONE:** User reported `P1 VALIDATION: PASS`. Marked Play ×10 lifecycle cleanup and `stopAll()` cleanup gates complete. Added compact `Copy log` / `Clear` controls to the Core Lab runtime log plus `window.FXDeckLog.getText()/getLines()/copy()/clear()` for portable debugging traces.
+- **P1.3.0:** Added one-click automated P1 lifecycle validator covering reset cleanliness, authored-definition resolution, direction normalization, 10 overlapping plays with automatic cleanup, and active-effect `stopAll()` cleanup.
 - **P1.2.3:** Locked desktop workbench proportions to explicit `31.25% / 37.5% / 31.25%` columns so intrinsic panel content cannot let the preview dominate the screen; bumped CSS/JS cache keys for reliable Pages refresh.
 - **P1.2.2:** Rebalanced the desktop three-column workbench to approximately `1 : 1.2 : 1`, so the preview is only ~20% wider than the controls and inspector instead of dominating the screen.
 - **P1.2.1:** Rebuilt Core Lab as a widescreen three-column editor/workbench: controls on the left, large live canvas in the center, authored/resolved inspector and runtime metrics on the right. Diagnostics remain in a compact strip below; mobile/tablet collapse responsively.
