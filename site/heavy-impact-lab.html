@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.5.1</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.6.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.5.1 makes queue-aware quality proactive: admission uses projected backlog including the incoming burst, so lower-value smoke/debris can be reduced before the scheduler crosses pressure thresholds. Hero layers remain protected.</p>
+      <p class="intro">P3.6 returns to product capability work. Effects now declare their own particle assets, and Fireball adds the first moving-source archetype: moving head + trail → runtime position updates → Explosion handoff at impact.</p>
     </header>
 
     <section class="workbench">
@@ -40,13 +40,14 @@
         <div class="control">
           <p class="label">Effect</p>
           <select id="effect-select">
-            <option value="explosion" selected>Explosion — projected-backlog quality probe</option>
+            <option value="fireball" selected>Fireball — moving-source proof</option>
+            <option value="explosion">Explosion — composite one-shot</option>
             <option value="heavyImpact">Heavy Impact — production one-shot</option>
           </select>
         </div>
         <div class="control">
           <p class="label">Authored version</p>
-          <select disabled><option id="authored-version-label">v1 — Explosion</option></select>
+          <select disabled><option id="authored-version-label">v1 — Fireball</option></select>
         </div>
         <div class="control">
           <p class="label">Authored variant</p>
@@ -60,7 +61,7 @@
             <option value="emitter">Per-play emitter — reference</option>
             <option value="shared">Shared direct — synchronous reference</option>
           </select>
-          <p class="control-note">Production scheduled bursts carry semantic priority and projected-backlog admission. Hero layers are protected; low-value layers shed before backlog crosses the next pressure tier.</p>
+          <p class="control-note">One-shot cues use the selected burst path. Fireball travel intentionally uses explicit moving emitters; its impact reuses Explosion through the selected one-shot path.</p>
         </div>
 
         <div class="control">
@@ -70,7 +71,6 @@
             <option value="800" selected>800 particles / 24 emission points</option>
             <option value="1200">1200 particles / 32 emission points</option>
           </select>
-          <p class="control-note">Synthetic Stress Compare explicitly disables backpressure so all paths still receive the same requested workload.</p>
         </div>
 
         <div class="control">
@@ -90,21 +90,21 @@
         <div class="control">
           <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
           <input id="direction" type="range" min="0" max="359" value="18" step="1">
-          <p class="control-note">Heavy Impact uses direction tightly. Explosion uses it as a broad blast bias.</p>
+          <p class="control-note">Fireball uses direction as its actual travel vector. Heavy Impact uses it tightly; Explosion uses it as a broad blast bias.</p>
         </div>
 
         <div class="actions">
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
+          <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
           <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
           <button id="play-ab" class="secondary" type="button">Effect A/B</button>
           <button id="run-cancel-gate" class="secondary" type="button">Runtime Cancel Gate</button>
           <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
-          <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
         <div class="input-note">
-          <p class="label">P3.5.1 focus</p>
-          <p>P3.5.0 improved Explosion frame pacing but admitted 870/870 particles because quality pressure was detected only after bursts entered the queue. P3.5.1 evaluates queue pressure against the projected backlog before admission, so debris/smoke can shed proactively while core/fireball remain intact.</p>
+          <p class="label">P3.6 focus</p>
+          <p>Performance diagnostics are retained but are no longer the gate. The current question is whether FXDeck handles a genuinely different lifecycle: a moving source with a trail that updates every frame and transitions into an existing effect at impact, while assets are discovered from registered effect definitions rather than a manual Lab preload list.</p>
         </div>
       </aside>
 
@@ -112,9 +112,9 @@
         <div class="canvas-toolbar">
           <div>
             <p class="label">02 / Preview</p>
-            <strong id="preview-title">Explosion production probe</strong>
+            <strong id="preview-title">Fireball production probe</strong>
           </div>
-          <span id="preview-note">Click to move target + play selected effect</span>
+          <span id="preview-note">Click to choose launch point; direction controls travel</span>
         </div>
 
         <div id="impact-stage" class="stage">
@@ -129,8 +129,8 @@
             </div>
           </div>
           <div class="caption">
-            <strong id="caption-title">explosion / v1 / default</strong>
-            <span id="caption-note">projected-backlog quality / shared-scheduled production default</span>
+            <strong id="caption-title">fireball / v1 / default</strong>
+            <span id="caption-note">moving source → trail → Explosion handoff</span>
           </div>
         </div>
       </section>
@@ -141,7 +141,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p id="effect-summary" class="summary">Explosion uses semantic layer priorities so low-value particles can be reduced under runtime queue pressure without cutting the hero core/fireball.</p>
+        <p id="effect-summary" class="summary">Fireball proves moving emitters, runtime position updates and effect-to-effect handoff without adding a generic timeline or projectile framework.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -166,9 +166,9 @@
         </section>
 
         <section class="inspector-section runtime-section">
-          <p class="label">Runtime / performance</p>
+          <p class="label">Runtime / diagnostics</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.5.1</dd></div>
+            <div><dt>Build</dt><dd>P3.6.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>p95 frame</dt><dd id="metric-p95">--</dd></div>
@@ -203,14 +203,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.5.1.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.5.1"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.5.1"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
 </body>
 </html>
