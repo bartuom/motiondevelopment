@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.3.0</p>
+        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.3.1</p>
         <h1>Heavy Impact</h1>
       </div>
-      <p class="intro">Readability pass: the directional pressure response now has a stronger leading edge and clearer separation from the contact flash while preserving the same FXDeck.play() contract.</p>
+      <p class="intro">Readability pass plus a hardened overlap benchmark: one clean capture at a time, cancellable scheduled plays and reliable final cleanup reporting.</p>
     </header>
 
     <section class="workbench">
@@ -68,8 +68,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P2.3 focus</p>
-          <p>The pressure wave should now be clearly visible as a short directional response just after contact, while remaining secondary to the flash and hero sparks.</p>
+          <p class="label">P2.3.1 focus</p>
+          <p>Overlap benchmark now starts from a clean resource state, blocks competing manual input during capture and cancels scheduled plays when Stop All is used.</p>
         </div>
       </aside>
 
@@ -137,7 +137,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P2.3.0</dd></div>
+            <div><dt>Build</dt><dd>P2.3.1</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -165,13 +165,13 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.3.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.3.1.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p2.3.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p2.3.1"></script>
 </body>
 </html>
