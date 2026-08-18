@@ -1,4 +1,4 @@
-const BUILD = 'P3.2.1';
+const BUILD = 'P3.3.0';
 const ROUNDS = 3;
 
 const stressButton = document.querySelector('#play-stress-ab');
@@ -52,7 +52,7 @@ async function waitForLab(timeoutMs = 8000) {
     if (lab?.particleAdapter?.container && lab?.fx) return lab;
     await sleep(40);
   }
-  throw new Error('P3.2 stress benchmark could not find an initialized FXDeckLab.');
+  throw new Error(`${BUILD} stress benchmark could not find an initialized FXDeckLab.`);
 }
 
 function summarizeFrames(samples) {
@@ -341,7 +341,7 @@ async function runLeg(lab, path, preset, round, profile) {
 }
 
 function setUiBusy(busy) {
-  const ids = ['play-impact', 'play-overlap', 'play-ab', 'stop-all', 'particle-path', 'intensity', 'direction', 'stress-load', 'stress-profile'];
+  const ids = ['play-impact', 'play-overlap', 'play-ab', 'run-cancel-gate', 'stop-all', 'particle-path', 'intensity', 'direction', 'stress-load', 'stress-profile'];
   for (const id of ids) {
     const element = document.getElementById(id);
     if (element) element.disabled = busy;
@@ -450,7 +450,7 @@ if (stressButton) {
 waitForLab()
   .then((lab) => {
     const stats = lab.particleAdapter.getStats();
-    log(`${BUILD} ready: uniform + heterogeneous + combined profile stress; integrated scheduled mode ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
+    log(`${BUILD} ready: uniform + heterogeneous + combined profile stress; production scheduled mode ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
   })
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
