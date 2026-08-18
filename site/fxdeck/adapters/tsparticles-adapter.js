@@ -1,6 +1,15 @@
 import { CoordinateAdapter } from '../core/coordinate-adapter.js';
 
 const BURST_MODES = new Set(['emitter', 'shared', 'scheduled']);
+const BURST_PRIORITIES = new Set(['hero', 'high', 'medium', 'low']);
+const PRIORITY_SCHEDULE = ['hero', 'hero', 'high', 'hero', 'high', 'medium', 'hero', 'high', 'medium', 'low'];
+const PRESSURE_RANK = { none: 0, medium: 1, high: 2, critical: 3 };
+const BACKPRESSURE_SCALES = {
+  none: { hero: 1, high: 1, medium: 1, low: 1 },
+  medium: { hero: 1, high: 1, medium: .9, low: .75 },
+  high: { hero: 1, high: .9, medium: .7, low: .4 },
+  critical: { hero: 1, high: .8, medium: .5, low: .15 }
+};
 
 export class TsParticlesAdapter {
   constructor({
@@ -11,7 +20,10 @@ export class TsParticlesAdapter {
     burstMode = 'scheduled',
     sharedFrameBudgetMs = 6,
     sharedChunkSize = 8,
-    sharedImmediateCount = 8
+    sharedImmediateCount = 8,
+    backpressureMedium = 96,
+    backpressureHigh = 160,
+    backpressureCritical = 240
   }) {
     if (!engine) throw new Error('TsParticlesAdapter requires the tsParticles engine.');
     if (!stage) throw new Error('TsParticlesAdapter requires a stage element.');
@@ -32,8 +44,13 @@ export class TsParticlesAdapter {
     this.sharedFrameBudgetMs = Math.max(.5, Number(sharedFrameBudgetMs) || 6);
     this.sharedChunkSize = Math.max(1, Math.round(Number(sharedChunkSize) || 8));
     this.sharedImmediateCount = Math.max(0, Math.round(Number(sharedImmediateCount) || 0));
+    this.backpressureMedium = Math.max(1, Math.round(Number(backpressureMedium) || 96));
+    this.backpressureHigh = Math.max(this.backpressureMedium + 1, Math.round(Number(backpressureHigh) || 160));
+    this.backpressureCritical = Math.max(this.backpressureHigh + 1, Math.round(Number(backpressureCritical) || 240));
     this.sharedQueue = [];
     this.sharedSchedulerRaf = 0;
+    this.sharedPriorityCursor = 0;
+    this.qualityTelemetry = this.#newQualityTelemetry();
   }
 
   async init() {
@@ -82,11 +99,18 @@ export class TsParticlesAdapter {
    * - scheduled: production default; shared persistent container plus one global frame-budgeted queue.
    * - emitter: tsParticles addEmitter(startCount), retained as baseline/reference and for explicit emitter use.
    * - shared: synchronous direct push into the persistent container, retained as a diagnostic reference.
+   *
+   * Scheduled bursts also accept semantic priority and queue backpressure:
+   * { priority: 'hero'|'high'|'medium'|'low', backpressure: true|false }.
    */
-  async burst(options, cssPosition, { mode = this.burstMode } = {}) {
+  async burst(options, cssPosition, {
+    mode = this.burstMode,
+    priority = 'medium',
+    backpressure = true
+  } = {}) {
     if (mode === 'emitter') return this.spawn(options, cssPosition);
     if (mode === 'shared') return this.spawnSharedBurst(options, cssPosition);
-    if (mode === 'scheduled') return this.spawnScheduledBurst(options, cssPosition);
+    if (mode === 'scheduled') return this.spawnScheduledBurst(options, cssPosition, { priority, backpressure });
     throw new Error(`Unsupported burst mode: ${mode}`);
   }
 
@@ -125,6 +149,8 @@ export class TsParticlesAdapter {
       id,
       mode: 'shared',
       count,
+      requestedCount: count,
+      shedCount: 0,
       remaining: 0,
       pending: false,
       ready: null,
@@ -138,10 +164,13 @@ export class TsParticlesAdapter {
     return handle;
   }
 
-  async spawnScheduledBurst(options, cssPosition) {
+  async spawnScheduledBurst(options, cssPosition, { priority = 'medium', backpressure = true } = {}) {
     this.#assertReady();
 
-    const count = this.#burstCount(options);
+    const requestedCount = this.#burstCount(options);
+    const normalizedPriority = this.#normalizePriority(priority);
+    const admission = this.#admitScheduledCount(requestedCount, normalizedPriority, backpressure !== false);
+    const count = admission.admitted;
     const id = `fxdeck-scheduled-${++this.serial}`;
     const position = this.coordinates.toCanvas(cssPosition);
     const particleOptions = structuredClone(options.particles);
@@ -154,7 +183,11 @@ export class TsParticlesAdapter {
     const handle = {
       id,
       mode: 'scheduled',
+      priority: normalizedPriority,
+      pressureAtAdmission: admission.pressure,
       count,
+      requestedCount,
+      shedCount: requestedCount - count,
       remaining,
       pending: remaining > 0,
       ready,
@@ -166,14 +199,20 @@ export class TsParticlesAdapter {
 
     this.sharedBursts.set(id, handle);
 
-    // Seed a few particles immediately so a gameplay hit still responds in the
-    // triggering frame, then place the rest into the global fair scheduler.
     if (immediateCount > 0) {
       this.container.particles.push(immediateCount, position, particleOptions, id);
     }
 
     if (remaining > 0) {
-      this.sharedQueue.push({ id, position, particleOptions, remaining, cancelled: false });
+      this.sharedQueue.push({
+        id,
+        priority: normalizedPriority,
+        position,
+        particleOptions,
+        remaining,
+        cancelled: false
+      });
+      if (backpressure !== false) this.#recordQualityPressure(this.#pressureForQueued(this.#queuedParticleCount()));
       this.#scheduleSharedDrain();
     } else {
       handle.pending = false;
@@ -252,10 +291,12 @@ export class TsParticlesAdapter {
     if (this.sharedSchedulerRaf) cancelAnimationFrame(this.sharedSchedulerRaf);
     this.sharedSchedulerRaf = 0;
     this.sharedQueue = [];
+    this.sharedPriorityCursor = 0;
 
     for (const id of [...this.handles.keys()]) this.stop(id);
     for (const id of [...this.sharedBursts.keys()]) this.stopSharedBurst(id);
     this.container.particles?.clear?.();
+    this.qualityTelemetry = this.#newQualityTelemetry();
   }
 
   resize() {
@@ -270,23 +311,43 @@ export class TsParticlesAdapter {
         burstGroups: 0,
         queuedBursts: 0,
         queuedParticles: 0,
+        queuePressure: 'none',
         burstMode: this.burstMode,
         schedulerBudgetMs: this.sharedFrameBudgetMs,
+        qualityRequestedParticles: 0,
+        qualityAdmittedParticles: 0,
+        qualityShedParticles: 0,
+        qualityShedBursts: 0,
+        qualityPeakPressure: 'none',
         scale: { x: 1, y: 1 }
       };
     }
 
     this.sweep();
+    const queuedParticles = this.#queuedParticleCount();
     return {
       particles: Number(this.container.particles?.count ?? this.container.particles?.array?.length ?? 0),
       emitters: this.handles.size,
       burstGroups: this.sharedBursts.size,
       queuedBursts: this.sharedQueue.length,
-      queuedParticles: this.sharedQueue.reduce((sum, job) => sum + Math.max(0, job.remaining), 0),
+      queuedParticles,
+      queuePressure: this.#pressureForQueued(queuedParticles),
+      queuedByPriority: this.#queuedByPriority(),
       burstMode: this.burstMode,
       schedulerBudgetMs: this.sharedFrameBudgetMs,
       schedulerChunkSize: this.sharedChunkSize,
       schedulerImmediateCount: this.sharedImmediateCount,
+      backpressureThresholds: {
+        medium: this.backpressureMedium,
+        high: this.backpressureHigh,
+        critical: this.backpressureCritical
+      },
+      qualityRequestedParticles: this.qualityTelemetry.requested,
+      qualityAdmittedParticles: this.qualityTelemetry.admitted,
+      qualityShedParticles: this.qualityTelemetry.shed,
+      qualityShedBursts: this.qualityTelemetry.shedBursts,
+      qualityPeakPressure: this.qualityTelemetry.peakPressure,
+      qualityByPriority: structuredClone(this.qualityTelemetry.byPriority),
       scale: this.coordinates.getScale()
     };
   }
@@ -298,12 +359,93 @@ export class TsParticlesAdapter {
     return count;
   }
 
+  #normalizePriority(priority) {
+    return BURST_PRIORITIES.has(priority) ? priority : 'medium';
+  }
+
+  #queuedParticleCount() {
+    return this.sharedQueue.reduce((sum, job) => sum + Math.max(0, job.remaining), 0);
+  }
+
+  #queuedByPriority() {
+    const result = { hero: 0, high: 0, medium: 0, low: 0 };
+    for (const job of this.sharedQueue) {
+      if (job.cancelled) continue;
+      result[this.#normalizePriority(job.priority)] += Math.max(0, job.remaining);
+    }
+    return result;
+  }
+
+  #pressureForQueued(queuedParticles) {
+    if (queuedParticles >= this.backpressureCritical) return 'critical';
+    if (queuedParticles >= this.backpressureHigh) return 'high';
+    if (queuedParticles >= this.backpressureMedium) return 'medium';
+    return 'none';
+  }
+
+  #admitScheduledCount(requested, priority, backpressure) {
+    const queued = this.#queuedParticleCount();
+    const pressure = this.#pressureForQueued(queued);
+    const scale = backpressure ? BACKPRESSURE_SCALES[pressure][priority] : 1;
+    const admitted = Math.max(1, Math.min(requested, Math.round(requested * scale)));
+
+    if (backpressure) {
+      const shed = requested - admitted;
+      this.qualityTelemetry.requested += requested;
+      this.qualityTelemetry.admitted += admitted;
+      this.qualityTelemetry.shed += shed;
+      if (shed > 0) this.qualityTelemetry.shedBursts += 1;
+      const priorityStats = this.qualityTelemetry.byPriority[priority];
+      priorityStats.requested += requested;
+      priorityStats.admitted += admitted;
+      priorityStats.shed += shed;
+      this.#recordQualityPressure(pressure);
+    }
+
+    return { requested, admitted, pressure, scale };
+  }
+
+  #recordQualityPressure(pressure) {
+    if (PRESSURE_RANK[pressure] > PRESSURE_RANK[this.qualityTelemetry.peakPressure]) {
+      this.qualityTelemetry.peakPressure = pressure;
+    }
+  }
+
+  #newQualityTelemetry() {
+    return {
+      requested: 0,
+      admitted: 0,
+      shed: 0,
+      shedBursts: 0,
+      peakPressure: 'none',
+      byPriority: {
+        hero: { requested: 0, admitted: 0, shed: 0 },
+        high: { requested: 0, admitted: 0, shed: 0 },
+        medium: { requested: 0, admitted: 0, shed: 0 },
+        low: { requested: 0, admitted: 0, shed: 0 }
+      }
+    };
+  }
+
   #scheduleSharedDrain() {
     if (this.sharedSchedulerRaf || !this.sharedQueue.length) return;
     this.sharedSchedulerRaf = requestAnimationFrame(() => {
       this.sharedSchedulerRaf = 0;
       this.#drainSharedQueue();
     });
+  }
+
+  #takeNextSharedJob() {
+    if (!this.sharedQueue.length) return null;
+
+    for (let attempt = 0; attempt < PRIORITY_SCHEDULE.length; attempt += 1) {
+      const priority = PRIORITY_SCHEDULE[this.sharedPriorityCursor % PRIORITY_SCHEDULE.length];
+      this.sharedPriorityCursor = (this.sharedPriorityCursor + 1) % PRIORITY_SCHEDULE.length;
+      const index = this.sharedQueue.findIndex((job) => !job.cancelled && job.priority === priority);
+      if (index >= 0) return this.sharedQueue.splice(index, 1)[0];
+    }
+
+    return this.sharedQueue.shift() ?? null;
   }
 
   #drainSharedQueue() {
@@ -315,9 +457,7 @@ export class TsParticlesAdapter {
     while (this.sharedQueue.length) {
       if (operations > 0 && performance.now() - frameStartedAt >= this.sharedFrameBudgetMs) break;
 
-      // Round-robin: each active burst receives one chunk before another chunk
-      // from the same burst, so one large request cannot starve newer impacts.
-      const job = this.sharedQueue.shift();
+      const job = this.#takeNextSharedJob();
       if (!job || job.cancelled || !this.sharedBursts.has(job.id)) continue;
 
       const chunk = Math.min(job.remaining, this.sharedChunkSize);
