@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P2 Heavy Impact vertical slice lab.">
   <title>FXDeck Heavy Impact Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.0.0">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.1.0">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,7 +24,7 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.0.0</p>
+        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.1.0</p>
         <h1>Heavy Impact</h1>
       </div>
       <p class="intro">First production-style vertical slice: one FXDeck.play() call orchestrates particles, DOM cue layers and game integration hooks.</p>
@@ -63,7 +63,7 @@
 
         <div class="actions">
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
-          <button id="play-overlap" class="secondary" type="button">Overlap ×6</button>
+          <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
@@ -83,13 +83,15 @@
         </div>
 
         <div id="impact-stage" class="stage">
-          <div class="grid" aria-hidden="true"></div>
-          <div class="impact-backdrop" aria-hidden="true"></div>
-          <div id="heavy-impact-particles" class="particles" aria-hidden="true"></div>
-          <div id="impact-dom-layer" class="impact-dom-layer" aria-hidden="true"></div>
-          <div id="impact-target" class="impact-target" aria-hidden="true">
-            <span class="target-core"></span>
-            <span class="target-ring"></span>
+          <div id="impact-kick-layer" class="impact-kick-layer" aria-hidden="true">
+            <div class="grid"></div>
+            <div class="impact-backdrop"></div>
+            <div id="heavy-impact-particles" class="particles"></div>
+            <div id="impact-dom-layer" class="impact-dom-layer"></div>
+            <div id="impact-target" class="impact-target">
+              <span class="target-core"></span>
+              <span class="target-ring"></span>
+            </div>
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
@@ -133,9 +135,12 @@
         </section>
 
         <section class="inspector-section runtime-section">
-          <p class="label">Runtime state</p>
+          <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P2.0.0</dd></div>
+            <div><dt>Build</dt><dd>P2.1.0</dd></div>
+            <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
+            <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
+            <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
             <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
             <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
             <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -160,13 +165,13 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.0.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.1.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p2.0.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p2.1.0"></script>
 </body>
 </html>
