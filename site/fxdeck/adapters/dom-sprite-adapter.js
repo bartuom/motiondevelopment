@@ -19,6 +19,8 @@ export class DomSpriteAdapter {
       }
     }
 
+    if (options.textContent != null) element.textContent = String(options.textContent);
+    if (options.html != null) element.innerHTML = String(options.html);
     if (options.style) Object.assign(element.style, options.style);
     if (options.cssVars) {
       for (const [name, value] of Object.entries(options.cssVars)) {
