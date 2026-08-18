@@ -1,4 +1,5 @@
-const BUILD = 'P3.1.0';
+const BUILD = 'P3.1.1';
+const ROUNDS = 3;
 
 const stressButton = document.querySelector('#play-stress-ab');
 const stressLoadInput = document.querySelector('#stress-load');
@@ -51,6 +52,27 @@ function summarizeFrames(samples) {
     avgFps: 1000 / avgMs,
     low1: 1000 / p99Ms,
     spikes20: valid.filter((dt) => dt > 20).length
+  };
+}
+
+function median(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return 0;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) * 0.5;
+}
+
+function aggregate(results) {
+  return {
+    spawnMs: median(results.map((item) => item.spawnMs)),
+    avgFps: median(results.map((item) => item.avgFps)),
+    low1: median(results.map((item) => item.low1)),
+    spikes20: median(results.map((item) => item.spikes20)),
+    peakParticles: median(results.map((item) => item.peakParticles)),
+    peakEmitters: Math.max(...results.map((item) => item.peakEmitters)),
+    peakGroups: Math.max(...results.map((item) => item.peakGroups)),
+    allTargetsReached: results.every((item) => item.targetReached),
+    allCleanupClean: results.every((item) => item.finalParticles === 0 && item.finalEmitters === 0 && item.finalGroups === 0)
   };
 }
 
@@ -150,7 +172,7 @@ async function cleanLab(lab) {
   await nextFrame();
 }
 
-async function runLeg(lab, path, preset) {
+async function runLeg(lab, path, preset, round) {
   const adapter = lab.particleAdapter;
   const stage = document.querySelector('#impact-stage');
   const points = makePoints(stage, preset.points);
@@ -159,19 +181,17 @@ async function runLeg(lab, path, preset) {
   await cleanLab(lab);
   adapter.setBurstMode(path);
 
-  const handles = [];
   const spawnStartedAt = performance.now();
   for (let index = 0; index < points.length; index += 1) {
-    handles.push(await adapter.burst(stressEmitterOptions(counts[index]), points[index], { mode: path }));
+    await adapter.burst(stressEmitterOptions(counts[index]), points[index], { mode: path });
   }
   const spawnMs = performance.now() - spawnStartedAt;
 
   const target = await waitForParticleTarget(adapter, preset.particles);
   const statsAtStart = adapter.getStats();
-  log(`STRESS ${path}: spawn ${spawnMs.toFixed(2)} ms / requested ${preset.particles} / ready ${statsAtStart.particles} particles / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
+  log(`STRESS R${round} ${path}: spawn ${spawnMs.toFixed(2)} ms / requested ${preset.particles} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
 
   const frameResult = await sampleFrames(adapter, 1500);
-  const endStats = adapter.getStats();
 
   adapter.clear();
   await nextFrame();
@@ -182,17 +202,17 @@ async function runLeg(lab, path, preset) {
     path,
     requested: preset.particles,
     points: preset.points,
+    round,
     spawnMs,
     readyParticles: statsAtStart.particles,
     targetReached: target.reached,
     ...frameResult,
-    endParticles: endStats.particles,
     finalParticles: cleanStats.particles,
     finalEmitters: cleanStats.emitters,
     finalGroups: cleanStats.burstGroups
   };
 
-  log(`STRESS ${path} RESULT: ${result.avgFps.toFixed(1)} avg / ${result.low1.toFixed(1)} low / ${result.spikes20} spikes / peak ${result.peakParticles} particles / ${result.peakEmitters} emitters / ${result.peakGroups} groups / cleanup ${result.finalEmitters}/${result.finalGroups}/${result.finalParticles}`);
+  log(`STRESS R${round} ${path} RESULT: ${result.avgFps.toFixed(1)} avg / ${result.low1.toFixed(1)} low / ${result.spikes20} spikes / peak ${result.peakParticles} / cleanup ${result.finalEmitters}/${result.finalGroups}/${result.finalParticles}`);
   return result;
 }
 
@@ -214,24 +234,36 @@ async function runStressAB() {
   const requested = Number(stressLoadInput?.value ?? 800);
   const preset = STRESS_PRESETS[requested] ?? STRESS_PRESETS[800];
   const originalPath = lab.particleAdapter.getBurstMode();
+  const results = { emitter: [], shared: [] };
 
   setUiBusy(true);
-  log(`P3.1 STRESS A/B START: ${preset.particles} matched particles across ${preset.points} emission points; particle-only workload, emitter first then shared-direct`);
+  log(`${BUILD} STRESS A/B START: ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds; order alternates to reduce run-order bias`);
 
   try {
-    const emitter = await runLeg(lab, 'emitter', preset);
-    await sleep(220);
-    const shared = await runLeg(lab, 'shared', preset);
+    for (let round = 1; round <= ROUNDS; round += 1) {
+      const order = round % 2 === 1 ? ['emitter', 'shared'] : ['shared', 'emitter'];
+      log(`STRESS ROUND ${round}/${ROUNDS}: ${order.join(' → ')}`);
 
+      for (const path of order) {
+        const result = await runLeg(lab, path, preset, round);
+        results[path].push(result);
+        await sleep(180);
+      }
+    }
+
+    const emitter = aggregate(results.emitter);
+    const shared = aggregate(results.shared);
+    const tolerance = Math.max(4, Math.round(preset.particles * 0.02));
+    const peakDelta = shared.peakParticles - emitter.peakParticles;
+    const workloadMatched = emitter.allTargetsReached && shared.allTargetsReached && Math.abs(peakDelta) <= tolerance;
+    const cleanupClean = emitter.allCleanupClean && shared.allCleanupClean;
+    const spawnDelta = shared.spawnMs - emitter.spawnMs;
     const avgDelta = shared.avgFps - emitter.avgFps;
     const lowDelta = shared.low1 - emitter.low1;
-    const spawnDelta = shared.spawnMs - emitter.spawnMs;
-    const peakDelta = shared.peakParticles - emitter.peakParticles;
-    const matched = Math.abs(peakDelta) <= Math.max(4, Math.round(preset.particles * 0.02));
 
-    log(`P3.1 STRESS A/B RESULT: emitter ${emitter.spawnMs.toFixed(2)}ms spawn / ${emitter.avgFps.toFixed(1)} avg / ${emitter.low1.toFixed(1)} low / ${emitter.spikes20} spikes / peak ${emitter.peakParticles} | shared ${shared.spawnMs.toFixed(2)}ms spawn / ${shared.avgFps.toFixed(1)} avg / ${shared.low1.toFixed(1)} low / ${shared.spikes20} spikes / peak ${shared.peakParticles} | Δ shared-emitter ${spawnDelta >= 0 ? '+' : ''}${spawnDelta.toFixed(2)}ms spawn, ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${peakDelta >= 0 ? '+' : ''}${peakDelta} particles | workload ${matched ? 'MATCHED' : 'MISMATCHED'}`);
+    log(`${BUILD} STRESS A/B RESULT (median ${ROUNDS}): emitter ${emitter.spawnMs.toFixed(2)}ms spawn / ${emitter.avgFps.toFixed(1)} avg / ${emitter.low1.toFixed(1)} low / ${emitter.spikes20.toFixed(0)} spikes / peak ${emitter.peakParticles.toFixed(0)} | shared ${shared.spawnMs.toFixed(2)}ms spawn / ${shared.avgFps.toFixed(1)} avg / ${shared.low1.toFixed(1)} low / ${shared.spikes20.toFixed(0)} spikes / peak ${shared.peakParticles.toFixed(0)} | Δ shared-emitter ${spawnDelta >= 0 ? '+' : ''}${spawnDelta.toFixed(2)}ms spawn, ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${peakDelta >= 0 ? '+' : ''}${peakDelta.toFixed(0)} particles | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
   } catch (error) {
-    log(`P3.1 STRESS A/B FAIL: ${error.message}`);
+    log(`${BUILD} STRESS A/B FAIL: ${error.message}`);
     console.error(error);
   } finally {
     await cleanLab(lab);
@@ -245,7 +277,7 @@ async function runStressAB() {
 if (stressButton) {
   stressButton.addEventListener('click', () => {
     runStressAB().catch((error) => {
-      log(`P3.1 STRESS A/B FAIL: ${error.message}`);
+      log(`${BUILD} STRESS A/B FAIL: ${error.message}`);
       console.error(error);
       setUiBusy(false);
     });
@@ -253,7 +285,7 @@ if (stressButton) {
 }
 
 waitForLab()
-  .then(() => log(`${BUILD} ready: matched synthetic particle stress presets 400 / 800 / 1200; isolates backend strategy from Heavy Impact DOM/screen hooks`))
+  .then(() => log(`${BUILD} ready: 3-round matched synthetic particle stress presets 400 / 800 / 1200; isolates backend strategy and reports median result`))
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
     console.error(error);
