@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.7.3';
+const BUILD = 'P3.8.0';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,15 +68,15 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.7.3 gives Effect Grid an effect-aware safe world around the cell layout so radial travel and impacts remain renderable instead of hitting logical canvas edges. The runtime HUD is also lighter and more transparent.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-2])/g, BUILD);
+  if (intro) intro.textContent = 'P3.8.0 moves beyond one-shots and projectiles: Environment Emitter proves a sustained FXDeck source with live position/intensity updates and owned stop cleanup. Fireball remains the accepted moving-source baseline.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+)/g, BUILD);
 }
 
 async function loadEffectGridLab() {
   try {
     await import('./effect-grid-lab.js?v=p3.7.3');
     await import('./effect-grid-canvas-projection.js?v=p3.7.3');
-    await import('./effect-grid-runtime-controls.js?v=p3.7.3');
+    await import('./effect-grid-runtime-controls.js?v=p3.8.0');
   } catch (error) {
     appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
     console.error(error);
@@ -95,13 +95,16 @@ if (!host) {
 
       effectInput?.dispatchEvent(new Event('change'));
       normalizeVisibleBuild();
-      appendLog(`${BUILD} Fireball mobile path active: transform-only projectile movement, cheap compositor visual and sparse 96ms embers`);
+      appendLog(`${BUILD} Fireball baseline retained: independent compositor projectile + sparse embers + Explosion handoff`);
       refreshFireballInspector();
       refreshVisualMetric();
+
+      // Install the sustained Environment capability before the Grid clones effect options.
+      await import('./environment-runtime-bridge.js?v=p3.8.0');
       await loadEffectGridLab();
     })
     .catch((error) => {
-      appendLog(`${BUILD} Fireball bridge FAIL: ${error.message}`);
+      appendLog(`${BUILD} Runtime bridge FAIL: ${error.message}`);
       console.error(error);
     });
 }
