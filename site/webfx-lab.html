@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck technology spike for validating tsParticles as a gameplay VFX backend.">
   <title>FXDeck Technology Spike</title>
   <link rel="stylesheet" href="./webfx-lab.css">
-  <link rel="stylesheet" href="./fxdeck-log-tools.css?v=p0.2.2">
+  <link rel="stylesheet" href="./fxdeck-log-tools.css?v=p0.3.0">
 </head>
 <body>
   <main class="lab-shell">
@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">FXDeck / P0 Technology Spike</p>
         <h1>FXDeck Lab</h1>
-        <p class="intro">Backend validation before framework work: exact spawn, moving emitter, burst stress, cleanup, resize, image particles and DOM/particle compositing.</p>
+        <p class="intro">Backend validation before framework work: exact spawn, moving emitter, burst stress, cleanup, resize, image particles, DOM/particle compositing and measured performance headroom.</p>
       </div>
       <a class="back-link" href="./">Legacy portfolio</a>
     </header>
@@ -31,6 +31,7 @@
             <button type="button" data-test="image"><span>05</span>Image particles</button>
             <button type="button" data-test="composite"><span>06</span>Composite FX</button>
             <button type="button" data-test="resize"><span>07</span>Resize / reflow</button>
+            <button type="button" data-test="performance"><span>08</span>Performance load</button>
           </div>
         </div>
 
@@ -38,7 +39,7 @@
           <div><dt>Backend</dt><dd>tsParticles 4.3.2</dd></div>
           <div><dt>Bundle</dt><dd>Full / spike only</dd></div>
           <div><dt>Loader</dt><dd>explicit loadFull()</dd></div>
-          <div><dt>Build</dt><dd class="build-id">P0.2.2</dd></div>
+          <div><dt>Build</dt><dd class="build-id">P0.3.0</dd></div>
           <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
           <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
           <div><dt>Tracked emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -73,14 +74,14 @@
         <h2>What must work before FXDeck Core</h2>
       </div>
       <div class="gate-grid">
-        <span>Exact gameplay position</span><span>Moving source</span><span>Repeated one-shots</span><span>Emitter cleanup</span><span>Resize</span><span>Image particles</span><span>DOM layering</span><span>60 FPS target</span>
+        <span>Exact gameplay position</span><span>Moving source</span><span>Repeated one-shots</span><span>Emitter cleanup</span><span>Resize</span><span>Image particles</span><span>DOM layering</span><span>Measured 60 FPS headroom</span>
       </div>
       <div class="log-toolbar">
         <button id="copy-log" type="button">Copy full log</button>
         <button id="clear-log" type="button">Clear log</button>
         <span id="copy-log-status" class="copy-status" aria-live="polite"></span>
       </div>
-      <pre id="spike-log" class="spike-log" tabindex="0">FXDeck spike ready. Build P0.2.2.</pre>
+      <pre id="spike-log" class="spike-log" tabindex="0">FXDeck spike ready. Build P0.3.0.</pre>
     </section>
   </main>
 
@@ -109,8 +110,9 @@
       await globalThis.loadFull(globalThis.tsParticles);
       appendBootstrapLog('PASS bootstrap: full bundle registered before container creation');
 
-      await loadClassicScript('./js/webfx-lab.js?v=p0.2.2');
-      await loadClassicScript('./js/fxdeck-log-tools.js?v=p0.2.2');
+      await loadClassicScript('./js/webfx-lab.js?v=p0.3.0');
+      await loadClassicScript('./js/fxdeck-performance-test.js?v=p0.3.0');
+      await loadClassicScript('./js/fxdeck-log-tools.js?v=p0.3.0');
     } catch (error) {
       appendBootstrapLog(`BOOTSTRAP FAIL: ${error.message}`);
       console.error(error);
