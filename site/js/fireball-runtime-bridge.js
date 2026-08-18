@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.9.0';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.9.0';
+const BUILD = 'P3.10.0';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,15 +68,15 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.9.0 adds the portfolio-facing Rare Reward archetype: a large owned DOM/SVG card reveal with staged motion, rarity lighting and particle accents, using the same FXDeck lifecycle and zoomable real-effect Grid.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+)/g, BUILD);
+  if (intro) intro.textContent = 'P3.10.0 adds an interactive football-card pack-opening archetype: premium back-card idle/shimmer, click-driven 3D flip, staged player-information reveal, rarity hit and persistent final card. Rare Reward remains available as the fantasy UI reveal reference.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+|9\.[0-9]+)/g, BUILD);
 }
 
 async function loadEffectGridLab() {
   try {
     await import('./effect-grid-lab.js?v=p3.7.3');
     await import('./effect-grid-canvas-projection.js?v=p3.7.3');
-    await import('./effect-grid-runtime-controls.js?v=p3.9.0');
+    await import('./effect-grid-runtime-controls.js?v=p3.10.0');
   } catch (error) {
     appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
     console.error(error);
@@ -95,12 +95,13 @@ if (!host) {
 
       effectInput?.dispatchEvent(new Event('change'));
       normalizeVisibleBuild();
-      appendLog(`${BUILD} Runtime capability pass: Fireball + Environment baselines retained; Rare Reward UI/card reveal loading`);
+      appendLog(`${BUILD} Runtime capability pass: football card reveal loading; Rare Reward / Fireball / Environment retained as independent archetypes`);
       refreshFireballInspector();
       refreshVisualMetric();
 
       await import('./environment-runtime-bridge.js?v=p3.8.1');
       await import('./rare-reward-runtime-bridge.js?v=p3.9.0');
+      await import('./football-card-runtime-bridge.js?v=p3.10.0');
       await loadEffectGridLab();
     })
     .catch((error) => {
