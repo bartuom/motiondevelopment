@@ -13,7 +13,7 @@
 - **Current milestone:** P1 — Minimal FXDeck Core
 - **Status:** ACTIVE — implementation complete enough for exit validation
 - **Next implementation:** no new Core feature. Validate P1 lifecycle/direction in-browser; fix only concrete failures found by that validation.
-- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.2.2
+- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.2.3
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
 ## Product target
@@ -201,6 +201,7 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P1.2.3:** Locked desktop workbench proportions to explicit `31.25% / 37.5% / 31.25%` columns so intrinsic panel content cannot let the preview dominate the screen; bumped CSS/JS cache keys for reliable Pages refresh.
 - **P1.2.2:** Rebalanced the desktop three-column workbench to approximately `1 : 1.2 : 1`, so the preview is only ~20% wider than the controls and inspector instead of dominating the screen.
 - **P1.2.1:** Rebuilt Core Lab as a widescreen three-column editor/workbench: controls on the left, large live canvas in the center, authored/resolved inspector and runtime metrics on the right. Diagnostics remain in a compact strip below; mobile/tablet collapse responsively.
 - **P1.2.0:** Replaced four-way direction bucketing with a true direction contract. `FXDeck.play()` now accepts degrees or `{x,y}`, Core normalizes to a unit vector, and `testBurst` uses continuous tsParticles angular offset with authored cone spread. Core Lab exposes full 0–359° control and the resolved unit vector.
