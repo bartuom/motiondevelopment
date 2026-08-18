@@ -28,10 +28,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.9.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.10.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.9.0 adds the portfolio-facing Rare Reward archetype: a large owned DOM/SVG card reveal with staged motion, rarity lighting and particle accents, using the same FXDeck lifecycle and zoomable real-effect Grid.</p>
+      <p class="intro">P3.10.0 adds an interactive football-card pack-opening archetype: premium back-card idle/shimmer, click-driven 3D flip, staged player-information reveal, rarity hit and persistent final card. Rare Reward remains available as the fantasy UI reveal reference.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -92,7 +92,7 @@
           <div class="control">
             <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
             <input id="direction" type="range" min="0" max="359" value="18" step="1">
-            <p class="control-note">Direction remains effect-specific: travel for Fireball, blast bias for impacts, reveal-light angle for Rare Reward.</p>
+            <p class="control-note">Direction remains effect-specific: travel for Fireball, blast bias for impacts, reveal-light angle for card-space effects.</p>
           </div>
 
           <div class="actions actions--primary">
@@ -102,7 +102,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>One-shots, moving projectiles and sustained environment sources are accepted baselines. P3.9 adds a large UI/card-space reveal so the same runtime can drive portfolio-facing reward moments as well as world VFX.</p>
+            <p>World one-shots, moving projectiles, sustained sources and UI/card-space reveals now share one runtime. P3.10 adds a genuinely interactive football pack-opening card with idle back, click reveal and persistent final state.</p>
           </div>
         </div>
 
@@ -193,7 +193,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.9.0</span>
+              <span class="runtime-hud__build">P3.10.0</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -274,7 +274,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.9.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.10.0.</pre>
           </section>
 
           <section class="debug-section">
@@ -296,7 +296,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.9.0"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.10.0"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.8.2"></script>
 </body>
