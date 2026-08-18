@@ -1,6 +1,5 @@
-const BUILD = 'P3.1.2';
+const BUILD = 'P3.2.0';
 const ROUNDS = 3;
-const SHARED_FRAME_BUDGET_MS = 6;
 
 const stressButton = document.querySelector('#play-stress-ab');
 const stressLoadInput = document.querySelector('#stress-load');
@@ -15,7 +14,7 @@ const STRESS_PRESETS = {
 const PATH_LABELS = {
   emitter: 'emitter',
   shared: 'shared-direct',
-  budgeted: 'shared-budgeted'
+  scheduled: 'shared-scheduled'
 };
 
 function stamp() {
@@ -43,7 +42,7 @@ async function waitForLab(timeoutMs = 8000) {
     if (lab?.particleAdapter?.container && lab?.fx) return lab;
     await sleep(40);
   }
-  throw new Error('P3.1 stress benchmark could not find an initialized FXDeckLab.');
+  throw new Error('P3.2 stress benchmark could not find an initialized FXDeckLab.');
 }
 
 function summarizeFrames(samples) {
@@ -67,15 +66,15 @@ function median(values) {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
   if (!sorted.length) return 0;
   const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) * 0.5;
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) * .5;
 }
 
 function aggregate(results) {
   return {
-    cpuMs: median(results.map((item) => item.cpuMs)),
-    spawnSpanMs: median(results.map((item) => item.spawnSpanMs)),
-    worstSpawnFrameMs: median(results.map((item) => item.worstSpawnFrameMs)),
-    spawnSpikes20: median(results.map((item) => item.spawnSpikes20)),
+    submitCpuMs: median(results.map((item) => item.submitCpuMs)),
+    populationSpanMs: median(results.map((item) => item.populationSpanMs)),
+    worstPopulationFrameMs: median(results.map((item) => item.worstPopulationFrameMs)),
+    populationSpikes20: median(results.map((item) => item.populationSpikes20)),
     targetWaitMs: median(results.map((item) => item.targetWaitMs)),
     avgFps: median(results.map((item) => item.avgFps)),
     low1: median(results.map((item) => item.low1)),
@@ -84,7 +83,7 @@ function aggregate(results) {
     peakEmitters: Math.max(...results.map((item) => item.peakEmitters)),
     peakGroups: Math.max(...results.map((item) => item.peakGroups)),
     allTargetsReached: results.every((item) => item.targetReached),
-    allCleanupClean: results.every((item) => item.finalParticles === 0 && item.finalEmitters === 0 && item.finalGroups === 0)
+    allCleanupClean: results.every((item) => item.finalParticles === 0 && item.finalEmitters === 0 && item.finalGroups === 0 && item.finalQueuedParticles === 0)
   };
 }
 
@@ -98,7 +97,7 @@ function stressEmitterOptions(count) {
     particles: {
       color: { value: '#ffffff' },
       shape: { type: 'circle' },
-      opacity: { value: 0.42 },
+      opacity: { value: .42 },
       size: { value: 3 },
       move: { enable: false },
       life: { count: 1, duration: { value: 2.4, sync: true } }
@@ -116,9 +115,10 @@ function makePoints(stage, pointCount) {
   for (let index = 0; index < pointCount; index += 1) {
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const x = width * (0.18 + 0.64 * ((col + 0.5) / cols));
-    const y = height * (0.18 + 0.64 * ((row + 0.5) / rows));
-    points.push({ x, y });
+    points.push({
+      x: width * (.18 + .64 * ((col + .5) / cols)),
+      y: height * (.18 + .64 * ((row + .5) / rows))
+    });
   }
 
   return points;
@@ -130,19 +130,28 @@ function distribute(total, buckets) {
   return Array.from({ length: buckets }, () => base + (remainder-- > 0 ? 1 : 0));
 }
 
-async function waitForParticleTarget(adapter, target, timeoutMs = 450) {
+async function waitForParticleTarget(adapter, target, timeoutMs = 1400) {
   const startedAt = performance.now();
   let peak = 0;
 
   while (performance.now() - startedAt < timeoutMs) {
     await nextFrame();
-    const count = adapter.getStats().particles;
+    const stats = adapter.getStats();
+    const count = stats.particles ?? 0;
     peak = Math.max(peak, count);
-    if (count >= target) return { reached: true, count, peak, waitMs: performance.now() - startedAt };
+    if (count >= target && (stats.queuedParticles ?? 0) === 0) {
+      return { reached: true, count, peak, waitMs: performance.now() - startedAt };
+    }
   }
 
-  const count = adapter.getStats().particles;
-  return { reached: count >= target, count, peak: Math.max(peak, count), waitMs: performance.now() - startedAt };
+  const stats = adapter.getStats();
+  const count = stats.particles ?? 0;
+  return {
+    reached: count >= target && (stats.queuedParticles ?? 0) === 0,
+    count,
+    peak: Math.max(peak, count),
+    waitMs: performance.now() - startedAt
+  };
 }
 
 async function sampleFrames(adapter, durationMs = 1400) {
@@ -181,7 +190,7 @@ async function cleanLab(lab) {
   await nextFrame();
 }
 
-async function probeSpawnFrames(task) {
+async function probePopulationFrames(task) {
   const samples = [];
   let active = true;
   let raf = 0;
@@ -197,7 +206,7 @@ async function probeSpawnFrames(task) {
   raf = requestAnimationFrame(tick);
   const startedAt = performance.now();
   const value = await task();
-  const spawnSpanMs = performance.now() - startedAt;
+  const populationSpanMs = performance.now() - startedAt;
 
   await nextFrame();
   await nextFrame();
@@ -207,33 +216,22 @@ async function probeSpawnFrames(task) {
   const frameSummary = summarizeFrames(samples);
   return {
     value,
-    spawnSpanMs,
-    worstSpawnFrameMs: frameSummary.worstMs,
-    spawnSpikes20: frameSummary.spikes20
+    populationSpanMs,
+    worstPopulationFrameMs: frameSummary.worstMs,
+    populationSpikes20: frameSummary.spikes20
   };
 }
 
-async function spawnWorkload(adapter, path, points, counts) {
-  let cpuMs = 0;
-  let frameBudgetStartedAt = performance.now();
+async function submitWorkload(adapter, path, points, counts) {
+  let submitCpuMs = 0;
 
   for (let index = 0; index < points.length; index += 1) {
-    const backendMode = path === 'emitter' ? 'emitter' : 'shared';
-    const callStartedAt = performance.now();
-    await adapter.burst(stressEmitterOptions(counts[index]), points[index], { mode: backendMode });
-    cpuMs += performance.now() - callStartedAt;
-
-    if (
-      path === 'budgeted' &&
-      index < points.length - 1 &&
-      performance.now() - frameBudgetStartedAt >= SHARED_FRAME_BUDGET_MS
-    ) {
-      await nextFrame();
-      frameBudgetStartedAt = performance.now();
-    }
+    const startedAt = performance.now();
+    await adapter.burst(stressEmitterOptions(counts[index]), points[index], { mode: path });
+    submitCpuMs += performance.now() - startedAt;
   }
 
-  return { cpuMs };
+  return submitCpuMs;
 }
 
 async function runLeg(lab, path, preset, round) {
@@ -244,13 +242,18 @@ async function runLeg(lab, path, preset, round) {
   const label = PATH_LABELS[path];
 
   await cleanLab(lab);
-  adapter.setBurstMode(path === 'emitter' ? 'emitter' : 'shared');
+  adapter.setBurstMode(path);
 
-  const spawnProbe = await probeSpawnFrames(() => spawnWorkload(adapter, path, points, counts));
-  const target = await waitForParticleTarget(adapter, preset.particles);
+  const populationProbe = await probePopulationFrames(async () => {
+    const submitCpuMs = await submitWorkload(adapter, path, points, counts);
+    const target = await waitForParticleTarget(adapter, preset.particles);
+    return { submitCpuMs, target };
+  });
+
+  const target = populationProbe.value.target;
   const statsAtStart = adapter.getStats();
 
-  log(`STRESS R${round} ${label}: CPU ${spawnProbe.value.cpuMs.toFixed(2)} ms / span ${spawnProbe.spawnSpanMs.toFixed(2)} ms / worst spawn frame ${spawnProbe.worstSpawnFrameMs.toFixed(1)} ms / spawn >20ms ${spawnProbe.spawnSpikes20} / requested ${preset.particles} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
+  log(`STRESS R${round} ${label}: submit CPU ${populationProbe.value.submitCpuMs.toFixed(2)} ms / population span ${populationProbe.populationSpanMs.toFixed(1)} ms / worst population frame ${populationProbe.worstPopulationFrameMs.toFixed(1)} ms / population >20ms ${populationProbe.populationSpikes20} / requested ${preset.particles} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / queued ${statsAtStart.queuedParticles ?? 0} / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
 
   const frameResult = await sampleFrames(adapter, 1400);
 
@@ -264,25 +267,26 @@ async function runLeg(lab, path, preset, round) {
     requested: preset.particles,
     points: preset.points,
     round,
-    cpuMs: spawnProbe.value.cpuMs,
-    spawnSpanMs: spawnProbe.spawnSpanMs,
-    worstSpawnFrameMs: spawnProbe.worstSpawnFrameMs,
-    spawnSpikes20: spawnProbe.spawnSpikes20,
+    submitCpuMs: populationProbe.value.submitCpuMs,
+    populationSpanMs: populationProbe.populationSpanMs,
+    worstPopulationFrameMs: populationProbe.worstPopulationFrameMs,
+    populationSpikes20: populationProbe.populationSpikes20,
     targetWaitMs: target.waitMs,
     readyParticles: statsAtStart.particles,
     targetReached: target.reached,
     avgFps: frameResult.avgFps,
     low1: frameResult.low1,
     steadySpikes20: frameResult.spikes20,
-    peakParticles: frameResult.peakParticles,
+    peakParticles: Math.max(target.peak, frameResult.peakParticles),
     peakEmitters: frameResult.peakEmitters,
     peakGroups: frameResult.peakGroups,
     finalParticles: cleanStats.particles,
     finalEmitters: cleanStats.emitters,
-    finalGroups: cleanStats.burstGroups
+    finalGroups: cleanStats.burstGroups,
+    finalQueuedParticles: cleanStats.queuedParticles ?? 0
   };
 
-  log(`STRESS R${round} ${label} RESULT: spawn worst ${result.worstSpawnFrameMs.toFixed(1)} ms / spawn spikes ${result.spawnSpikes20} / steady ${result.avgFps.toFixed(1)} avg / ${result.low1.toFixed(1)} low / ${result.steadySpikes20} spikes / peak ${result.peakParticles} / cleanup ${result.finalEmitters}/${result.finalGroups}/${result.finalParticles}`);
+  log(`STRESS R${round} ${label} RESULT: population worst ${result.worstPopulationFrameMs.toFixed(1)} ms / population spikes ${result.populationSpikes20} / steady ${result.avgFps.toFixed(1)} avg / ${result.low1.toFixed(1)} low / ${result.steadySpikes20} spikes / peak ${result.peakParticles} / cleanup ${result.finalEmitters}/${result.finalGroups}/${result.finalParticles}, queued ${result.finalQueuedParticles}`);
   return result;
 }
 
@@ -299,24 +303,25 @@ function setUiBusy(busy) {
 }
 
 function resultSummary(label, result) {
-  return `${label} CPU ${result.cpuMs.toFixed(1)}ms / span ${result.spawnSpanMs.toFixed(1)}ms / worst ${result.worstSpawnFrameMs.toFixed(1)}ms / spawn spikes ${result.spawnSpikes20.toFixed(0)} / steady ${result.avgFps.toFixed(1)} avg ${result.low1.toFixed(1)} low / peak ${result.peakParticles.toFixed(0)}`;
+  return `${label} submit ${result.submitCpuMs.toFixed(1)}ms / span ${result.populationSpanMs.toFixed(1)}ms / worst ${result.worstPopulationFrameMs.toFixed(1)}ms / population spikes ${result.populationSpikes20.toFixed(0)} / steady ${result.avgFps.toFixed(1)} avg ${result.low1.toFixed(1)} low / peak ${result.peakParticles.toFixed(0)}`;
 }
 
-async function runStressAB() {
+async function runStressCompare() {
   if (!stressButton || stressButton.disabled) return;
   const lab = await waitForLab();
   const requested = Number(stressLoadInput?.value ?? 800);
   const preset = STRESS_PRESETS[requested] ?? STRESS_PRESETS[800];
   const originalPath = lab.particleAdapter.getBurstMode();
-  const results = { emitter: [], shared: [], budgeted: [] };
+  const scheduler = lab.particleAdapter.getStats();
+  const results = { emitter: [], shared: [], scheduled: [] };
   const roundOrders = [
-    ['emitter', 'shared', 'budgeted'],
-    ['shared', 'budgeted', 'emitter'],
-    ['budgeted', 'emitter', 'shared']
+    ['emitter', 'shared', 'scheduled'],
+    ['shared', 'scheduled', 'emitter'],
+    ['scheduled', 'emitter', 'shared']
   ];
 
   setUiBusy(true);
-  log(`${BUILD} STRESS COMPARE START: ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds / shared-budget ${SHARED_FRAME_BUDGET_MS}ms per frame`);
+  log(`${BUILD} STRESS COMPARE START: ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds / integrated scheduler ${scheduler.schedulerBudgetMs ?? '?'}ms budget, chunk ${scheduler.schedulerChunkSize ?? '?'}, immediate ${scheduler.schedulerImmediateCount ?? '?'}`);
 
   try {
     for (let round = 1; round <= ROUNDS; round += 1) {
@@ -332,13 +337,13 @@ async function runStressAB() {
 
     const emitter = aggregate(results.emitter);
     const shared = aggregate(results.shared);
-    const budgeted = aggregate(results.budgeted);
-    const tolerance = Math.max(4, Math.round(preset.particles * 0.02));
-    const peaks = [emitter.peakParticles, shared.peakParticles, budgeted.peakParticles];
-    const workloadMatched = [emitter, shared, budgeted].every((item) => item.allTargetsReached) && Math.max(...peaks) - Math.min(...peaks) <= tolerance;
-    const cleanupClean = [emitter, shared, budgeted].every((item) => item.allCleanupClean);
+    const scheduled = aggregate(results.scheduled);
+    const tolerance = Math.max(4, Math.round(preset.particles * .02));
+    const peaks = [emitter.peakParticles, shared.peakParticles, scheduled.peakParticles];
+    const workloadMatched = [emitter, shared, scheduled].every((item) => item.allTargetsReached) && Math.max(...peaks) - Math.min(...peaks) <= tolerance;
+    const cleanupClean = [emitter, shared, scheduled].every((item) => item.allCleanupClean);
 
-    log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-budgeted', budgeted)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
+    log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-scheduled', scheduled)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
   } catch (error) {
     log(`${BUILD} STRESS COMPARE FAIL: ${error.message}`);
     console.error(error);
@@ -353,7 +358,7 @@ async function runStressAB() {
 
 if (stressButton) {
   stressButton.addEventListener('click', () => {
-    runStressAB().catch((error) => {
+    runStressCompare().catch((error) => {
       log(`${BUILD} STRESS COMPARE FAIL: ${error.message}`);
       console.error(error);
       setUiBusy(false);
@@ -362,7 +367,10 @@ if (stressButton) {
 }
 
 waitForLab()
-  .then(() => log(`${BUILD} ready: matched stress compares emitter vs shared-direct vs shared-budgeted and measures the spawn hitch itself`))
+  .then((lab) => {
+    const stats = lab.particleAdapter.getStats();
+    log(`${BUILD} ready: stress now tests the integrated TsParticlesAdapter scheduled mode (${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}) instead of a Lab-only yielding loop`);
+  })
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
     console.error(error);
