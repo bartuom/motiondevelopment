@@ -7,6 +7,7 @@
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
   <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.6.1">
+  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.6.3">
 </head>
 <body data-workspace-mode="play">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,10 +25,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.6.2</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.6.3</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">Play mode stays focused on authoring and the resolved cue. P3.6.2 hardens Fireball travel under multiple simultaneous instances so emitter-spawn hitches cannot fast-forward projectiles straight to impact.</p>
+      <p class="intro">P3.6.3 fixes concurrent Fireballs at the ownership level: every projectile now has its own visual handle, while the trail is emitted as independent emission-point bursts along the flight path before the existing Explosion handoff.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -77,7 +78,7 @@
               <option value="emitter">Per-play emitter — reference</option>
               <option value="shared">Shared direct — diagnostic</option>
             </select>
-            <p class="control-note">Fireball intentionally uses explicit moving emitters for flight. Its impact hands off to Explosion through the selected one-shot path.</p>
+            <p class="control-note">Fireball head ownership is independent from tsParticles emitters. The selected one-shot path drives sampled trail bursts and the Explosion impact.</p>
           </div>
 
           <div class="control">
@@ -98,7 +99,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Fireball exercises moving source + trail + runtime position updates + Explosion handoff. Multiple overlapping projectiles now preserve visible travel even when emitter creation stalls a frame.</p>
+            <p>Each Fireball owns an independent projectile visual, samples trail bursts along its path, follows runtime direction and hands off to the existing Explosion cue. Concurrent projectiles must remain visible at the same time.</p>
           </div>
         </div>
 
@@ -189,7 +190,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.6.2</span>
+              <span class="runtime-hud__build">P3.6.3</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -214,7 +215,7 @@
 
           <div class="caption">
             <strong id="caption-title">fireball / v1 / default</strong>
-            <span id="caption-note">moving source → trail → Explosion handoff</span>
+            <span id="caption-note">independent visual → sampled trail → Explosion handoff</span>
           </div>
         </div>
       </section>
@@ -226,7 +227,7 @@
             <h2>Resolved cue</h2>
           </div>
 
-          <p id="effect-summary" class="summary">Moving projectile archetype: explicit moving head + trail emitters travel along runtime direction, then hand off to the existing Explosion cue at impact.</p>
+          <p id="effect-summary" class="summary">Moving projectile archetype with an independently owned visual head per FXDeck instance, sampled particle-trail bursts along the flight path, and an Explosion handoff at impact.</p>
 
           <section class="inspector-section">
             <p class="label">Authored timing</p>
@@ -269,7 +270,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.2.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.3.</pre>
           </section>
 
           <section class="debug-section">
@@ -291,6 +292,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.6.3"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
