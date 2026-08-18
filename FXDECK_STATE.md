@@ -14,10 +14,10 @@
 ## Current state
 
 - **Current milestone:** P3 — Extract Proven Abstractions / Production Runtime
-- **Status:** ACTIVE — P3.3.0 promotes the measured frame-budgeted `shared-scheduled` path to the production default for semantic one-shot bursts and adds the cancellation/late-respawn gate required before moving to the second production effect.
+- **Status:** ACTIVE — P3.4.0 moves beyond the Heavy Impact vertical slice. Explosion is implemented as the second real effect using the same production `shared-scheduled` burst path, EffectInstance lifecycle, runtime parameters and only the small helpers now proven by two effects.
 - **Previous milestone:** P2 — Heavy Impact Vertical Slice — **DONE** after desktop visual acceptance and clean P2.3 overlap benchmark on 2026-08-18.
-- **Next action:** in Runtime Lab **Build P3.3.0**, run **`Cancel / Stop Gate`** once. It must report queued work before cancellation, then PASS both `FXDeck.stop(instance)` and `FXDeck.stopAll()` with complete `0 instances / 0 emitters / 0 groups / 0 particles / 0 queued` cleanup and no late respawn after the delayed-check windows. If it passes, move directly to the second real effect (`Explosion`) instead of adding more Heavy Impact-specific architecture.
-- **Current Runtime Lab:** `site/heavy-impact-lab.html` — P3.3.0
+- **Next action:** in Runtime Lab **Build P3.4.0**, leave `Explosion` selected and `Shared scheduled — production default`. First run several single `FXDeck.play()` calls at intensity `1.0` and visually confirm the core sprite/fireball/sparks/debris/smoke read as one explosion with no obvious delayed layer. Then set intensity `2.0` and run **`Effect A/B`** once. Paste the resulting Explosion A/B log and visual verdict. If Explosion works without runtime redesign, the second-effect architecture proof passes and P3 can move to remaining production hardening (mobile/DPR/quality) instead of effect-specific framework work.
+- **Current Runtime Lab:** `site/heavy-impact-lab.html` — P3.4.0
 - **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
@@ -140,34 +140,31 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 
 ## P3 — Extract Proven Abstractions / Production Runtime — ACTIVE
 
-**Goal:** extract only abstractions that Heavy Impact demonstrated are genuinely reusable, then harden the runtime.
+**Goal:** extract only abstractions demonstrated by real effects, then harden the runtime.
 
-- [ ] Extract repeated timing/sequencing behavior into the smallest useful timeline/cue primitive **only where Heavy Impact proves it reduces boilerplate without obscuring the effect definition**.
-- [x] **Extract one-shot particle burst abstraction from Heavy Impact duplication:** effect code now calls `ParticleAdapter.burst()` for sparks/debris and no longer assumes that a one-shot burst must be implemented by a backend emitter object.
-- [x] **Research direct shared-container runtime API in tsParticles v4:** official `ParticlesManager.addParticle/push` accepts runtime position, override particle options and a group id; Particle instances expose the group, allowing per-effect cleanup without clearing the whole container.
-- [x] **Prototype Shared Emission Points path:** `TsParticlesAdapter` supports synchronous `burstMode = "shared"`, pushing authored particle options directly into the persistent container and grouping particles by burst id for per-instance cleanup.
-- [x] **P3 Runtime Lab A/B harness:** the existing Heavy Impact page is the persistent Runtime Lab instead of creating another milestone page. It supports manual particle paths and automated real-effect/backend comparisons with portable logs.
-- [x] **P3.0 real-effect A/B directional result recorded:** at intensity `2.0`, emitter path reported `59.3 FPS avg / 30.0 1% low / 1 spike / 237 peak particles`; shared-direct reported `60.0 / 60.0 / 0 spikes / 384 peak particles`. Shared looked promising despite ~62% more peak particles, but unequal peaks made the result directional evidence only.
-- [x] **P3.1.1 matched synthetic backend benchmark implemented and run:** at 800 stationary matched particles / 24 points, workload was `MATCHED`, cleanup `CLEAN`. Emitter median setup ~`4 ms`; synchronous shared-direct ~`92 ms`; both rendered at ~`60/60/0` only after creation. This exposed that steady-state FPS sampling hid spawn cost.
-- [x] **P3.1.2 spawn-hitch benchmark implemented and run:** matched 800-particle compare measured the actual population frames. Median results: emitter ~`2 ms` submit CPU / `2 ms` submit span but **`83.3 ms worst population frame / 1 >20 ms spike`**; shared-direct ~`76 ms` synchronous creation / **`66.7 ms worst / 1 spike`**; Lab-only shared-budgeted ~`118 ms` aggregate CPU / `242 ms` total population span but **`16.7 ms worst / 0 spawn spikes`**. All three reached peak `800`, steady `60/60`, workload `MATCHED`, cleanup `CLEAN`.
-- [x] **P3.2.0 integrated Shared Emission Scheduler:** `TsParticlesAdapter` now has experimental `burstMode = "scheduled"`. It keeps one persistent container, creates a small immediate seed (`8`) for responsive impact feedback, then queues the remaining particles globally. A fair round-robin scheduler pushes chunks (`8`) under a `6 ms` CPU budget per animation frame so one large burst cannot monopolize creation. Queued work remains owned by its burst id and is cancellable through the existing handle/EffectInstance cleanup path.
-- [x] **P3.2.0 benchmark upgraded to test the real adapter scheduler:** Synthetic Stress Compare submits matched workloads through `emitter`, `shared`, and actual `scheduled` adapter modes, measuring submission, population frames, steady-state frame metrics, peak resources, queued work and cleanup.
-- [x] **P3.2.1 heterogeneous Emission Point benchmark implemented:** Runtime Lab supports uniform, heterogeneous and combined matched stress with deterministic per-point count/intensity, color, direction, speed, size and opacity variation while keeping total particles controlled.
-- [x] **P3.2.1 integrated 800-particle stress passed for both profiles.** Uniform median: emitter `2 ms submit / 119 ms span / 100.0 ms worst / 1 population spike`, shared-direct `74 / 90 / 66.7 / 1`, shared-scheduled `24 / 192 / 16.7 / 0`; all steady `60/60`, peak `800`, workload `MATCHED`, cleanup `CLEAN`. Heterogeneous median: emitter `1 / 132 / 100.0 / 1`, shared-direct `85 / 108 / 83.3 / 1`, shared-scheduled `26 / 188 / 16.7 / 0`; all peak `800`, workload `MATCHED`, cleanup `CLEAN`. Shared-scheduled heterogeneity delta was only `+2 ms submit / -4 ms span / +0 ms worst / +0 population spikes / ~0 steady FPS change`.
-- [x] **Real Heavy Impact A/B passed at intensity `2.0`.** Per-play emitter: `57.4 FPS avg / 30.0 1% low / 4 >20 ms / 6 emitters / 262 peak particles`. Shared-scheduled: `60.0 / 60.0 / 0 / 12 groups / 384 peak particles / 36 peak queued`, final cleanup `0/0/0`, groups `0`, queue `0`. Shared-scheduled improved avg by `+2.6 FPS`, eliminated the four measured spikes and held full 60/60 despite ~47% more peak particles. User visually preferred the scheduled/B result, so no unacceptable burst-smearing/latency was observed in this real cue.
-- [x] **Shared-scheduled adopted as the production default for semantic one-shot bursts in P3.3.0.** `TsParticlesAdapter` constructor default is now `burstMode = "scheduled"`; `ParticleAdapter.burst()` therefore uses the fair frame-budgeted shared scheduler unless a caller explicitly selects another mode. `spawn()`/emitter APIs remain available explicitly for sustained/moving emitter archetypes and reference testing; synchronous shared-direct remains diagnostic/reference only.
-- [x] **P3.3.0 cancellation gate implemented.** Runtime Lab now tests (1) `FXDeck.stop(instance)` while a Heavy Impact still owns active scheduled queue work and (2) `FXDeck.stopAll()` during six overlapping scheduled Heavy Impacts. Both phases require a real queued-work precondition, complete resource/queue cleanup, then delayed no-respawn checks after the stop.
-- [ ] **Run P3.3.0 `Cancel / Stop Gate`.** Require PASS for per-instance owned queue cancellation, stopAll cleanup and delayed no-respawn checks before considering scheduler ownership/cancellation hardened.
-- [ ] Keep DOM flash/wave helpers Lab-local until a second production effect proves they are genuinely reusable.
-- [ ] Evaluate the accumulated screen-kick controller as a reusable gameplay/screen impulse helper when the next effect also needs it.
-- [ ] Formalize asset preload/ownership required by real effects.
-- [ ] **Harden effect cancellation and cleanup for overlapping/restarted effects beyond the current Heavy Impact scenarios.** P3.3 gate is the current blocking validation.
+- [x] **Extract the smallest repeated effect helpers only after a second effect proves them:** P3.4 adds shared `burstTracked`, `scheduleAsync` and `runHook` helpers used by both Heavy Impact and Explosion. No generic timeline/track system was introduced.
+- [x] **Extract one-shot particle burst abstraction from Heavy Impact duplication:** effect code calls `ParticleAdapter.burst()` and does not assume backend emitter topology.
+- [x] **Research direct shared-container runtime API in tsParticles v4:** official ParticlesManager runtime operations support the direct/shared prototype and per-group ownership.
+- [x] **Prototype Shared Emission Points path** and retain synchronous shared-direct only as diagnostic/reference after measurement.
+- [x] **P3 Runtime Lab A/B harness:** one persistent Runtime Lab hosts real-effect tests and matched backend stress instead of adding a page per effect/milestone.
+- [x] **P3.1/P3.2 matched stress isolated particle population timing:** emitter and shared-direct both produced long population frames; the frame-budgeted shared scheduler removed >20 ms population spikes under the tested 800-particle workload.
+- [x] **P3.2.1 heterogeneous Emission Point stress passed:** per-point count/intensity, color, direction, speed, size and opacity variation produced no scheduler frame-pacing regression at matched 800 particles / 24 points.
+- [x] **Real Heavy Impact A/B passed at intensity `2.0`:** emitter `57.4 avg / 30 low / 4 spikes / 262 peak particles`; shared-scheduled `60/60/0 / 384 peak particles / 36 peak queued`, cleanup clean. User visually preferred scheduled/B.
+- [x] **Shared-scheduled adopted as the production default for semantic one-shot bursts in P3.3.0.** Explicit emitter APIs remain available for sustained/moving emitter archetypes; shared-direct remains diagnostic/reference.
+- [x] **P3.3.0 cancellation gate passed 2026-08-18.** Phase 1 started with `1 instance / 1 group / 8 particles / 36 queued`; `FXDeck.stop(instance)` removed owned particles and queued work and no late respawn occurred. Phase 2 started with `6 instances / 6 groups / 48 particles / 216 queued`; `FXDeck.stopAll()` cleared all instances/groups/particles/queue and delayed Heavy Impact work did not respawn.
+- [x] **Effect cancellation/cleanup hardened for active scheduled queue work:** per-instance queue ownership, stopAll cleanup and delayed no-respawn behavior are validated by the P3.3 gate.
+- [x] **Second real effect implemented without a new runtime subsystem:** P3.4 adds `explosion/v1/default` with core image sprite, fireball particles, broad directional sparks, debris, smoke and screen kick. It uses the same `FXDeck.play`, EffectInstance ownership, runtime position/direction/intensity, semantic burst API and production shared scheduler as Heavy Impact.
+- [x] **Runtime Lab generalized from Heavy-Impact-only UI to multi-effect selection:** Heavy Impact and Explosion share the same stage, `FXDeck.play`, Overlap ×6, Effect A/B, inspector, timeline and logs.
+- [x] **Screen-kick integration reuse proven by a second effect:** Explosion uses the same accumulated screen-kick controller. Keep it as an integration/Lab helper for now rather than pushing browser camera behavior into FXDeck Core.
+- [ ] **Validate Explosion visually and through real-effect A/B.** Confirm the core sprite/fireball/sparks/debris/smoke read as one cue, scheduled emission does not visibly smear the short explosion, direction/intensity remain meaningful, cleanup is clean and the selected-effect A/B remains stable at intensity `2.0`.
+- [ ] **Formalize asset preload/ownership:** Explosion adds a second preloaded SVG (`fxdeck-explosion-core.svg`), proving the need is real; next step is to decide the smallest effect-owned preload declaration instead of growing a manual Lab preload list.
+- [ ] **DOM hook policy:** Heavy Impact and Explosion both use browser integration hooks, but their visual implementations differ. Keep transient DOM animation implementation Lab-local until a third effect demonstrates a stable reusable surface beyond the existing small Lab helpers.
 - [ ] Add quality controls based on measured costs rather than arbitrary particle-count presets.
 - [ ] Re-run P0-style performance scenarios through FXDeck and compare runtime overhead against raw tsParticles after the shared-path decision.
-- [ ] Validate resize/DPR/mobile behavior through the production runtime, including representative Heavy Impact behavior on Galaxy S20+ or equivalent mobile hardware.
+- [ ] Validate resize/DPR/mobile behavior through the production runtime, including representative Heavy Impact and Explosion behavior on Galaxy S20+ or equivalent mobile hardware.
 - [ ] Keep effect definitions predominantly declarative/config-driven where practical; flag any effect that requires large bespoke lifecycle code.
 
-**P3 exit:** runtime is stable enough that new effects should mostly exercise existing capabilities instead of forcing core redesign. High-frequency one-shot bursts use the scheduled shared path by default; sustained/moving emitter behavior remains an explicit separate archetype. Ownership/cancellation, mobile/DPR and the second-effect architecture proof remain before P3 can be considered production-hardened.
+**P3 exit:** runtime is stable enough that new effects mostly exercise existing capabilities instead of forcing core redesign. The scheduler/ownership path is accepted for one-shot bursts. Explosion is the current second-effect proof; remaining blockers after it passes are asset ownership, quality controls, production-runtime comparison and mobile/DPR hardening.
 
 ---
 
@@ -175,13 +172,13 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 
 **Goal:** prove FXDeck across different gameplay-effect archetypes and measure whether it actually reduces custom implementation work.
 
-- [ ] **Heavy Impact** — composite timing, direction, screen/target hooks.
-- [ ] **Explosion** — sprite/image + particles. **Next real-effect architecture proof after P3.3 cancellation gate.**
+- [x] **Heavy Impact** — composite timing, direction, screen/target hooks; first production-style effect accepted in P2/P3.
+- [ ] **Explosion** — implementation exists in P3.4 with sprite/image + particles; pending visual/performance acceptance before counting it complete.
 - [ ] **Fireball** — moving source + trail + impact transition.
 - [ ] **Critical Hit** — ultra-short timing and readable impact hierarchy.
 - [ ] **Rare Reward** — UI/DOM + particles.
 - [ ] **Magic Burst** — more complex motion/noise/color behavior.
-- [ ] **Environment emitter** — sustained/long-running lifecycle; use this effect to decide whether live `EffectInstance` parameter updates are actually necessary.
+- [ ] **Environment emitter** — sustained/long-running lifecycle; use this effect to decide whether live EffectInstance parameter updates are actually necessary.
 - [ ] Track custom code required per effect; identify regressions where a new effect needs large one-off infrastructure.
 - [ ] Validate representative effects on mobile quality targets.
 
@@ -214,7 +211,7 @@ Do not build these pre-emptively:
 - shader graph
 - marketplace/cloud/account system
 - generic plugin abstraction for many particle engines
-- large timeline/track system before Heavy Impact proves a need
+- large timeline/track system
 - hot-swapping an authored effect definition on an already-playing short-lived effect instance
 
 ---
@@ -223,30 +220,32 @@ Do not build these pre-emptively:
 
 1. **tsParticles is the initial particle backend, not the public FXDeck API.** Backend-specific behavior stays behind `TsParticlesAdapter`.
 2. **P0 remains raw.** It is the performance and behavior reference against which FXDeck overhead can later be measured.
-3. **Version and variant are authored definitions.** They are analogous to saved prefab/config revisions, not runtime sliders.
-4. **Position, direction and intensity are runtime inputs.** They modify one play instance without creating a new authored version. Direction is normalized by Core to a unit vector; degrees are retained as a convenience representation.
-5. **Vertical-slice-first.** Heavy Impact drives the next abstractions; the architecture must not expand speculatively.
+3. **Version and variant are authored definitions.** They are saved config revisions, not runtime sliders.
+4. **Position, direction and intensity are runtime inputs.** They modify one play instance without creating a new authored version.
+5. **Vertical-slice-first / proof-first.** New abstractions are extracted only after real effects prove repetition.
 6. **Primary product KPI:** how much effect-specific custom code is required to add the next production effect while preserving quality, cleanup and performance.
-7. **Active definitions are immutable for P1/P2.** Version/variant can be selected independently on every new `play()` call. Live parameter mutation on long-running instances is deferred until a real sustained effect proves it useful.
-8. **Runtime diagnostics must be portable.** Lab logs should remain easy to copy/paste so browser failures can be debugged from complete traces rather than screenshots alone.
-9. **P2 integration hooks remain explicit.** Target/camera behavior is supplied through effect hooks rather than hard-coded into Core. Browser-specific flash/wave implementations stay in the Lab until repetition proves a reusable DOM helper is warranted.
-10. **Shared Emission Points were a measured P3 candidate, not a presumed fix.** Matched tests isolated population timing from emitter-object count before adoption.
-11. **Overlapping screen impulses should be aggregated.** P2.1 demonstrated that firing multiple independent transform animations on the same camera/stage target gives misleading and unstable feedback. The Lab accumulates kick impulses through one controller; a reusable runtime helper is considered only if later effects prove the same need.
-12. **Visual hierarchy is also a performance control.** P2.2 reduced low-value particle density before runtime-level optimization; the clean P2.3 desktop benchmark cut peak particles from `454` to `229` while improving frame-time stability.
-13. **Visible build labels must correspond to the modules actually executing.** When a local ESM dependency changes, its import URL must receive a new cache key/version. Versioning only the HTML or top-level controller is insufficient for reliable GitHub Pages iteration.
-14. **Performance harness scheduling is part of measurement integrity.** A benchmark must own and cancel its own scheduled plays, prevent re-entrant captures and competing manual input, start from a known clean resource state, and distinguish harness scheduling from FXDeck lifecycle behavior.
-15. **P2 pressure wave is not final art.** Its purpose was to prove sequencing and directional composition. A production pressure response may use distortion/refraction or another rendering technique; do not overfit Core around the current DOM arc.
-16. **Mobile validation belongs to production-runtime hardening.** P0 established the raw backend envelope; P3 must validate the actual FXDeck production path after shared-emission and helper decisions are made.
+7. **Active short-lived definitions remain immutable.** Live parameter mutation is deferred until a sustained effect proves it useful.
+8. **Runtime diagnostics are portable.** Lab logs remain copy/paste friendly.
+9. **Browser integration hooks remain explicit.** Target/camera/DOM behavior is supplied through effect hooks rather than hard-coded into Core.
+10. **Shared Emission Points were measured before adoption.** Population scheduling, not emitter-object count alone, was the meaningful optimization target.
+11. **Overlapping screen impulses are aggregated.** Heavy Impact and Explosion now both use the same Lab-level controller.
+12. **Visual hierarchy is also a performance control.** Reduce low-value particles before runtime-level optimization.
+13. **Visible build labels must correspond to the modules actually executing.** Changed local ESM dependencies receive new cache keys.
+14. **Performance harness scheduling is part of measurement integrity.** Benchmarks own/cancel their tasks and start from clean state.
+15. **Heavy Impact pressure wave is not final art.** It remains a placeholder for possible distortion/refraction-style treatment.
+16. **Mobile validation belongs to production-runtime hardening.** P0 established the raw backend envelope; P3 validates the actual production path.
 17. **One-shot burst is a semantic adapter operation.** Effect code asks for `burst()` and does not encode backend topology.
-18. **Shared bursts retain per-instance ownership.** Scheduled particles use unique group ids and queued jobs so `EffectInstance.stop()` can remove only its own live/queued work rather than clearing unrelated effects.
-19. **A visible browser build number is part of the release contract.** Any user-testable behavior, benchmark, UI or runtime change must advance the visible `P#.x.x` label.
-20. **Real-effect A/B and matched backend A/B answer different questions.** Heavy Impact measures production behavior; synthetic stress isolates backend population behavior only when workload is matched and repeated.
-21. **Steady-state FPS after spawn is not sufficient for burst architecture decisions.** Burst benchmarking includes the frames in which particles are populated.
-22. **Emitter call time is not emitter population cost.** Backend APIs may defer expensive work; measure frame pacing, not just call duration.
-23. **Frame pacing is prioritized over fastest full-population latency for high-volume one-shot bursts** when real-effect responsiveness is preserved.
-24. **Scheduled shared emission is fair and cancellable by design.** It uses a global round-robin queue, small chunks, a per-frame CPU budget, immediate seed particles and burst ownership.
-25. **Shared Emission Points support heterogeneous runtime data.** Color, direction, size, speed, opacity and count/intensity may differ per emission point; P3.2.1 measured this without changing total particle workload and found no scheduler frame-pacing regression at 800/24.
-26. **`shared-scheduled` is the production default for semantic one-shot bursts from P3.3 onward.** This decision is supported by matched uniform/heterogeneous stress plus the real Heavy Impact A/B and visual acceptance. It does not eliminate emitters: sustained, moving or otherwise emitter-native effects may explicitly use `spawn()`/emitter behavior.
+18. **Shared bursts retain per-instance ownership.** Scheduled particles and queued jobs are removable per EffectInstance.
+19. **A visible browser build number is part of the release contract.** Any user-testable behavior advances the visible `P#.x.x` label.
+20. **Real-effect A/B and matched backend A/B answer different questions.** Both are required for architecture decisions.
+21. **Steady-state FPS after spawn is insufficient.** Burst benchmarking includes population frames.
+22. **Emitter call time is not emitter population cost.** Backend APIs may defer expensive work.
+23. **Frame pacing is prioritized over fastest full-population latency** when real-effect responsiveness is preserved.
+24. **Scheduled shared emission is fair and cancellable by design.** It uses a global round-robin queue, small chunks, per-frame CPU budget, immediate seed particles and burst ownership.
+25. **Shared Emission Points support heterogeneous runtime data.** P3.2.1 measured this without scheduler frame-pacing regression at 800/24.
+26. **`shared-scheduled` is the production default for semantic one-shot bursts from P3.3 onward.** This does not eliminate explicit emitters for sustained/moving use.
+27. **Small effect helpers are extracted only when repeated by two real effects.** P3.4 introduced `effect-utils.js` only after Explosion repeated Heavy Impact's burst ownership, async cue scheduling and hook cleanup patterns.
+28. **One Runtime Lab, many effects.** New production effects should be selectable in the existing Lab; do not create a new page/tab for each effect.
 
 ---
 
@@ -254,39 +253,31 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
-- **P3.3.0 — production one-shot scheduler default:** Promoted `TsParticlesAdapter` default burst mode from `emitter` to `scheduled`. `ParticleAdapter.burst()` now uses the frame-budgeted shared scheduler unless explicitly overridden; direct `spawn()` emitter behavior remains available for sustained/moving/reference use.
-- **P3.3.0 — cancellation/late-respawn gate:** Runtime Lab adds `Cancel / Stop Gate`. Phase 1 requires active queued Heavy Impact work, stops one EffectInstance and verifies complete owned cleanup plus delayed no-respawn. Phase 2 creates six scheduled Heavy Impacts, requires active queued work, calls stopAll and verifies complete cleanup plus delayed no-respawn.
-- **P3.2.1 — real Heavy Impact scheduler A/B PASS:** intensity `2.0` emitter measured `57.4 avg / 30 low / 4 spikes / 6 emitters / 262 particles`; shared-scheduled measured `60/60/0 / 12 groups / 384 particles / 36 peak queued`, final resources/groups/queue all zero. User visually preferred scheduled/B. This cleared the responsiveness/feeling gate for one-shot adoption.
-- **P3.2.1 — matched heterogeneous stress PASS:** uniform and heterogeneous 800-particle/24-point profiles both returned `workload MATCHED` and `cleanup CLEAN`. Shared-scheduled held `16.7 ms worst / 0 population spikes / 60/60 steady` in both profiles. Heterogeneity delta was effectively neutral for frame pacing (`+0 ms worst`, `+0 spikes`).
-- **P3.2.1 — heterogeneous Emission Point stress harness:** Added uniform/heterogeneous/both profiles with controlled total particle count and per-point count/intensity, color, direction, speed, size and opacity variation.
-- **P3.2.0 — integrated Shared Emission Scheduler:** Added experimental scheduled burst mode with immediate seed, fair global round-robin queue, `8`-particle chunks and `6 ms` frame budget.
-- **P3.2.0 — integrated scheduler benchmark + real-effect gate:** Synthetic Stress Compare benchmarks actual adapter emitter/shared/scheduled paths and Heavy Impact A/B compares emitter vs shared-scheduled.
+- **P3.4.0 — Explosion second-effect proof:** Added `explosion/v1/default` with a preloaded SVG core sprite plus fireball, sparks, debris and smoke bursts, broad runtime direction bias, intensity scaling and screen kick. It uses the existing production shared-scheduled path and EffectInstance lifecycle; no new runtime subsystem was added.
+- **P3.4.0 — proven effect helpers:** Added `effect-utils.js` containing only `burstTracked`, `scheduleAsync` and `runHook`, extracted because both Heavy Impact and Explosion now repeat those patterns. Heavy Impact was migrated to the same helpers.
+- **P3.4.0 — multi-effect Runtime Lab:** Added an Effect selector and generalized the existing Runtime Lab play/overlap/A-B/inspector/timeline workflow so Explosion and Heavy Impact use one page and one runtime. Explosion is selected by default in this build.
+- **P3.3.0 — cancellation gate PASS:** User-run gate started phase 1 with `1 instance / 1 group / 8 particles / 36 queued` and phase 2 with `6 instances / 6 groups / 48 particles / 216 queued`. `stop(instance)` and `stopAll()` both cleared owned/live/queued work, and delayed checks found no respawn.
+- **P3.3.0 — production one-shot scheduler default:** Promoted `TsParticlesAdapter` default burst mode from emitter to scheduled; direct emitter behavior remains available explicitly.
+- **P3.3.0 — cancellation/late-respawn gate:** Added the two-phase runtime ownership validation.
+- **P3.2.1 — real Heavy Impact scheduler A/B PASS:** intensity `2.0` emitter `57.4 avg / 30 low / 4 spikes / 262 particles`; shared-scheduled `60/60/0 / 384 particles / 36 peak queued`, cleanup clean; user visually preferred scheduled/B.
+- **P3.2.1 — matched heterogeneous stress PASS:** uniform and heterogeneous 800/24 profiles both `MATCHED/CLEAN`; shared-scheduled held `16.7 ms worst / 0 population spikes / 60/60 steady` in both.
+- **P3.2.1 — heterogeneous Emission Point stress harness:** Added controlled per-point count/intensity, color, direction, speed, size and opacity variation.
+- **P3.2.0 — integrated Shared Emission Scheduler:** Added scheduled burst mode with immediate seed, fair global queue, 8-particle chunks and 6 ms frame budget.
 - **P3.1.2 — matched 800 spawn-hitch result:** emitter `83.3 ms worst / 1 spike`, shared-direct `66.7 / 1`, Lab-only shared-budgeted `16.7 / 0`; workload matched and cleanup clean.
-- **P3.1.2 — spawn-hitch measurement + budgeted shared experiment:** Added population-frame measurement and frame-budgeted direct-particle experiment.
-- **P3.1.1 — matched 800 result:** emitter ~`4 ms` setup; shared-direct ~`92 ms` synchronous creation; post-spawn steady metrics alone were shown to hide burst hitch cost.
-- **P3.1.1 — benchmark repeatability:** Added 3 rounds, alternating order and median decision metrics.
-- **P3.1.0 — matched synthetic backend stress:** Added `400 / 800 / 1200` matched particle presets across `16 / 24 / 32` emission points.
-- **P3.1.0 — release/version discipline:** Visible Runtime Lab version advancement and cache-busting made mandatory for user-testable browser iterations.
-- **P3.0 real-effect A/B result:** intensity `2.0`, emitter `59.3/30/1 / 237 particles`; shared-direct `60/60/0 / 384`, directional evidence only because temporal peaks differed.
-- **P3.0.0 — Shared Emission Points prototype:** Added `ParticleAdapter.burst()` plus emitter and synchronous shared-direct paths with per-burst ownership.
-- **P3.0.0 Runtime Lab:** Promoted Heavy Impact page into persistent Runtime Lab rather than creating another milestone tab.
-- **P2 DONE / P3 ACTIVE:** Heavy Impact vertical-slice look accepted; pressure wave retained as browser placeholder. Mobile production validation moved to P3.
-- **P2.3 clean desktop benchmark:** intensity `2.0`, exactly `6 instances`, peak `5 emitters / 229 particles`, `59.3 avg / 30 low / 1 spike`, final `0/0/0`.
-- **P2.3.1:** Hardened overlap benchmark scheduling, reset and Stop All behavior.
+- **P3.1.1 — matched 800 result:** emitter setup cheap; shared-direct synchronous creation expensive; post-spawn steady FPS shown insufficient.
+- **P3.1.0 — matched synthetic backend stress + release/version discipline.**
+- **P3.0.0 — Shared Emission Points prototype:** Added semantic `ParticleAdapter.burst()` and emitter/shared-direct strategies with per-burst ownership.
+- **P3.0.0 Runtime Lab:** Promoted Heavy Impact page into persistent Runtime Lab.
+- **P2 DONE / P3 ACTIVE:** Heavy Impact vertical-slice look accepted; mobile production validation moved to P3.
+- **P2.3 clean desktop benchmark:** intensity `2.0`, exactly `6 instances`, `229` peak particles, `59.3 avg / 30 low / 1 spike`, final `0/0/0`.
+- **P2.3.1:** Hardened overlap benchmark scheduling/reset/Stop All.
 - **P2.3.0:** Increased pressure-wave readability without Core/API changes.
-- **P2.2.1:** Fixed stale-module deployment behavior with cache-safe imported module versioning.
-- **P2.2.0:** Heavy Impact visual hierarchy pass reduced particle density and improved readability/performance.
-- **P2.1 measured baseline:** intensity `0.5`: `6 emitters / 130 particles`, `60/60/0`; intensity `2.0`: `6 emitters / 454 particles`, `55.4/20/5`; both final `0/0/0`.
-- **P2.1.0:** Added measured overlap diagnostics and accumulated inner-layer screen kick.
-- **P2 finding / P3 requirement:** Added Shared Emission Points / Burst Pooling as a measured optimization candidate.
+- **P2.2.1:** Fixed stale-module deployment with cache-safe imported module versioning.
+- **P2.2.0:** Heavy Impact visual hierarchy pass reduced particle density and improved performance.
+- **P2.1 measured baseline:** intensity `2.0` `454 particles`, `55.4 avg / 20 low / 5 spikes`, final `0/0/0`.
+- **P2.1.0:** Added measured overlap diagnostics and accumulated screen kick.
 - **P2.0.0:** Added first Heavy Impact vertical slice and three-column Lab.
 - **P1.3.1 / P1 DONE:** Automated lifecycle validation PASS and portable runtime logs.
-- **P1.3.0:** Added one-click lifecycle validator.
-- **P1.2.3:** Locked desktop workbench proportions.
-- **P1.2.2:** Rebalanced desktop columns.
-- **P1.2.1:** Rebuilt Core Lab as widescreen three-column workbench.
-- **P1.2.0:** Added true continuous direction contract.
-- **P1.1.0:** Added authored-definition inspector.
 - **P1.0.0:** Added minimal FXDeck Core.
 - **P0.3.0:** Added raw 150/400/800 performance test; Galaxy S20+ held ~60 FPS at 150/400 and ~57.4 avg / 30 low at ~800.
 - **P0.2.2:** Fixed tsParticles v4 bootstrap with explicit `loadFull(tsParticles)`.
