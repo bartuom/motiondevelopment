@@ -12,13 +12,15 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion
-- **Current build:** **P3.6.1**
+- **Current build:** **P3.6.2**
 - **Status:** ACTIVE.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.6.1 UI shell over the accepted P3.6 runtime capability build.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.6.2.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0
-- **Current gate:** Runtime Lab usability + Fireball visual/lifecycle validation. Performance tuning remains deferred.
-- **Next action:** visually verify the P3.6.1 workspace: Play should expose only authoring controls + resolved cue; Debug / Tests should contain benchmarks/logs; Preview must stay visible in both modes; HUD Off/Basic/Full must work and color-code live runtime status. Then validate one Fireball play: moving head + trail → direction-following travel → existing Explosion at endpoint → no lingering projectile emitters.
+- **Current gate:** Fireball multi-instance visual/lifecycle correctness. Performance tuning remains deferred.
+- **P3.6.1 user validation:** Runtime Lab UI cleanup works and is materially cleaner. Single Fireball works, runtime intensity works, direction/travel/Explosion handoff are functional. A real bug was found when several Fireballs are active: projectile travel can become effectively invisible and Explosion appears almost immediately.
+- **P3.6.2 fix:** Fireball no longer computes travel progress directly from wall-clock `now - startedAt`. Travel accumulates rendered-frame time with a `34 ms` maximum visual advance per frame, preventing emitter-spawn/main-thread hitches from fast-forwarding a projectile straight to impact. Moving emitter lifetime also receives margin so a stretched visual flight cannot outlive its head/trail emitter.
+- **Next action:** on live **P3.6.2**, launch several Fireballs quickly or use Debug / Tests → `Overlap ×6 + perf` only as a convenient multi-instance launcher. Verify that multiple projectile heads/trails remain visible in flight, keep their different directions, then reach their endpoints and trigger Explosion normally. The benchmark numbers are not the gate.
 - **After Fireball:** implement a sustained **Environment emitter** with `start → live update position/intensity → stop`. Use that real effect to decide whether FXDeck needs first-class live `EffectInstance` parameter updates.
 
 ## Product target
@@ -94,28 +96,32 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - `FXDeckRuntime.getAssets({ target })` collects and deduplicates manifests across registered definitions.
 - `FXDeckRuntime.setAdapter(name, adapter)` allows registration/asset discovery before backend initialization.
 - Runtime Lab no longer hardcodes individual spark/explosion preload files; it builds the particle preload list from the registered effect catalog.
-- `site/fxdeck/effects/catalog.js` is the production effect registration surface.
+- `site/fxdeck/effects/catalog.js` is now the production effect registration surface.
 
-### P3.6 Fireball moving-source archetype — IMPLEMENTED, VISUAL VALIDATION PENDING
+### P3.6 Fireball moving-source archetype — IMPLEMENTED, MULTI-INSTANCE VALIDATION PENDING
 
-- `fireball/v1/default` added as the third real effect.
+- `fireball/v1/default` is the third real effect.
 - Uses two explicit moving emitters: projectile head + trail.
 - Per-frame movement updates both emitter positions along normalized runtime direction.
 - Authored default: ~250 px travel over ~560 ms; optional runtime `distance`/`travelDuration` are accepted without changing Core normalization.
 - At endpoint Fireball stops its moving emitters and reuses the existing `Explosion` via `FXDeck.play("explosion", ...)`.
 - Fireball owns its particle asset declaration.
-- `spawnTracked` was added as the minimal lifecycle helper for explicit moving emitters.
-- No generic projectile system, timeline, child-effect framework or live-update API was added pre-emptively.
+- `spawnTracked` is the minimal lifecycle helper for explicit moving emitters.
+- P3.6.1 user validation confirmed a single Fireball and runtime intensity work.
+- P3.6.1 exposed a real multi-instance bug: travel progress used `(rAF timestamp - startedAt) / duration`; creating several explicit emitters can block/delay the main thread, so the next rAF may arrive hundreds of milliseconds later and visually fast-forward early projectiles to impact.
+- P3.6.2 changes Fireball travel to a local rendered-frame clock. Each rAF adds at most `34 ms` to visual travel time. Large raw frame gaps are recorded on `instance.resolved.hitchClamps/maxRawFrameGapMs` but do not skip the authored flight.
+- Fireball head/trail emitter lifetime now includes a margin based on authored/runtime travel duration so clamped visual travel cannot lose its source emitter during a temporary stall.
+- This timing policy remains **Fireball-local**. Do not create a generic FXDeck clock/timeline abstraction unless Environment/another moving effect proves the same need.
 
-### P3.6.1 Runtime Lab UX — IMPLEMENTED, VISUAL VALIDATION PENDING
+### P3.6.1 Runtime Lab UX — USER-ACCEPTED
 
 - Main workbench remains three columns with the existing width balance; Preview stays persistent in the center.
-- Workspace now has **Play** and **Debug / Tests** modes instead of exposing every dev control simultaneously.
+- Workspace has **Play** and **Debug / Tests** modes instead of exposing every dev control simultaneously.
 - Play left pane contains only effect/version/variant/path/intensity/direction plus `FXDeck.play()` and `stopAll()`.
 - Play right pane contains authored timing + resolved cue only; runtime telemetry was removed from the inspector.
 - Debug left pane contains overlap/A-B/cancellation/synthetic stress controls and stress parameters.
 - Debug right pane contains the validation log, Copy/Clear actions, current public API call and HUD color legend.
-- Runtime diagnostics moved onto Preview as an engine-style translucent HUD with **Off / Basic / Full** modes.
+- Runtime diagnostics live on Preview as an engine-style translucent HUD with **Off / Basic / Full** modes.
 - Basic HUD: FPS, particle count, active instances.
 - Full HUD adds 1% low, p95/p99/worst/debt, >20ms frames, queued work, emitters, groups, queue pressure, quality shedding, burst path and canvas scale.
 - HUD health color coding: healthy FPS/no pressure = green, degraded/medium = amber, low FPS/high/critical pressure = red; particles/instances use informational blue.
@@ -126,7 +132,7 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 
 # Remaining P3 capability roadmap
 
-1. **P3.6.1 UI visual validation + Fireball visual/lifecycle validation** — current gate.
+1. **P3.6.2 Fireball multi-instance visual validation** — current gate. Do not evaluate it as a performance benchmark; verify visible travel and lifecycle for several concurrent projectiles.
 2. **Environment emitter** — sustained lifetime and real live-update pressure.
 3. **Effect-owned asset lifecycle hardening** — only if Fireball/Environment expose real preload/unload problems.
 4. **Rare Reward** — UI/DOM + particles to prove non-world-impact cue composition.
@@ -141,7 +147,7 @@ P3 exits when representative one-shot, moving and sustained effects all use the 
 
 - [x] Heavy Impact — short composite impact.
 - [x] Explosion — multi-layer one-shot.
-- [ ] Fireball — implemented; pending visual acceptance.
+- [ ] Fireball — single instance accepted; P3.6.2 multi-instance visual regression pending.
 - [ ] Environment emitter — sustained/long-running.
 - [ ] Rare Reward — UI/DOM + particles.
 - [ ] Critical Hit — ultra-short readability.
@@ -180,12 +186,15 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 8. One Runtime Lab hosts all production effects; no page per effect.
 9. Runtime diagnostics are a toggleable preview HUD; test controls/logs belong to Debug / Tests, not the main authoring workflow.
 10. Lab UI concerns stay outside FXDeck Core.
-11. Every user-testable iteration advances visible build/cache keys.
+11. Moving-cue visual timing must not silently disappear because unrelated synchronous setup delayed an rAF. Fireball solves this locally with clamped rendered-frame advancement; generalize only after another real effect repeats the requirement.
+12. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
 # Changelog — 2026-08-18
 
+- **P3.6.2 — Fireball multi-instance timing fix:** replaced wall-clock travel progress with accumulated rendered-frame time capped to `34 ms` advance per frame, preventing concurrent emitter creation/main-thread stalls from fast-forwarding projectiles directly to Explosion.
+- **P3.6.2 — Fireball emitter lifetime hardening:** moving head/trail emitter lifetime now scales with travel duration plus margin; resolved diagnostics record travel progress and hitch clamps.
 - **P3.6.1 — Runtime Lab UI cleanup:** split side panes into Play vs Debug / Tests while keeping the Preview persistent; removed benchmarks and telemetry clutter from normal authoring.
 - **P3.6.1 — runtime HUD:** added translucent engine-style Off/Basic/Full diagnostics overlay with FPS/queue health color coding and local mode persistence.
 - **P3.6.1 — debug workspace:** moved stress controls, overlap/A-B/cancellation tools, validation log, Copy/Clear and API preview into the Debug / Tests mode.
