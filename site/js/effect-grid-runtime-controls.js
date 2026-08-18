@@ -1,4 +1,4 @@
-const BUILD = 'P3.8.1';
+const BUILD = 'P3.9.0';
 
 const primary = {
   effect: document.querySelector('#effect-select'),
@@ -75,6 +75,9 @@ function pathDescription(effectId, path) {
 
   if (effectId === 'fireball') {
     return `${topology} Fireball hero heads stay independent DOM visuals; topology applies to ember bursts and the Explosion handoff.`;
+  }
+  if (effectId === 'rareReward') {
+    return `${topology} Rare Reward keeps one independently owned DOM/SVG card per cue; topology applies only to the reveal's particle accents.`;
   }
   return `${topology} The selected topology drives the particle layers of this real effect.`;
 }
@@ -227,7 +230,7 @@ function install({ panel, grid }) {
     readout.textContent = parts.join(' • ');
   }
 
-  appendLog(`${BUILD} Grid setup ready: one-shot topology comparison retained; sustained Environment grid = independent explicit sources`);
+  appendLog(`${BUILD} Grid setup ready: world, projectile, sustained and card-space effects share one real-effect scaling harness`);
 }
 
 waitForGrid()
