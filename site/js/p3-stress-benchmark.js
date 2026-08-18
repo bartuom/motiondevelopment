@@ -1,5 +1,6 @@
-const BUILD = 'P3.4.0';
+const BUILD = 'P3.5.0';
 const ROUNDS = 3;
+const FRAME_BUDGET_MS = 1000 / 60;
 
 const stressButton = document.querySelector('#play-stress-ab');
 const stressLoadInput = document.querySelector('#stress-load');
@@ -36,14 +37,28 @@ async function waitForLab(timeoutMs = 8000) {
   throw new Error(`${BUILD} stress benchmark could not find an initialized FXDeckLab.`);
 }
 
+function percentile(sorted, q) {
+  if (!sorted.length) return 0;
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * q) - 1));
+  return sorted[index];
+}
+
 function summarizeFrames(samples) {
   const valid = samples.filter((dt) => Number.isFinite(dt) && dt > 0 && dt < 500);
-  if (!valid.length) return { avgFps: 0, low1: 0, spikes20: 0, worstMs: 0 };
+  if (!valid.length) return { avgFps: 0, low1: 0, spikes20: 0, worstMs: 0, p95Ms: 0, p99Ms: 0, debtMs: 0 };
   const avgMs = valid.reduce((sum, dt) => sum + dt, 0) / valid.length;
   const sorted = [...valid].sort((a, b) => a - b);
-  const p99Index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * .99) - 1));
-  const p99Ms = sorted[p99Index];
-  return { avgFps: 1000 / avgMs, low1: 1000 / p99Ms, spikes20: valid.filter((dt) => dt > 20).length, worstMs: Math.max(...valid) };
+  const p95Ms = percentile(sorted, .95);
+  const p99Ms = percentile(sorted, .99);
+  return {
+    avgFps: 1000 / avgMs,
+    low1: 1000 / p99Ms,
+    spikes20: valid.filter((dt) => dt > 20).length,
+    worstMs: sorted[sorted.length - 1],
+    p95Ms,
+    p99Ms,
+    debtMs: valid.reduce((sum, dt) => sum + Math.max(0, dt - FRAME_BUDGET_MS), 0)
+  };
 }
 
 function median(values) {
@@ -62,6 +77,10 @@ function aggregate(results) {
     targetWaitMs: median(results.map((item) => item.targetWaitMs)),
     avgFps: median(results.map((item) => item.avgFps)),
     low1: median(results.map((item) => item.low1)),
+    p95Ms: median(results.map((item) => item.p95Ms)),
+    p99Ms: median(results.map((item) => item.p99Ms)),
+    worstMs: median(results.map((item) => item.worstMs)),
+    debtMs: median(results.map((item) => item.debtMs)),
     steadySpikes20: median(results.map((item) => item.steadySpikes20)),
     peakParticles: median(results.map((item) => item.peakParticles)),
     peakEmitters: Math.max(...results.map((item) => item.peakEmitters)),
@@ -89,8 +108,13 @@ function stressEmitterOptions(count, index = 0, profile = 'uniform') {
       opacity: { value: heterogeneous ? opacity : .42 },
       size: { value: heterogeneous ? size : 3 },
       move: heterogeneous ? {
-        enable: true, direction: 'right', angle: { value: 16 + (index % 3) * 8, offset: direction },
-        random: false, straight: false, speed, outModes: { default: 'bounce' }
+        enable: true,
+        direction: 'right',
+        angle: { value: 16 + (index % 3) * 8, offset: direction },
+        random: false,
+        straight: false,
+        speed,
+        outModes: { default: 'bounce' }
       } : { enable: false },
       life: { count: 1, duration: { value: 2.4, sync: true } }
     }
@@ -102,13 +126,14 @@ function makePoints(stage, pointCount) {
   const height = Math.max(1, stage.clientHeight);
   const cols = Math.ceil(Math.sqrt(pointCount * (width / height)));
   const rows = Math.ceil(pointCount / cols);
-  const points = [];
-  for (let index = 0; index < pointCount; index += 1) {
+  return Array.from({ length: pointCount }, (_, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
-    points.push({ x: width * (.18 + .64 * ((col + .5) / cols)), y: height * (.18 + .64 * ((row + .5) / rows)) });
-  }
-  return points;
+    return {
+      x: width * (.18 + .64 * ((col + .5) / cols)),
+      y: height * (.18 + .64 * ((row + .5) / rows))
+    };
+  });
 }
 
 function distribute(total, buckets) {
@@ -123,8 +148,12 @@ function weightedDistribute(total, buckets) {
   const raw = weights.map((weight) => total * weight / weightSum);
   const counts = raw.map(Math.floor);
   let remainder = total - counts.reduce((sum, value) => sum + value, 0);
-  const byFraction = raw.map((value, index) => ({ index, fraction: value - Math.floor(value) })).sort((a, b) => b.fraction - a.fraction || a.index - b.index);
-  for (let cursor = 0; remainder > 0; cursor += 1, remainder -= 1) counts[byFraction[cursor % byFraction.length].index] += 1;
+  const byFraction = raw
+    .map((value, index) => ({ index, fraction: value - Math.floor(value) }))
+    .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+  for (let cursor = 0; remainder > 0; cursor += 1, remainder -= 1) {
+    counts[byFraction[cursor % byFraction.length].index] += 1;
+  }
   return counts;
 }
 
@@ -140,11 +169,18 @@ async function waitForParticleTarget(adapter, target, timeoutMs = 1400) {
     const stats = adapter.getStats();
     const count = stats.particles ?? 0;
     peak = Math.max(peak, count);
-    if (count >= target && (stats.queuedParticles ?? 0) === 0) return { reached: true, count, peak, waitMs: performance.now() - startedAt };
+    if (count >= target && (stats.queuedParticles ?? 0) === 0) {
+      return { reached: true, count, peak, waitMs: performance.now() - startedAt };
+    }
   }
   const stats = adapter.getStats();
   const count = stats.particles ?? 0;
-  return { reached: count >= target && (stats.queuedParticles ?? 0) === 0, count, peak: Math.max(peak, count), waitMs: performance.now() - startedAt };
+  return {
+    reached: count >= target && (stats.queuedParticles ?? 0) === 0,
+    count,
+    peak: Math.max(peak, count),
+    waitMs: performance.now() - startedAt
+  };
 }
 
 async function sampleFrames(adapter, durationMs = 1400) {
@@ -194,14 +230,23 @@ async function probePopulationFrames(task) {
   active = false;
   if (raf) cancelAnimationFrame(raf);
   const frameSummary = summarizeFrames(samples);
-  return { value, populationSpanMs, worstPopulationFrameMs: frameSummary.worstMs, populationSpikes20: frameSummary.spikes20 };
+  return {
+    value,
+    populationSpanMs,
+    worstPopulationFrameMs: frameSummary.worstMs,
+    populationSpikes20: frameSummary.spikes20
+  };
 }
 
 async function submitWorkload(adapter, path, points, counts, profile) {
   let submitCpuMs = 0;
   for (let index = 0; index < points.length; index += 1) {
     const startedAt = performance.now();
-    await adapter.burst(stressEmitterOptions(counts[index], index, profile), points[index], { mode: path });
+    await adapter.burst(
+      stressEmitterOptions(counts[index], index, profile),
+      points[index],
+      { mode: path, priority: 'medium', backpressure: false }
+    );
     submitCpuMs += performance.now() - startedAt;
   }
   return submitCpuMs;
@@ -222,25 +267,47 @@ async function runLeg(lab, path, preset, round, profile) {
     const target = await waitForParticleTarget(adapter, preset.particles);
     return { submitCpuMs, target };
   });
+
   const target = populationProbe.value.target;
   const statsAtStart = adapter.getStats();
-  log(`STRESS R${round} ${label} [${PROFILE_LABELS[profile]}]: submit CPU ${populationProbe.value.submitCpuMs.toFixed(2)} ms / population span ${populationProbe.populationSpanMs.toFixed(1)} ms / worst population frame ${populationProbe.worstPopulationFrameMs.toFixed(1)} ms / population >20ms ${populationProbe.populationSpikes20} / requested ${preset.particles} / per-point count ${countRange} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / queued ${statsAtStart.queuedParticles ?? 0} / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)} ms`);
+  log(`STRESS R${round} ${label} [${PROFILE_LABELS[profile]}]: submit ${populationProbe.value.submitCpuMs.toFixed(2)}ms / span ${populationProbe.populationSpanMs.toFixed(1)}ms / population worst ${populationProbe.worstPopulationFrameMs.toFixed(1)}ms / >20ms ${populationProbe.populationSpikes20} / requested ${preset.particles} / per-point ${countRange} / ready ${statsAtStart.particles} / ${statsAtStart.emitters} emitters / ${statsAtStart.burstGroups} groups / queued ${statsAtStart.queuedParticles ?? 0} / target ${target.reached ? 'reached' : 'NOT reached'} in ${target.waitMs.toFixed(1)}ms`);
 
   const frameResult = await sampleFrames(adapter, 1400);
   adapter.clear();
   await nextFrame();
   await nextFrame();
   const cleanStats = adapter.getStats();
+
   const result = {
-    path, profile, requested: preset.particles, points: preset.points, round,
-    submitCpuMs: populationProbe.value.submitCpuMs, populationSpanMs: populationProbe.populationSpanMs,
-    worstPopulationFrameMs: populationProbe.worstPopulationFrameMs, populationSpikes20: populationProbe.populationSpikes20,
-    targetWaitMs: target.waitMs, readyParticles: statsAtStart.particles, targetReached: target.reached,
-    avgFps: frameResult.avgFps, low1: frameResult.low1, steadySpikes20: frameResult.spikes20,
-    peakParticles: Math.max(target.peak, frameResult.peakParticles), peakEmitters: frameResult.peakEmitters, peakGroups: frameResult.peakGroups,
-    finalParticles: cleanStats.particles, finalEmitters: cleanStats.emitters, finalGroups: cleanStats.burstGroups, finalQueuedParticles: cleanStats.queuedParticles ?? 0
+    path,
+    profile,
+    requested: preset.particles,
+    points: preset.points,
+    round,
+    submitCpuMs: populationProbe.value.submitCpuMs,
+    populationSpanMs: populationProbe.populationSpanMs,
+    worstPopulationFrameMs: populationProbe.worstPopulationFrameMs,
+    populationSpikes20: populationProbe.populationSpikes20,
+    targetWaitMs: target.waitMs,
+    readyParticles: statsAtStart.particles,
+    targetReached: target.reached,
+    avgFps: frameResult.avgFps,
+    low1: frameResult.low1,
+    p95Ms: frameResult.p95Ms,
+    p99Ms: frameResult.p99Ms,
+    worstMs: frameResult.worstMs,
+    debtMs: frameResult.debtMs,
+    steadySpikes20: frameResult.spikes20,
+    peakParticles: Math.max(target.peak, frameResult.peakParticles),
+    peakEmitters: frameResult.peakEmitters,
+    peakGroups: frameResult.peakGroups,
+    finalParticles: cleanStats.particles,
+    finalEmitters: cleanStats.emitters,
+    finalGroups: cleanStats.burstGroups,
+    finalQueuedParticles: cleanStats.queuedParticles ?? 0
   };
-  log(`STRESS R${round} ${label} RESULT: population worst ${result.worstPopulationFrameMs.toFixed(1)} ms / population spikes ${result.populationSpikes20} / steady ${result.avgFps.toFixed(1)} avg / ${result.low1.toFixed(1)} low / ${result.steadySpikes20} spikes / peak ${result.peakParticles} / cleanup ${result.finalEmitters}/${result.finalGroups}/${result.finalParticles}, queued ${result.finalQueuedParticles}`);
+
+  log(`STRESS R${round} ${label} RESULT: population worst ${result.worstPopulationFrameMs.toFixed(1)}ms / population spikes ${result.populationSpikes20} / steady ${result.avgFps.toFixed(1)} avg / ${result.low1.toFixed(1)} low / p95 ${result.p95Ms.toFixed(1)} / p99 ${result.p99Ms.toFixed(1)} / worst ${result.worstMs.toFixed(1)}ms / debt ${result.debtMs.toFixed(1)}ms / peak ${result.peakParticles} / cleanup ${result.finalEmitters}/${result.finalGroups}/${result.finalParticles}, queued ${result.finalQueuedParticles}`);
   return result;
 }
 
@@ -257,23 +324,27 @@ function setUiBusy(busy) {
 }
 
 function resultSummary(label, result) {
-  return `${label} submit ${result.submitCpuMs.toFixed(1)}ms / span ${result.populationSpanMs.toFixed(1)}ms / worst ${result.worstPopulationFrameMs.toFixed(1)}ms / population spikes ${result.populationSpikes20.toFixed(0)} / steady ${result.avgFps.toFixed(1)} avg ${result.low1.toFixed(1)} low / peak ${result.peakParticles.toFixed(0)}`;
+  return `${label} submit ${result.submitCpuMs.toFixed(1)}ms / span ${result.populationSpanMs.toFixed(1)}ms / pop-worst ${result.worstPopulationFrameMs.toFixed(1)}ms / pop-spikes ${result.populationSpikes20.toFixed(0)} / steady ${result.avgFps.toFixed(1)} avg ${result.low1.toFixed(1)} low / p99 ${result.p99Ms.toFixed(1)} / worst ${result.worstMs.toFixed(1)}ms / debt ${result.debtMs.toFixed(1)}ms / peak ${result.peakParticles.toFixed(0)}`;
 }
 
 async function runProfileCompare(lab, preset, profile, scheduler) {
   const results = { emitter: [], shared: [], scheduled: [] };
-  const roundOrders = [['emitter', 'shared', 'scheduled'], ['shared', 'scheduled', 'emitter'], ['scheduled', 'emitter', 'shared']];
+  const roundOrders = [
+    ['emitter', 'shared', 'scheduled'],
+    ['shared', 'scheduled', 'emitter'],
+    ['scheduled', 'emitter', 'shared']
+  ];
   const profileDetail = profile === 'heterogeneous'
-    ? 'per-point intensity weights 0.55–1.45 normalized to the same total + varied color/direction/speed/size/opacity'
-    : 'identical stationary particle options at every point';
-  log(`${BUILD} STRESS COMPARE START: profile ${PROFILE_LABELS[profile]} / ${preset.particles} matched particles / ${preset.points} emission points / ${ROUNDS} rounds / ${profileDetail} / integrated scheduler ${scheduler.schedulerBudgetMs ?? '?'}ms budget, chunk ${scheduler.schedulerChunkSize ?? '?'}, immediate ${scheduler.schedulerImmediateCount ?? '?'}`);
+    ? 'per-point runtime variation with total particle count fixed'
+    : 'identical particle options at every point';
+
+  log(`${BUILD} STRESS COMPARE START: ${PROFILE_LABELS[profile]} / ${preset.particles} matched particles / ${preset.points} points / ${ROUNDS} rounds / ${profileDetail} / backpressure DISABLED for matched workload / scheduler ${scheduler.schedulerBudgetMs ?? '?'}ms, chunk ${scheduler.schedulerChunkSize ?? '?'}`);
 
   for (let round = 1; round <= ROUNDS; round += 1) {
     const order = roundOrders[round - 1];
     log(`STRESS ROUND ${round}/${ROUNDS} [${PROFILE_LABELS[profile]}]: ${order.map((path) => PATH_LABELS[path]).join(' → ')}`);
     for (const path of order) {
-      const result = await runLeg(lab, path, preset, round, profile);
-      results[path].push(result);
+      results[path].push(await runLeg(lab, path, preset, round, profile));
       await sleep(180);
     }
   }
@@ -285,6 +356,7 @@ async function runProfileCompare(lab, preset, profile, scheduler) {
   const peaks = [emitter.peakParticles, shared.peakParticles, scheduled.peakParticles];
   const workloadMatched = [emitter, shared, scheduled].every((item) => item.allTargetsReached) && Math.max(...peaks) - Math.min(...peaks) <= tolerance;
   const cleanupClean = [emitter, shared, scheduled].every((item) => item.allCleanupClean);
+
   log(`${BUILD} STRESS COMPARE RESULT (median ${ROUNDS}, ${PROFILE_LABELS[profile]}): ${resultSummary('emitter', emitter)} | ${resultSummary('shared-direct', shared)} | ${resultSummary('shared-scheduled', scheduled)} | workload ${workloadMatched ? 'MATCHED' : 'MISMATCHED'} | cleanup ${cleanupClean ? 'CLEAN' : 'FAIL'}`);
   return { emitter, shared, scheduled, workloadMatched, cleanupClean };
 }
@@ -294,7 +366,9 @@ async function runStressCompare() {
   const lab = await waitForLab();
   const requested = Number(stressLoadInput?.value ?? 800);
   const preset = STRESS_PRESETS[requested] ?? STRESS_PRESETS[800];
-  const requestedProfile = ['uniform', 'heterogeneous', 'both'].includes(stressProfileInput?.value) ? stressProfileInput.value : 'both';
+  const requestedProfile = ['uniform', 'heterogeneous', 'both'].includes(stressProfileInput?.value)
+    ? stressProfileInput.value
+    : 'both';
   const profiles = requestedProfile === 'both' ? ['uniform', 'heterogeneous'] : [requestedProfile];
   const originalPath = lab.particleAdapter.getBurstMode();
   const scheduler = lab.particleAdapter.getStats();
@@ -306,16 +380,11 @@ async function runStressCompare() {
       profileResults[profile] = await runProfileCompare(lab, preset, profile, scheduler);
       await sleep(260);
     }
+
     if (profileResults.uniform && profileResults.heterogeneous) {
       const uniform = profileResults.uniform.scheduled;
       const hetero = profileResults.heterogeneous.scheduled;
-      const deltaSubmit = hetero.submitCpuMs - uniform.submitCpuMs;
-      const deltaSpan = hetero.populationSpanMs - uniform.populationSpanMs;
-      const deltaWorst = hetero.worstPopulationFrameMs - uniform.worstPopulationFrameMs;
-      const deltaSpikes = hetero.populationSpikes20 - uniform.populationSpikes20;
-      const deltaAvg = hetero.avgFps - uniform.avgFps;
-      const deltaLow = hetero.low1 - uniform.low1;
-      log(`${BUILD} HETEROGENEITY DELTA (shared-scheduled, heterogeneous - uniform): ${deltaSubmit >= 0 ? '+' : ''}${deltaSubmit.toFixed(1)}ms submit / ${deltaSpan >= 0 ? '+' : ''}${deltaSpan.toFixed(1)}ms span / ${deltaWorst >= 0 ? '+' : ''}${deltaWorst.toFixed(1)}ms worst frame / ${deltaSpikes >= 0 ? '+' : ''}${deltaSpikes.toFixed(0)} population spikes / ${deltaAvg >= 0 ? '+' : ''}${deltaAvg.toFixed(1)} steady avg / ${deltaLow >= 0 ? '+' : ''}${deltaLow.toFixed(1)} steady low | uniform ${profileResults.uniform.workloadMatched && profileResults.uniform.cleanupClean ? 'VALID' : 'INVALID'} | heterogeneous ${profileResults.heterogeneous.workloadMatched && profileResults.heterogeneous.cleanupClean ? 'VALID' : 'INVALID'}`);
+      log(`${BUILD} HETEROGENEITY DELTA (scheduled, hetero-uniform): ${(hetero.submitCpuMs - uniform.submitCpuMs).toFixed(1)}ms submit / ${(hetero.populationSpanMs - uniform.populationSpanMs).toFixed(1)}ms span / ${(hetero.worstPopulationFrameMs - uniform.worstPopulationFrameMs).toFixed(1)}ms population worst / ${(hetero.p99Ms - uniform.p99Ms).toFixed(1)}ms p99 / ${(hetero.debtMs - uniform.debtMs).toFixed(1)}ms debt | uniform ${profileResults.uniform.workloadMatched && profileResults.uniform.cleanupClean ? 'VALID' : 'INVALID'} | heterogeneous ${profileResults.heterogeneous.workloadMatched && profileResults.heterogeneous.cleanupClean ? 'VALID' : 'INVALID'}`);
     }
   } catch (error) {
     log(`${BUILD} STRESS COMPARE FAIL: ${error.message}`);
@@ -342,7 +411,7 @@ if (stressButton) {
 waitForLab()
   .then((lab) => {
     const stats = lab.particleAdapter.getStats();
-    log(`${BUILD} ready: uniform + heterogeneous stress retained; production scheduled mode ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
+    log(`${BUILD} ready: matched synthetic stress keeps production backpressure disabled; scheduler ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
   })
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
