@@ -11,9 +11,9 @@
 ## Current state
 
 - **Current milestone:** P1 — Minimal FXDeck Core
-- **Status:** ACTIVE
-- **Next implementation:** replace four-way direction bucketing with true normalized direction and validate the complete P1 lifecycle in-browser.
-- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.1.0
+- **Status:** ACTIVE — implementation complete enough for exit validation
+- **Next implementation:** no new Core feature. Validate P1 lifecycle/direction in-browser; fix only concrete failures found by that validation.
+- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.2.0
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
 ## Product target
@@ -82,12 +82,14 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 
 - [x] `position` is a per-play runtime parameter.
 - [x] `intensity` is a per-play runtime parameter and resolves into real effect values.
-- [ ] Replace four-direction bucketing with **true direction**. Public input may be degrees and/or `{x,y}`; Core must normalize it to a unit vector usable consistently by all effect components.
+- [x] **True direction contract:** public input accepts degrees or a non-zero `{x,y}` vector; Core normalizes it to a unit vector and also exposes normalized degrees to effect code.
+- [x] P1 `testBurst` uses continuous tsParticles angular offset instead of four-direction bucketing; authored `spread` controls cone width independently of runtime direction.
 
 ### P1 validation / exit criteria
 
 - [ ] Clicking the Core Lab stage reliably spawns the selected definition at the clicked position.
 - [ ] V1 / V2 / Heavy visibly resolve to the inspector values shown in the UI.
+- [ ] Arbitrary non-cardinal directions (for example 25°, 73°, 211°) visibly steer the burst continuously and match the inspector unit vector.
 - [ ] `Play ×10` completes with `0 active instances`, `0 emitters`, and `0 particles` after lifecycle completion.
 - [ ] `FXDeck.stopAll()` immediately clears active instances and backend resources.
 - [ ] No effect-level code needs tsParticles emitter naming, DPR conversion, or manual backend cleanup.
@@ -188,7 +190,7 @@ Do not build these pre-emptively:
 1. **tsParticles is the initial particle backend, not the public FXDeck API.** Backend-specific behavior stays behind `TsParticlesAdapter`.
 2. **P0 remains raw.** It is the performance and behavior reference against which FXDeck overhead can later be measured.
 3. **Version and variant are authored definitions.** They are analogous to saved prefab/config revisions, not runtime sliders.
-4. **Position, direction and intensity are runtime inputs.** They modify one play instance without creating a new authored version.
+4. **Position, direction and intensity are runtime inputs.** They modify one play instance without creating a new authored version. Direction is normalized by Core to a unit vector; degrees are retained as a convenience representation.
 5. **Vertical-slice-first.** Heavy Impact must drive the next abstractions; the architecture must not expand speculatively.
 6. **Primary product KPI:** how much effect-specific custom code is required to add the next production effect while preserving quality, cleanup and performance.
 
@@ -198,10 +200,10 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P1.2.0:** Replaced four-way direction bucketing with a true direction contract. `FXDeck.play()` now accepts degrees or `{x,y}`, Core normalizes to a unit vector, and `testBurst` uses continuous tsParticles angular offset with authored cone spread. Core Lab exposes full 0–359° control and the resolved unit vector.
 - **P1.1.0:** Added authored-definition inspector to Core Lab. V1/V2/Heavy now expose real construction and parameter differences; authored data and runtime-resolved values are displayed separately.
 - Added shared FXDeck project navigation between P0 Spike, P1 Core and the legacy portfolio.
 - **P1.0.0:** Added the first modular FXDeck Core: registry, `play/stop/stopAll`, `EffectInstance`, `CoordinateAdapter`, `TsParticlesAdapter`, test effect, and separate Core Lab.
 - **P0.3.0:** Added raw performance test with Normal (~150), Heavy (~400) and Extreme (~800) loads. Desktop passed all loads at 60 FPS. Galaxy S20+ 5G held ~60 FPS at 150/400 and reached ~57.4 FPS avg / 30 FPS 1% low at ~800.
 - **P0.2.2:** Fixed tsParticles v4 bootstrap by explicitly awaiting `loadFull(tsParticles)` before creating the container.
 - **P0.2.1:** Fixed CSS/gameplay ↔ retina-canvas coordinate handling, preload, emitter lifecycle observation, resize validation, and persistent/copyable P0 logs.
-
