@@ -1,4 +1,4 @@
-const BUILD = 'P3.5.1';
+const BUILD = 'P3.6.0';
 const ROUNDS = 3;
 const FRAME_BUDGET_MS = 1000 / 60;
 
@@ -411,7 +411,7 @@ if (stressButton) {
 waitForLab()
   .then((lab) => {
     const stats = lab.particleAdapter.getStats();
-    log(`${BUILD} ready: matched synthetic stress keeps production backpressure disabled; scheduler ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
+    log(`${BUILD} ready: matched synthetic stress retained as diagnostics; scheduler ${stats.schedulerBudgetMs}ms budget, chunk ${stats.schedulerChunkSize}, immediate ${stats.schedulerImmediateCount}`);
   })
   .catch((error) => {
     log(`${BUILD} init warning: ${error.message}`);
