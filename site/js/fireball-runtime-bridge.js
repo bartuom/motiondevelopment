@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.6.4';
+const BUILD = 'P3.7.0';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -67,25 +67,34 @@ function normalizeVisibleBuild() {
   const hudBuild = document.querySelector('.runtime-hud__build');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.6\.2|P3\.6\.3/g, BUILD);
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.6\.[0-9]+/g, BUILD);
+}
+
+async function loadEffectGridLab() {
+  try {
+    await import('./effect-grid-lab.js?v=p3.7.0');
+  } catch (error) {
+    appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
+    console.error(error);
+  }
 }
 
 if (!host) {
   console.error(`${BUILD} Fireball bridge: #impact-dom-layer is missing.`);
 } else {
   waitForFx()
-    .then((fx) => {
+    .then(async (fx) => {
       registerFireball(fx);
       visualAdapter = new DomSpriteAdapter({ host });
       fx.setAdapter('visuals', visualAdapter);
       if (globalThis.FXDeckLab) globalThis.FXDeckLab.visualAdapter = visualAdapter;
 
-      // Re-resolve the selected definition after replacing Fireball v1 with P3.6.4.
       effectInput?.dispatchEvent(new Event('change'));
       normalizeVisibleBuild();
-      appendLog(`${BUILD} mobile Fireball pass active: transform-only projectile movement, cheap compositor visual, sparse 96ms embers, HUD backdrop blur disabled`);
+      appendLog(`${BUILD} Fireball mobile path active: transform-only projectile movement, cheap compositor visual and sparse 96ms embers`);
       refreshFireballInspector();
       refreshVisualMetric();
+      await loadEffectGridLab();
     })
     .catch((error) => {
       appendLog(`${BUILD} Fireball bridge FAIL: ${error.message}`);
