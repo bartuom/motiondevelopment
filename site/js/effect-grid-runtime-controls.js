@@ -136,12 +136,12 @@ function install({ panel, grid }) {
     syncing = false;
   }
 
-  function setPrimary(select, value, eventType = 'change') {
-    if (syncing || select.value === value) return;
+  function setPrimary(element, value, eventType = 'change') {
+    if (syncing) return;
     syncing = true;
-    select.value = value;
+    if (element.value !== value) element.value = value;
     syncing = false;
-    dispatch(select, eventType);
+    dispatch(element, eventType);
   }
 
   controls.effect.addEventListener('change', () => {
