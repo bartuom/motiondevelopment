@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.8.0';
+const BUILD = 'P3.8.1';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,15 +68,15 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.8.0 moves beyond one-shots and projectiles: Environment Emitter proves a sustained FXDeck source with live position/intensity updates and owned stop cleanup. Fireball remains the accepted moving-source baseline.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+)/g, BUILD);
+  if (intro) intro.textContent = 'P3.8.1 makes the sustained Environment archetype explicit and inspectable: multiple independent sources, active-source markers, live move/density updates and a much clearer intensity range. Fireball remains the accepted moving-source baseline.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.0)/g, BUILD);
 }
 
 async function loadEffectGridLab() {
   try {
     await import('./effect-grid-lab.js?v=p3.7.3');
     await import('./effect-grid-canvas-projection.js?v=p3.7.3');
-    await import('./effect-grid-runtime-controls.js?v=p3.8.0');
+    await import('./effect-grid-runtime-controls.js?v=p3.8.1');
   } catch (error) {
     appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
     console.error(error);
@@ -99,8 +99,7 @@ if (!host) {
       refreshFireballInspector();
       refreshVisualMetric();
 
-      // Install the sustained Environment capability before the Grid clones effect options.
-      await import('./environment-runtime-bridge.js?v=p3.8.0');
+      await import('./environment-runtime-bridge.js?v=p3.8.1');
       await loadEffectGridLab();
     })
     .catch((error) => {
