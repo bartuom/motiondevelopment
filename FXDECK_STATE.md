@@ -1,174 +1,139 @@
 # FXDeck — Project State, Roadmap & Changelog
 
-> **Canonical project state.** Update this file with every material FXDeck implementation change.
+> **Canonical project state.** Update with every material implementation change.
 >
 > Mandatory rules:
-> - A milestone is `DONE` only when its exit criteria are complete.
-> - Add abstractions only after real effects or measured failures prove the need.
-> - P0 remains the raw-tsParticles reference benchmark.
-> - Every changed browser module must receive a fresh cache key.
-> - Every user-testable browser iteration must advance the visible `P#.x.x` build label.
-> - Browser release flow is mandatory: **code change → commit/push `main` → Pages workflow → live/cache verification when tooling allows → user test**.
+> - Add abstractions only after a real effect or measured failure proves the need.
+> - P0 remains the raw-tsParticles performance reference.
+> - Every changed browser module gets a fresh cache key.
+> - Every user-testable browser iteration advances the visible `P#.x.x` build.
+> - Release flow: **code → commit/push `main` → Pages workflow → live/cache verification when available → user test**.
 
 ## Current state
 
-- **Current milestone:** P3 — Extract Proven Abstractions / Production Runtime
-- **Current build:** **P3.5.1**
-- **Status:** ACTIVE — one-shot scheduling, ownership/cancellation and the second-effect architecture proof have passed. P3.5.0 proved the priority scheduler improves Explosion frame pacing, but its admission policy reacted to the current queue only and therefore reported `pressure medium` while still admitting `870/870` particles. P3.5.1 makes admission proactive by evaluating the projected backlog including the incoming burst.
-- **Previous milestone:** P2 — Heavy Impact Vertical Slice — **DONE**.
-- **Current Runtime Lab:** `site/heavy-impact-lab.html` — P3.5.1
-- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
-- **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
-- **Next action:** on live **Build P3.5.1**, select `Explosion`, `Shared scheduled — production default`, intensity `2.0`, and run **Effect A/B**. The scheduled leg should now show non-zero shedding whenever projected backlog reaches medium/high/critical pressure. Compare admitted/requested/shed, peak queue/particles, p95/p99/worst/debt and visual hero quality against the accepted P3.5.0 result.
+- **Milestone:** P3 — Production Runtime Capability Completion
+- **Current build:** **P3.6.0**
+- **Status:** ACTIVE.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.6.0
+- **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
+- **Raw reference:** `site/webfx-lab.html` — P0.3.0
+- **Current gate:** functionality, not performance tuning.
+- **Next action:** visually validate **Fireball** on P3.6.0: one `FXDeck.play("fireball")` should create a moving projectile head + trail, follow runtime direction, reach its authored endpoint, trigger the existing `Explosion` at impact, and clean the projectile emitters. No synthetic/performance benchmark is required for this gate.
+- **After Fireball:** implement a sustained **Environment emitter** with `start → live update position/intensity → stop`. Use that real effect to decide whether FXDeck needs first-class live `EffectInstance` parameter updates.
 
 ## Product target
 
-FXDeck is a lightweight gameplay VFX runtime for web games. Game code should trigger a complete versioned cue with a small API while FXDeck owns backend topology, scheduling and lifecycle:
+FXDeck is a lightweight gameplay VFX runtime for web games. Game code should trigger complete, versioned cues through a small API while FXDeck owns backend topology, scheduling and lifecycle.
 
 ```js
-FXDeck.play("explosion", {
-  position: hitPosition,
-  direction: hitDirection,
-  intensity: 1.2
+FXDeck.play("fireball", {
+  position: origin,
+  direction: aimDirection,
+  intensity: 1.0
 });
 ```
 
-FXDeck is **not** intended to become a particle simulator, node editor, mini-Niagara, shader graph or generic animation engine. tsParticles is the initial backend behind `ParticleAdapter`.
+FXDeck is **not** intended to become a custom particle simulator, node editor, mini-Niagara, shader graph or generic animation engine. tsParticles remains an implementation backend behind adapters.
 
 ---
 
-# Roadmap
+# Proven architecture
 
-## P0 — tsParticles Technology Spike — DONE
+## P0 — tsParticles spike — DONE
 
-- [x] Explicit `loadFull(tsParticles)` bootstrap.
-- [x] Runtime emitter creation/movement/cleanup.
-- [x] Exact CSS/gameplay → retina-canvas positioning.
-- [x] Image/SVG particles and DOM compositing.
-- [x] Resize/reflow validation.
-- [x] Raw FPS/1% low/spike/particle cleanup benchmark.
-- [x] Galaxy S20+ raw backend validation: ~150/~400 particles near 60 FPS; ~800 begins to expose the performance cliff.
+- Raw runtime emitter creation/movement/cleanup works.
+- CSS/gameplay → retina-canvas positioning works.
+- Image/SVG particles, DOM compositing and resize/reflow work.
+- Raw benchmark established the mobile/backend envelope; Galaxy S20+ was near 60 FPS around 150/400 particles and began showing a cliff around 800.
 
-**Exit:** tsParticles accepted as initial backend; P0 frozen as raw reference.
+## P1 — Minimal Core — DONE
 
----
+- `FXDeck.register`, `play`, `stop`, `stopAll`.
+- `EffectInstance` owns timers and cleanup callbacks.
+- `CoordinateAdapter` hides CSS/canvas/DPR conversion.
+- `TsParticlesAdapter` hides backend details.
+- Authored `id/version/variant` are separated from runtime `position/direction/intensity`.
+- Portable inspector/log/lifecycle validation passed.
 
-## P1 — Minimal FXDeck Core — DONE
+## P2 — Heavy Impact — DONE
 
-- [x] `FXDeck.register`, `play`, `stop`, `stopAll`.
-- [x] `EffectInstance` owns timers and cleanup callbacks.
-- [x] `CoordinateAdapter` hides CSS/canvas/DPR conversion.
-- [x] `TsParticlesAdapter` hides backend details.
-- [x] Authored `id/version/variant` separated from runtime inputs.
-- [x] Runtime `position`, normalized `direction`, and `intensity`.
-- [x] Definition/runtime inspector and three-column workbench.
-- [x] Repeated-play cleanup and stopAll validation.
-- [x] Portable copyable logs.
+- First complete gameplay cue through one `FXDeck.play("heavyImpact")` call.
+- Contact flash, directional sparks/debris, pressure-wave placeholder, target recoil and accumulated screen kick.
+- Cleanup and overlap lifecycle validated.
+- Visual hierarchy pass reduced the high-load desktop case from the earlier ~454-particle baseline to ~229 peak with cleaner frame pacing.
 
-**Exit:** minimal public API accepted and frozen unless a real effect proves a missing capability.
+## P3 — Extract only proven runtime capabilities — ACTIVE
 
----
+### One-shot burst topology — ACCEPTED
 
-## P2 — Heavy Impact Vertical Slice — DONE
+- `ParticleAdapter.burst()` is semantic; effect code does not encode backend topology.
+- `shared-scheduled` is the production default for short one-shot bursts.
+- Explicit emitter mode remains available for sustained/moving archetypes.
+- Shared work uses a persistent container, immediate seed, fair frame-budgeted queue and per-burst ownership.
+- Heterogeneous emission-point parameters were validated.
+- Heavy Impact real A/B favored scheduled visually and in frame pacing.
+- Per-instance cancellation and `stopAll()` clear queued/live shared work with no late respawn.
 
-Heavy Impact proved that one `FXDeck.play("heavyImpact", ...)` call can coordinate a complete gameplay cue with particles + integration hooks.
+### Explosion / second effect — ACCEPTED
 
-- [x] Contact flash, directional sparks, debris, pressure-wave placeholder, target recoil and accumulated screen kick.
-- [x] Runtime direction/intensity affect real authored values.
-- [x] One `EffectInstance` owns the composite lifecycle.
-- [x] P2.1 high-load baseline at intensity `2.0`: `454 peak particles`, `55.4 avg / 20 low / 5 >20ms`, final clean.
-- [x] P2.2/P2.3 visual hierarchy reduced low-value density.
-- [x] Clean post-polish desktop benchmark: `229 peak particles`, `59.3 avg / 30 low / 1 >20ms`, final `0/0/0`.
-- [x] User accepted the single-impact visual slice; pressure wave remains a browser placeholder for possible future distortion/refraction treatment.
+- `explosion/v1/default` added a different composite cue without Core redesign.
+- Reuses the same runtime, lifecycle, burst abstraction and screen-kick integration.
+- Small helpers `burstTracked`, `scheduleAsync`, `runHook` were extracted only after repetition by Heavy Impact + Explosion.
+- User visually preferred the scheduled Explosion path.
 
-**Exit:** product thesis proven; P3 targets only abstractions/performance failures exposed by Heavy Impact.
+### P3.5 queue-aware quality — IMPLEMENTED, TUNING DEFERRED
 
----
+- Priority/backpressure machinery exists and remains available as an experimental production safeguard.
+- P3.5.0 showed scheduled Explosion materially reduced frame-time debt/spikes while carrying the full workload.
+- P3.5.1 changed admission from current-backlog to projected-backlog pressure.
+- **Do not continue tuning thresholds/scales now.** This is not a product gate until representative final effects/mobile prove it is needed.
 
-## P3 — Extract Proven Abstractions / Production Runtime — ACTIVE
+### P3.6 effect-owned assets — IMPLEMENTED
 
-### Semantic one-shot burst + Shared Emission Scheduler
+- Effect definitions can declare `assets`.
+- `FXDeckRuntime.getAssets({ target })` collects and deduplicates manifests across registered definitions.
+- `FXDeckRuntime.setAdapter(name, adapter)` allows registration/asset discovery before backend initialization.
+- Runtime Lab no longer hardcodes individual spark/explosion preload files; it builds the particle preload list from the registered effect catalog.
+- `site/fxdeck/effects/catalog.js` is now the production effect registration surface.
 
-- [x] Effect code uses semantic `ParticleAdapter.burst()` rather than assuming emitter objects.
-- [x] Retained explicit paths for testing/other archetypes: `emitter`, `shared-direct`, `shared-scheduled`.
-- [x] Matched backend stress established that emitter call time is not population cost.
-- [x] P3.1.2 matched 800/24 result: emitter ~`83.3ms worst / 1 population spike`; shared-direct ~`66.7ms / 1`; frame-budgeted shared ~`16.7ms / 0`.
-- [x] Integrated global shared scheduler: persistent container, immediate seed, fair queue, `8`-particle chunks, `6ms` CPU budget/frame.
-- [x] Heterogeneous 800/24 profile supports per-point count/intensity, color, direction, speed, size and opacity with no scheduler frame-pacing regression.
-- [x] Heavy Impact real A/B intensity `2.0`: emitter `57.4 avg / 30 low / 4 spikes / 262 peak`; scheduled `60/60/0 / 384 peak / 36 queued`; cleanup clean. User visually preferred scheduled.
-- [x] `shared-scheduled` promoted to production default for semantic one-shot bursts in P3.3. Explicit emitter APIs remain for sustained/moving emitter archetypes; shared-direct is diagnostic/reference.
+### P3.6 Fireball moving-source archetype — IMPLEMENTED, VISUAL VALIDATION PENDING
 
-### Ownership / cancellation
-
-- [x] Scheduled bursts retain unique group ownership and queued-work ownership.
-- [x] P3.3 cancellation gate PASS: `FXDeck.stop(instance)` removed one active group + queue with no late respawn.
-- [x] `FXDeck.stopAll()` removed six active instances/groups/queue with no delayed respawn.
-
-### Second real effect / abstraction pressure
-
-- [x] P3.4 added `explosion/v1/default` without a new runtime subsystem.
-- [x] Explosion reuses `FXDeck.play`, `EffectInstance`, runtime position/direction/intensity, semantic burst API and shared scheduler.
-- [x] Small helpers `burstTracked`, `scheduleAsync`, `runHook` extracted only after both Heavy Impact and Explosion repeated them.
-- [x] One persistent Runtime Lab supports Heavy Impact and Explosion; no new page/tab per effect.
-- [x] Screen-kick integration reused by a second effect while remaining Lab/integration-level rather than Core.
-- [x] **Explosion second-effect architecture proof PASS (2026-08-18).** User visually preferred scheduled/B. Across three intensity-2 ×6 A/B runs, emitter produced `53.4–55.4 avg`, `15–20 1% low`, `5–8 >20ms`, `538–604 peak particles`; scheduled produced `53.4 avg`, `30 low`, `10 >20ms`, `870 peak particles`, `176–224 peak queued`. All runs cleaned to zero.
-- [x] Explosion confirms the architecture can add a different composite cue without Core redesign.
-
-### P3.5 — queue-aware quality/backpressure
-
-Explosion exposed the next production issue: the scheduler could accept a large amount of low-value work even when backlog was rising. Quality policy is semantic rather than a blind global count multiplier.
-
-- [x] Scheduled burst priorities: `hero`, `high`, `medium`, `low`.
-- [x] Weighted scheduler service favors hero/high while still servicing medium/low.
-- [x] Explosion priority map: core `hero`, fireball `hero`, sparks `high`, debris `medium`, smoke `low`.
-- [x] Heavy Impact: sparks `hero`, debris `medium`.
-- [x] Queue pressure thresholds: medium `96`, high `160`, critical `240` queued particles.
-- [x] Backpressure scales keep hero at 100%; at critical pressure current scales are hero `1.0`, high `.8`, medium `.5`, low `.15`.
-- [x] Adapter telemetry records requested/admitted/shed particles, shed bursts, peak pressure and priority breakdown.
-- [x] Synthetic matched backend stress explicitly sets `backpressure:false`, preserving matched-workload integrity.
-- [x] Runtime telemetry includes p95, p99, worst frame and **frame-time debt** (`Σ max(0, frameMs - 16.667)`).
-- [x] **P3.5.0 Explosion Effect A/B result:** emitter `57.4 avg / 30 low / p95 16.7 / p99 33.3 / worst 33.3 / debt 67ms / 4 spikes / 611 peak particles`; scheduled `59.3 avg / 30 low / p95 16.7 / p99 33.3 / worst 33.3 / debt 17ms / 1 spike / 870 peak particles / 112 peak queued`. Scheduled improved avg by `+2.0 FPS`, cut debt by `50ms`, and reduced >20ms frames from `4` to `1` while carrying more particles.
-- [x] **P3.5.0 exposed an admission-policy flaw:** scheduled reported `pressure medium` but `quality 870/870 admitted, 0 shed`. Code review confirmed pressure used the current queue before admission, while the medium threshold was only crossed after the burst was added.
-- [x] **P3.5.1 projected-backlog admission:** quality pressure now evaluates `current queued + incoming queued portion` before choosing the priority scale. This allows medium/low layers to shed proactively instead of discovering pressure after full admission. Hero remains unshed.
-- [ ] **Run P3.5.1 Explosion Effect A/B at intensity `2.0`.** Require clean lifecycle. Confirm the scheduled leg now reports non-zero shedding under projected pressure and compare peak queue/particles plus p95/p99/worst/debt against P3.5.0. Visual hero core/fireball must remain intact.
-- [ ] Tune thresholds/scales only if measured P3.5.1 behavior justifies it.
-
-### Remaining P3 hardening after quality gate
-
-- [ ] Formalize effect-owned asset preload/ownership. Explosion's second SVG proves manual Lab preload lists no longer scale.
-- [ ] Keep DOM/transient visual helpers Lab-local until a third effect proves a stable reusable surface.
-- [ ] Re-run representative P0-style scenarios through production FXDeck and quantify runtime overhead against raw tsParticles.
-- [ ] Validate resize/DPR behavior through production Heavy Impact + Explosion.
-- [ ] Validate production runtime on mobile / Galaxy S20+ or equivalent target.
-- [ ] Keep effect definitions predominantly config-driven; flag any new effect requiring large bespoke lifecycle code.
-
-**P3 exit:** new effects mostly exercise existing capabilities rather than forcing Core redesign; one-shot scheduling has bounded frame work, ownership/cancellation and priority-aware quality; production asset ownership, runtime overhead and mobile/DPR behavior are validated.
+- `fireball/v1/default` added as the third real effect.
+- Uses two explicit moving emitters: projectile head + trail.
+- Per-frame movement updates both emitter positions along normalized runtime direction.
+- Authored default: ~250 px travel over ~560 ms; optional runtime `distance`/`travelDuration` are accepted without changing Core normalization.
+- At endpoint Fireball stops its moving emitters and reuses the existing `Explosion` via `FXDeck.play("explosion", ...)`.
+- Fireball owns its particle asset declaration.
+- `spawnTracked` was added as the minimal lifecycle helper for explicit moving emitters.
+- No generic projectile system, timeline, child-effect framework or live-update API was added pre-emptively.
 
 ---
 
-## P4 — Production VFX Library — PLANNED
+# Remaining P3 capability roadmap
 
-- [x] **Heavy Impact** — first production-style effect.
-- [x] **Explosion** — second-effect architecture proof accepted; current quality/backpressure tuning remains P3 runtime hardening.
-- [ ] **Fireball** — moving source + trail + impact transition.
-- [ ] **Critical Hit** — ultra-short timing/readability.
-- [ ] **Rare Reward** — UI/DOM + particles.
-- [ ] **Magic Burst** — more complex motion/noise/color.
-- [ ] **Environment emitter** — sustained/long-running lifecycle; use it to decide whether live `EffectInstance` updates are actually needed.
-- [ ] Track effect-specific custom code and authoring time.
-- [ ] Validate representative effects on mobile quality targets.
+1. **Fireball visual/lifecycle validation** — current gate.
+2. **Environment emitter** — sustained lifetime and real live-update pressure.
+3. **Effect-owned asset lifecycle hardening** — only if Fireball/Environment expose real preload/unload problems.
+4. **Rare Reward** — UI/DOM + particles to prove non-world-impact cue composition.
+5. **Critical Hit / Magic Burst** — broaden short-cue authoring without new Core if possible.
+6. **Only then:** production resize/DPR, mobile validation, raw-vs-runtime overhead, quality/backpressure tuning.
 
-**P4 success metric:** adding a new gameplay VFX is materially faster/simpler than hand-wiring tsParticles + DOM/sprites/lifecycle.
+P3 exits when representative one-shot, moving and sustained effects all use the runtime without repeated Core redesign.
 
 ---
 
-## P5 — Productization Decision — PLANNED
+# P4 — Production VFX Library — PLANNED
 
-- [ ] Review runtime stability, authoring speed, bundle/runtime overhead and mobile results.
-- [ ] Decide internal library vs open-source runtime vs commercial toolkit/content packs.
-- [ ] If public: minimal docs/examples/packaging/supported browser baseline.
-- [ ] If commercial: validate gameplay-ready effect/workflow value rather than competing as another generic particle editor.
-- [ ] Rebuild public showcase around production effects after the productization decision.
+- [x] Heavy Impact — short composite impact.
+- [x] Explosion — multi-layer one-shot.
+- [ ] Fireball — implemented; pending visual acceptance.
+- [ ] Environment emitter — sustained/long-running.
+- [ ] Rare Reward — UI/DOM + particles.
+- [ ] Critical Hit — ultra-short readability.
+- [ ] Magic Burst — more complex motion/noise/color.
+- [ ] Track effect-specific custom code/authoring pressure.
+
+Primary success metric: adding a new gameplay VFX should be materially simpler than hand-wiring tsParticles + DOM/sprites/lifecycle each time.
 
 ---
 
@@ -181,60 +146,38 @@ Explosion exposed the next production issue: the scheduler could accept a large 
 - mesh particle engine
 - 3D renderer
 - shader graph
-- marketplace/cloud/account system
-- generic plugin abstraction for many particle engines
+- generic multi-backend plugin framework
 - large timeline/track system
-- hot-swapping authored definitions on already-playing short effects
+- child-effect graph system
+- hot-swapping authored definitions on already-playing short cues
 
 ---
 
-# Key architectural decisions
+# Key decisions
 
-1. **tsParticles is a backend, not the public API.**
-2. **P0 remains raw** as the backend reference.
-3. **Version/variant are authored; position/direction/intensity are runtime inputs.**
-4. **Proof-first architecture:** extract only after real repetition/failure.
-5. **Primary KPI:** effect-specific custom code required for the next production effect.
-6. **Short-lived active definitions remain immutable.** Live mutation waits for a sustained effect.
-7. **Diagnostics must be portable/copyable.**
-8. **Browser target/camera/DOM behavior stays behind explicit integration hooks.**
-9. **One-shot burst is semantic.** Effects do not encode backend object topology.
-10. **Population scheduling, not emitter-object count alone, is the important burst optimization target.**
-11. **`shared-scheduled` is the production default for one-shot bursts; explicit emitters remain for sustained/moving use.**
-12. **Shared scheduled work is fair, bounded and cancellable.**
-13. **Per-point heterogeneous data is supported.**
-14. **Visual hierarchy is also runtime quality policy.** Hero/high/medium/low priorities let FXDeck degrade low-value particles first.
-15. **Backpressure admission must be prospective, not retrospective.** P3.5.0 showed that looking only at current queued work can report pressure after full admission; P3.5.1 uses projected queue pressure including the incoming burst.
-16. **Matched synthetic benchmarks must disable adaptive shedding.** Production quality tests and backend-isolation tests answer different questions.
-17. **Frame severity matters more than spike count alone.** p95/p99/worst/debt are first-class diagnostics.
-18. **Small effect helpers are extracted only after two real effects repeat them.**
-19. **One Runtime Lab, many effects.** Do not create a page per effect/milestone.
-20. **Every user-testable browser iteration advances the visible build and cache keys.**
-21. **Release completion means push + Pages deployment verification when accessible, not local/repo edits alone.**
+1. tsParticles is a backend, not the public API.
+2. Proof-first architecture: real effects drive abstractions.
+3. One-shot bursts default to shared-scheduled; sustained/moving sources may use explicit emitters.
+4. Shared scheduled work is bounded, fair and cancellable.
+5. Effect assets belong to effect definitions, not to the Runtime Lab bootstrap.
+6. Fireball intentionally reuses Explosion instead of duplicating impact logic.
+7. Performance diagnostics remain available, but optimization is not allowed to block completion of the representative effect set unless a real blocker appears.
+8. One Runtime Lab hosts all production effects; no page per effect.
+9. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
-# Changelog
+# Changelog — 2026-08-18
 
-## 2026-08-18
-
-- **P3.5.1 — projected-backlog quality admission:** admission pressure now evaluates current queued particles plus the incoming burst's queued portion before applying hero/high/medium/low scales. This fixes P3.5.0's `pressure medium / 0 shed` behavior where pressure was detected only after full admission.
-- **P3.5.0 — measured Explosion result:** emitter `57.4 avg / 30 low / p99 33.3 / worst 33.3 / debt 67ms / 4 spikes / 611 peak`; scheduled `59.3 avg / 30 low / p99 33.3 / worst 33.3 / debt 17ms / 1 spike / 870 peak / 112 queued`, but `870/870 admitted, 0 shed, pressure medium` exposed retrospective admission pressure.
-- **P3.5.0 — queue-aware quality/backpressure:** Added semantic scheduled-burst priorities, weighted queue service, backlog thresholds and priority scales.
-- **P3.5.0 — quality telemetry:** Added requested/admitted/shed counts, shed bursts, queue pressure, priority breakdown and peak pressure.
-- **P3.5.0 — frame-time diagnostics:** Added p95, p99, worst frame and frame-time debt to Runtime Lab and real Effect A/B output.
-- **P3.5.0 — benchmark integrity:** Synthetic Stress explicitly disables backpressure so matched backend workloads remain comparable.
-- **P3.4.0 — Explosion architecture proof PASS:** user visually preferred scheduled/B. Three intensity-2 ×6 runs showed emitter `53.4–55.4 avg / 15–20 low / 5–8 spikes / 538–604 peak`; scheduled `53.4 avg / 30 low / 10 spikes / 870 peak / 176–224 queued`; all cleanup clean.
-- **P3.4.0 — Explosion + multi-effect Runtime Lab:** Added second real effect and generalized existing Lab without a new page.
-- **P3.4.0 — proven effect helpers:** Added `burstTracked`, `scheduleAsync`, `runHook` after repetition by two effects.
-- **P3.3.0 — cancellation gate PASS:** per-instance stop and stopAll clear live/queued work with no late respawn.
-- **P3.3.0 — shared-scheduled production default.**
-- **P3.2.1 — Heavy Impact scheduled A/B PASS:** emitter `57.4/30/4`, scheduled `60/60/0`; scheduled visually preferred.
-- **P3.2.1 — matched heterogeneous stress PASS:** scheduled held ~`16.7ms worst / 0 population spikes` at 800/24 for uniform and heterogeneous profiles.
-- **P3.2.0 — integrated Shared Emission Scheduler.**
-- **P3.1.2 — matched spawn-hitch isolation:** emitter `83.3ms worst`, shared-direct `66.7ms`, budgeted shared `16.7ms`.
-- **P3.1.0/P3.1.1 — matched synthetic stress + repeatability + release/version discipline.**
-- **P3.0.0 — semantic burst abstraction + Shared Emission Points prototype + persistent Runtime Lab.**
-- **P2 DONE:** Heavy Impact visual slice accepted; clean post-polish benchmark `229 peak / 59.3 avg / 30 low / 1 spike`.
-- **P1 DONE:** minimal Core/lifecycle/runtime params/portable logs accepted.
-- **P0.3.0:** raw tsParticles performance envelope including Galaxy S20+ reference.
+- **P3.6.0 — product-capability priority reset:** stopped treating backpressure tuning as the current gate; performance remains diagnostic until representative runtime capabilities are complete.
+- **P3.6.0 — effect-owned assets:** added effect `assets`, runtime asset collection/deduplication, late adapter attachment, and production effect catalog; removed manual per-file particle preload ownership from Runtime Lab.
+- **P3.6.0 — Fireball:** added moving projectile head + trail through explicit tracked emitters, per-frame position updates, runtime direction, and impact handoff to existing Explosion.
+- **P3.5.1:** projected-backlog admission policy implemented; further tuning deferred.
+- **P3.5.0:** queue-aware priority/backpressure and richer frame-time diagnostics added.
+- **P3.4.0:** Explosion second-effect proof + multi-effect Runtime Lab + small repeated effect helpers.
+- **P3.3.0:** shared-scheduled production default + cancellation gate PASS.
+- **P3.2.x:** integrated scheduler, matched/heterogeneous stress and Heavy Impact A/B acceptance.
+- **P3.0/P3.1:** semantic burst + Shared Emission Points prototype and population-hitch isolation.
+- **P2:** Heavy Impact vertical slice accepted.
+- **P1:** minimal Core accepted.
+- **P0:** raw tsParticles viability/performance spike accepted.
