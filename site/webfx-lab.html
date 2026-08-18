@@ -6,6 +6,7 @@
   <meta name="description" content="FXDeck technology spike for validating tsParticles as a gameplay VFX backend.">
   <title>FXDeck Technology Spike</title>
   <link rel="stylesheet" href="./webfx-lab.css">
+  <link rel="stylesheet" href="./fxdeck-log-tools.css?v=p0.2.1">
 </head>
 <body>
   <main class="lab-shell">
@@ -36,6 +37,7 @@
         <dl class="meta-list">
           <div><dt>Backend</dt><dd>tsParticles 4.3.2</dd></div>
           <div><dt>Bundle</dt><dd>Full / spike only</dd></div>
+          <div><dt>Build</dt><dd class="build-id">P0.2.1</dd></div>
           <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
           <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
           <div><dt>Tracked emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -72,12 +74,18 @@
       <div class="gate-grid">
         <span>Exact gameplay position</span><span>Moving source</span><span>Repeated one-shots</span><span>Emitter cleanup</span><span>Resize</span><span>Image particles</span><span>DOM layering</span><span>60 FPS target</span>
       </div>
-      <pre id="spike-log" class="spike-log">FXDeck spike ready.</pre>
+      <div class="log-toolbar">
+        <button id="copy-log" type="button">Copy full log</button>
+        <button id="clear-log" type="button">Clear log</button>
+        <span id="copy-log-status" class="copy-status" aria-live="polite"></span>
+      </div>
+      <pre id="spike-log" class="spike-log" tabindex="0">FXDeck spike ready. Build P0.2.1.</pre>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script src="./js/webfx-lab.js" defer></script>
+  <script src="./js/webfx-lab.js?v=p0.2.1" defer></script>
+  <script src="./js/fxdeck-log-tools.js?v=p0.2.1" defer></script>
 </body>
 </html>
