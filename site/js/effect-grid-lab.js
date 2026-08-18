@@ -1,4 +1,4 @@
-const BUILD = 'P3.7.1';
+const BUILD = 'P3.7.3';
 const GRID_PRESETS = {
   '2x2': [2, 2],
   '2x5': [2, 5],
@@ -9,6 +9,11 @@ const GRID_PRESETS = {
   '5x6': [5, 6],
   '6x6': [6, 6],
   '8x8': [8, 8]
+};
+const EFFECT_OVERSCAN = {
+  fireball: 360,
+  explosion: 180,
+  heavyImpact: 160
 };
 
 const stage = document.querySelector('#impact-stage');
@@ -60,11 +65,34 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function selectedEffectId() {
+  return effectInput?.value ?? 'fireball';
+}
+
+function effectOverscan() {
+  return EFFECT_OVERSCAN[selectedEffectId()] ?? 180;
+}
+
+function gridGeometry() {
+  const contentWidth = state.cols * state.cellSize;
+  const contentHeight = state.rows * state.cellSize;
+  const overscan = effectOverscan();
+  return {
+    contentWidth,
+    contentHeight,
+    overscan,
+    width: contentWidth + overscan * 2,
+    height: contentHeight + overscan * 2,
+    centerX: overscan + contentWidth * .5,
+    centerY: overscan + contentHeight * .5
+  };
+}
+
 function addStylesheet() {
   if (document.querySelector('link[data-effect-grid-lab]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = './effect-grid-lab.css?v=p3.7.1';
+  link.href = './effect-grid-lab.css?v=p3.7.3';
   link.dataset.effectGridLab = 'true';
   document.head.appendChild(link);
 }
@@ -214,7 +242,7 @@ function injectControls() {
   panel.innerHTML = `
     <div class="effect-grid-tool__head">
       <div><p class="label">Effect Grid Lab</p><strong>Real-effect scale test</strong></div>
-      <span class="effect-grid-tool__badge">P3.7.1</span>
+      <span class="effect-grid-tool__badge">P3.7.3</span>
     </div>
     <div class="control">
       <p class="label">Grid preset</p>
@@ -265,8 +293,8 @@ function injectControls() {
       <button id="effect-grid-loop" type="button">Loop: Off</button>
       <button id="effect-grid-stop" type="button">Stop Grid</button>
     </div>
-    <div id="effect-grid-readout" class="effect-grid-tool__readout">24 / batch • replace • 640 × 960 world • zoom 100%</div>
-    <p class="effect-grid-tool__hint">Mouse wheel zooms the virtual viewport. Drag the preview to pan. Grid cells call normal <code>FXDeck.play()</code>. Changing preset/direction while active cleanly respawns the selected grid.</p>
+    <div id="effect-grid-readout" class="effect-grid-tool__readout">24 / batch • replace • safe world • zoom 100%</div>
+    <p class="effect-grid-tool__hint">The logical particle world includes effect-aware overscan, so radial projectiles and impacts are not clipped at the outer grid cells. Mouse wheel zooms; drag pans.</p>
   `;
 
   const anchor = debugPanel.querySelector('#effect-grid-anchor');
@@ -327,13 +355,17 @@ function injectControls() {
   state.controls.loop.addEventListener('click', toggleLoop);
   state.controls.stop.addEventListener('click', () => stopGrid({ resetView: false }));
 
-  effectInput?.addEventListener('change', () => refreshActiveGrid('grid-effect-change'));
+  effectInput?.addEventListener('change', () => {
+    rebuildGrid({ preserveView: false });
+    refreshActiveGrid('grid-effect-change');
+  });
   intensityInput?.addEventListener('change', () => refreshActiveGrid('grid-intensity-change'));
   directionInput?.addEventListener('change', () => refreshActiveGrid('grid-base-direction-change'));
 }
 
 function worldSize() {
-  return { width: state.cols * state.cellSize, height: state.rows * state.cellSize };
+  const { width, height } = gridGeometry();
+  return { width, height };
 }
 
 function resetWorldGeometry() {
@@ -354,7 +386,7 @@ function activateGrid() {
   stage.classList.add('is-effect-grid-active');
   state.overlay.hidden = false;
   state.zoomChip.hidden = false;
-  const { width, height } = worldSize();
+  const { width, height } = gridGeometry();
   state.world.style.width = `${width}px`;
   state.world.style.height = `${height}px`;
   renderGridGuides();
@@ -373,6 +405,7 @@ function deactivateGrid() {
 
 function renderGridGuides() {
   if (!state.overlay) return;
+  const { overscan } = gridGeometry();
   state.overlay.replaceChildren();
   for (let row = 0; row < state.rows; row++) {
     for (let col = 0; col < state.cols; col++) {
@@ -380,8 +413,8 @@ function renderGridGuides() {
       const cell = document.createElement('div');
       cell.className = 'effect-grid-cell';
       cell.dataset.index = String(index + 1);
-      cell.style.left = `${col * state.cellSize}px`;
-      cell.style.top = `${row * state.cellSize}px`;
+      cell.style.left = `${overscan + col * state.cellSize}px`;
+      cell.style.top = `${overscan + row * state.cellSize}px`;
       cell.style.width = `${state.cellSize}px`;
       cell.style.height = `${state.cellSize}px`;
       state.overlay.appendChild(cell);
@@ -395,7 +428,7 @@ function rebuildGrid({ preserveView = true } = {}) {
     return;
   }
   const oldCenter = screenCenterWorld();
-  const { width, height } = worldSize();
+  const { width, height } = gridGeometry();
   state.world.style.width = `${width}px`;
   state.world.style.height = `${height}px`;
   renderGridGuides();
@@ -405,29 +438,36 @@ function rebuildGrid({ preserveView = true } = {}) {
 }
 
 function gridPositions() {
+  const { overscan } = gridGeometry();
   const points = [];
   for (let row = 0; row < state.rows; row++) {
     for (let col = 0; col < state.cols; col++) {
-      points.push({ index: row * state.cols + col, row, col, x: (col + .5) * state.cellSize, y: (row + .5) * state.cellSize });
+      points.push({
+        index: row * state.cols + col,
+        row,
+        col,
+        x: overscan + (col + .5) * state.cellSize,
+        y: overscan + (row + .5) * state.cellSize
+      });
     }
   }
   return points;
 }
 
 function directionFor(point, baseDirection) {
-  const { width, height } = worldSize();
+  const { centerX, centerY } = gridGeometry();
   if (state.directionPattern === 'same') return baseDirection;
   if (state.directionPattern === 'alternating') return (baseDirection + (point.index % 2 ? 180 : 0)) % 360;
   if (state.directionPattern === 'seeded') return (baseDirection + point.index * 137.507764) % 360;
-  const dx = point.x - width * .5;
-  const dy = point.y - height * .5;
+  const dx = point.x - centerX;
+  const dy = point.y - centerY;
   if (Math.hypot(dx, dy) < 1) return baseDirection;
   return (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
 }
 
 function spawnBatch({ source = 'manual', logSpawn = true } = {}) {
   if (!state.fx) return;
-  const effectId = effectInput?.value ?? 'fireball';
+  const effectId = selectedEffectId();
   const intensity = Number(intensityInput?.value ?? 1);
   const baseDirection = Number(directionInput?.value ?? 0);
   const points = gridPositions();
@@ -444,7 +484,7 @@ function spawnBatch({ source = 'manual', logSpawn = true } = {}) {
   }
 
   if (logSpawn) {
-    appendLog(`GRID ${source.toUpperCase()} ${effectId}: ${points.length} instances / ${state.cols}×${state.rows} / cell ${state.cellSize}px / zoom ${(state.zoom * 100).toFixed(0)}% / ${state.directionPattern}`);
+    appendLog(`GRID ${source.toUpperCase()} ${effectId}: ${points.length} instances / ${state.cols}×${state.rows} / cell ${state.cellSize}px / safe ${effectOverscan()}px / zoom ${(state.zoom * 100).toFixed(0)}% / ${state.directionPattern}`);
   }
   updateReadout();
 }
@@ -461,7 +501,7 @@ function refreshActiveGrid(reason) {
   if (state.controls.autoFit?.checked) fitGrid();
   state.fx.stopAll(reason);
   spawnBatch({ source: 'refresh', logSpawn: false });
-  appendLog(`GRID REFRESH: ${reason} → ${state.cols * state.rows} clean instances`);
+  appendLog(`GRID REFRESH: ${reason} → ${state.cols * state.rows} clean instances / safe ${effectOverscan()}px`);
 }
 
 function stopGrid({ resetView = false } = {}) {
@@ -487,7 +527,7 @@ function startLoop() {
   state.fx?.stopAll?.('effect-grid-loop-start');
   spawnBatch({ source: 'loop', logSpawn: false });
   state.loopCycles = 1;
-  appendLog(`GRID LOOP START: ${state.cols * state.rows}/batch / ${state.loopMode} / ${state.loopInterval}ms`);
+  appendLog(`GRID LOOP START: ${state.cols * state.rows}/batch / ${state.loopMode} / ${state.loopInterval}ms / safe ${effectOverscan()}px`);
   restartLoop();
   updateReadout();
 }
@@ -519,8 +559,8 @@ function stopLoop() {
 
 function fitGrid() {
   if (!state.world) return;
-  const { width, height } = worldSize();
-  const pad = 20;
+  const { width, height } = gridGeometry();
+  const pad = 14;
   const zoom = clamp(Math.min((stage.clientWidth - pad * 2) / width, (stage.clientHeight - pad * 2) / height), .1, 2);
   state.zoom = zoom;
   state.panX = (stage.clientWidth - width * zoom) * .5;
@@ -552,15 +592,15 @@ function applyView() {
   state.world.style.transform = `translate3d(${state.panX.toFixed(2)}px, ${state.panY.toFixed(2)}px, 0) scale(${state.zoom.toFixed(4)})`;
   if (state.controls.zoom) state.controls.zoom.value = String(Math.round(state.zoom * 100));
   if (state.controls.zoomValue) state.controls.zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
-  if (state.zoomChip) state.zoomChip.textContent = `GRID ${state.cols}×${state.rows} • ${Math.round(state.zoom * 100)}%`;
+  if (state.zoomChip) state.zoomChip.textContent = `GRID ${state.cols}×${state.rows} • SAFE ${effectOverscan()} • ${Math.round(state.zoom * 100)}%`;
   updateReadout();
 }
 
 function updateReadout() {
   if (!state.controls.readout) return;
-  const { width, height } = worldSize();
+  const { width, height, overscan } = gridGeometry();
   const cycles = state.loopEnabled ? ` • cycle ${state.loopCycles}` : '';
-  state.controls.readout.textContent = `${state.cols * state.rows} / batch • ${state.loopMode}${cycles} • ${width} × ${height} world • zoom ${Math.round(state.zoom * 100)}%`;
+  state.controls.readout.textContent = `${state.cols * state.rows} / batch • ${state.loopMode}${cycles} • safe ${overscan}px • ${width} × ${height} world • zoom ${Math.round(state.zoom * 100)}%`;
 }
 
 function screenCenterWorld() {
@@ -657,6 +697,7 @@ waitForRuntime()
         cols: state.cols,
         rows: state.rows,
         cellSize: state.cellSize,
+        overscan: effectOverscan(),
         zoom: state.zoom,
         panX: state.panX,
         panY: state.panY,
@@ -668,7 +709,7 @@ waitForRuntime()
     };
 
     updateReadout();
-    appendLog(`${BUILD} Effect Grid ready: primary real-effect scaling, clean-replace loop default, explicit stack/soak mode, auto-respawn on grid changes`);
+    appendLog(`${BUILD} Effect Grid ready: effect-aware safe overscan keeps radial travel/impacts inside the logical particle world; clean replace loop remains default`);
   })
   .catch((error) => {
     appendLog(`${BUILD} Effect Grid Lab FAIL: ${error.message}`);
