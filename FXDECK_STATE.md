@@ -12,9 +12,9 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion
-- **Current build:** **P3.8.0**
+- **Current build:** **P3.8.1**
 - **Status:** ACTIVE.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.8.0.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.8.1.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1.
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0.
 - **Primary real-effect test:** Runtime Lab Play + Debug / Tests → **Effect Grid Lab**.
@@ -29,6 +29,7 @@
 - Galaxy S20+ exposed a real Fireball mobile scalability issue at higher concurrency; P3.6.4 removed avoidable moving-DOM/filter/trail cost. That performance question is retained as a future optimization/quality concern, not a blocker for the moving-source capability.
 - Effect Grid is now the standard real-effect scaling harness with zoom/pan/Fit, safe overscan, controlled Replace loop and optional Stack / Soak.
 - Desktop Explosion grid tests proved the harness reaches meaningful production-level load rather than only synthetic particle tests.
+- Initial P3.8.0 Environment feedback: moving the same source worked conceptually, but the demo was ambiguous because repeated clicks looked like replacement and intensity only changed a narrow emission range that was difficult to see.
 
 ### Fireball capability decision
 
@@ -61,7 +62,7 @@
 ### P3.8.0 — Sustained Environment Source
 
 - Added `environmentEmitter/v1/default` as the first long-running effect archetype.
-- Public capability under test:
+- Added a small live-update capability because the sustained effect proved the need:
 
 ```js
 const source = FXDeck.play("environmentEmitter", {
@@ -78,40 +79,49 @@ FXDeck.update(source, {
 FXDeck.stop(source);
 ```
 
-- Added a small live-update capability module only after the sustained effect proved the need:
-  - `FXDeck.update(instance, patch)` updates normalized runtime params;
-  - effect-specific update handler owns how those params affect real resources;
-  - updates issued before the effect finishes startup are retained and applied when its handler becomes ready.
-- Added a tsParticles sustained-emitter update adapter:
-  - live position updates move the existing emitter;
-  - live intensity maps to emitter `rate.quantity` without replacing the owning `EffectInstance`.
-- Environment Emitter uses one explicit sustained emitter per FXDeck source.
+- `FXDeck.update(instance, patch)` updates normalized runtime params and lets the effect-specific update handler mutate owned resources.
+- Updates issued before effect startup completes are merged and replayed when the update handler becomes ready.
+- Environment uses one explicit sustained tsParticles emitter per FXDeck source.
 - Current live semantics:
   - **position:** live;
   - **intensity / emission density:** live;
-  - **direction:** spawn-time only for P3.8.0. Runtime does not pretend this is live when the current backend path cannot update the emitter particle-option snapshot correctly without recreation.
-- Effect runs indefinitely until `FXDeck.stop()` / `stopAll()` and owns emitter cleanup through the normal EffectInstance lifecycle.
-- Environment is registered through the production effect catalog and is also the default P3.8.0 Runtime Lab selection.
-- Play-mode probe behavior:
-  - Start / Restart source;
-  - click Preview to move the active source with `FXDeck.update(position)`;
-  - move Runtime intensity while running to update emission density live;
-  - stop through normal FXDeck cleanup.
-- Effect Grid recognizes Environment as a sustained archetype. The one-shot topology selector is disabled for this effect instead of falsely implying scheduled/shared burst modes affect it.
+  - **direction:** spawn-time only; restart is required to change flow direction.
+- Stop cleanup uses the normal EffectInstance lifecycle.
+
+### P3.8.1 — Clear multi-source sustained probe
+
+- Clarified the model: **one `FXDeck.play("environmentEmitter")` = one independent long-running source** such as smoke, steam, flame or dust.
+- Play-mode Environment now supports two distinct operations:
+  - `Restart active source` — replaces only the selected source;
+  - `+ Add source` — creates another sustained source while previous sources remain alive.
+- Clicking Preview now means **move the active source** with `FXDeck.update(position)`; it does not create additional sources.
+- Added per-source debug markers (`S1`, `S2`, …) in Play so ownership and movement are visually explicit.
+- Added `Remove active`; normal `FXDeck.stopAll()` still clears every source/resource.
+- Runtime intensity is explicitly labeled **Active source intensity** for Environment.
+- Intensity mapping was widened from a weak narrow quantity range to roughly **1 → 10 particles per emission tick** across the existing `0.5× → 2.0×` slider.
+- Live intensity still mutates emission density on the same emitter; it does not recreate the FXDeck EffectInstance. Existing particles naturally age out, so density transition is visible over a short settling period.
+- Inspector now exposes:
+  - running source count,
+  - active source label/id,
+  - current emission quantity and approximate particles/second,
+  - live-update semantics.
+- Effect Grid still treats Environment as explicit sustained topology; each grid cell is an independent sustained source and one-shot topology selection remains disabled.
 
 ### Current gate
 
-Validate **P3.8.0 Environment Emitter capability**, not performance tuning:
+Validate **P3.8.1 Environment semantics**, not performance tuning:
 
-1. Runtime Lab should open on `Environment Emitter`.
-2. `Start / Restart source` creates one sustained source and it continues indefinitely.
-3. Clicking different points in Preview moves the **same running FXDeck instance/emitter**, rather than spawning a new source.
-4. Runtime intensity changes emission density while the source remains alive.
-5. `FXDeck.stopAll()` removes the emitter and remaining particles cleanly.
-6. Debug / Effect Grid can spawn multiple Environment sources as real sustained instances; normal Loop remains Replace, Stack / Soak is explicit.
-7. No direction-live-update requirement in this gate.
+1. Runtime Lab opens on `Environment Emitter`.
+2. `Start source` creates one sustained source with a visible `S#` marker.
+3. Clicking several Preview positions moves that same active source; source count stays unchanged.
+4. `+ Add source` keeps the previous source alive and creates another independent source; source count and HUD Emitters should rise together.
+5. After adding a source, it becomes active; clicking Preview moves only that active source.
+6. Moving Active source intensity from `0.5×` to `2.0×` should create an obvious density difference after existing particles settle, while the source/EffectInstance remains alive.
+7. `Remove active` stops only the selected source.
+8. `FXDeck.stopAll()` removes all Environment emitters and remaining owned workload cleanly.
+9. Direction remains restart-only in this gate.
 
-If this passes, the next product-capability effect is **Rare Reward**: a large UI/card-space cue combining DOM/SVG + particles. That will test a different surface than world-space impact/projectile/environment effects and will use the existing zoomable Grid for large-card scaling.
+If this passes, sustained Environment is conceptually accepted and the next product-capability effect is **Rare Reward**: a large UI/card-space cue combining DOM/SVG + particles.
 
 ---
 
@@ -192,10 +202,11 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 
 ### Sustained Environment archetype — ACTIVE VALIDATION
 
-- First indefinitely running source.
-- Explicit sustained emitter ownership.
+- First indefinitely running source archetype.
+- One explicit sustained emitter per FXDeck source.
 - `FXDeck.update()` capability introduced because a real sustained effect requires mutation after play.
 - Live position and intensity are implemented without replacing the EffectInstance.
+- Multiple independent sustained sources are now exposed clearly in Play.
 - Direction remains spawn-time for the current backend path.
 - Stop cleanup uses normal instance ownership.
 
@@ -211,19 +222,19 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 ### Effect Grid Lab — PRIMARY REAL-EFFECT SCALING HARNESS
 
 - Grid calls normal `FXDeck.play(effect, params)` per cell.
-- Supports real one-shot, moving and now sustained effects.
+- Supports real one-shot, moving and sustained effects.
 - Presets cover small through high-concurrency grids.
 - Direction patterns, zoom, Fit and pan are generic Lab concerns.
 - Cell layout bounds are not particle-world clip bounds; safe overscan protects authored travel/impact envelopes.
 - Normal Loop replaces the previous batch; Stack / Soak is explicit.
 - One-shot topology comparison remains available where the effect actually uses burst topology.
-- Sustained Environment correctly reports explicit sustained topology rather than pretending one-shot topology selection applies.
+- Sustained Environment reports explicit sustained topology rather than pretending one-shot topology selection applies.
 
 ---
 
 # Remaining P3 capability roadmap
 
-1. **P3.8.0 Environment validation** — sustained start → live position/intensity update → stop, including multiple Grid sources.
+1. **P3.8.1 Environment validation** — multiple sustained sources + live active-source position/intensity + stop ownership.
 2. **Rare Reward** — large UI/card-space cue using DOM/SVG + particles; validate large-cell zoom/grid behavior.
 3. **Effect-owned asset lifecycle hardening** — only if representative effects expose a real preload/unload problem.
 4. **Critical Hit / Magic Burst** — broaden short-cue authoring without new Core if possible.
@@ -238,7 +249,7 @@ P3 exits when representative one-shot, moving, sustained and UI-space effects al
 - [x] Heavy Impact — short composite impact.
 - [x] Explosion — multi-layer one-shot.
 - [x] Fireball — moving-source concept/runtime capability accepted; polish/perf scaling can continue later.
-- [ ] Environment Emitter — implementation complete, P3.8.0 validation pending.
+- [ ] Environment Emitter — P3.8.1 multi-source/live-update validation pending.
 - [ ] Rare Reward — UI/DOM + particles.
 - [ ] Critical Hit — ultra-short readability.
 - [ ] Magic Burst — more complex motion/noise/color.
@@ -275,25 +286,27 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 7. Fireball moving-source capability is accepted; further projectile work needs a new real requirement.
 8. **Live update is added only because the sustained Environment effect requires it.**
 9. Live update semantics are effect-owned: Core carries normalized params; each effect/adapter decides which real resources can mutate safely.
-10. Do not claim a parameter is live if the backend requires recreation; Environment direction is explicitly spawn-time in P3.8.0.
-11. Performance work is deferred unless a representative real effect exposes a blocker relevant to the current product capability.
-12. One Runtime Lab hosts all production effects; no page per effect.
-13. Runtime diagnostics are a toggleable Preview HUD; dev-only controls/logs belong to Debug / Tests.
-14. Real-effect Grid scaling is the default scalability test. Backend stress is advanced isolation.
-15. Repeated Grid tests default to Replace batch. Accumulation is explicit through Stack / Soak.
-16. Grid camera framing includes authored travel/impact envelope; cell bounds are not particle-world clip bounds.
-17. Every user-testable iteration advances visible build/cache keys.
+10. Do not claim a parameter is live if the backend requires recreation; Environment direction remains spawn-time.
+11. One Environment `play()` is one source; moving a source is `update()`, creating another source is another `play()`.
+12. Performance work is deferred unless a representative real effect exposes a blocker relevant to the current product capability.
+13. One Runtime Lab hosts all production effects; no page per effect.
+14. Runtime diagnostics are a toggleable Preview HUD; dev-only controls/logs belong to Debug / Tests.
+15. Real-effect Grid scaling is the default scalability test. Backend stress is advanced isolation.
+16. Repeated Grid tests default to Replace batch. Accumulation is explicit through Stack / Soak.
+17. Grid camera framing includes authored travel/impact envelope; cell bounds are not particle-world clip bounds.
+18. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
 # Changelog — 2026-08-18
 
+- **P3.8.1 — Environment semantics/UI:** separated `Restart active source` from `+ Add source`; added source markers, source count/readout and `Remove active`.
+- **P3.8.1 — visible live intensity:** widened Environment density mapping to roughly 1–10 particles per emission tick across the 0.5×–2.0× slider while keeping the same emitter/EffectInstance alive.
+- **P3.8.1 — Environment inspector:** reports running/active source, emission rate and live-update semantics; Grid still treats each cell as an independent explicit sustained source.
 - **P3.8.0 — Environment Emitter:** added first sustained/indefinite FXDeck effect with explicit emitter ownership.
-- **P3.8.0 — live update capability:** added `FXDeck.update(instance, patch)` support for real effects that need post-play mutation; updates can be queued until the effect installs its update handler.
+- **P3.8.0 — live update capability:** added `FXDeck.update(instance, patch)` support for real effects that need post-play mutation; updates can be queued/merged until the effect installs its update handler.
 - **P3.8.0 — sustained adapter update:** added live emitter position and emission-quantity mutation behind an adapter extension rather than leaking tsParticles emitter internals into effect code.
 - **P3.8.0 — Environment semantics:** position and intensity are live; direction is intentionally spawn-time only.
-- **P3.8.0 — Runtime Lab:** Environment becomes the current capability probe; click Preview moves the same running source, intensity changes density live, normal stop owns cleanup.
-- **P3.8.0 — Grid sustained awareness:** Environment is available in the generic Effect Grid, while one-shot topology selection is disabled for that effect and labeled `explicit sustained`.
 - **P3.7.3 — safe Grid world:** separated cell layout from logical particle bounds and added effect-aware overscan.
 - **P3.7.3 — HUD transparency:** reduced Runtime HUD opacity while keeping blur disabled.
 - **P3.7.2 — self-contained Grid setup/topology comparison.**
