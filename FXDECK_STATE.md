@@ -12,13 +12,13 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion
-- **Current build:** **P3.6.0**
+- **Current build:** **P3.6.1**
 - **Status:** ACTIVE.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.6.0
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.6.1 UI shell over the accepted P3.6 runtime capability build.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0
-- **Current gate:** functionality, not performance tuning.
-- **Next action:** visually validate **Fireball** on P3.6.0: one `FXDeck.play("fireball")` should create a moving projectile head + trail, follow runtime direction, reach its authored endpoint, trigger the existing `Explosion` at impact, and clean the projectile emitters. No synthetic/performance benchmark is required for this gate.
+- **Current gate:** Runtime Lab usability + Fireball visual/lifecycle validation. Performance tuning remains deferred.
+- **Next action:** visually verify the P3.6.1 workspace: Play should expose only authoring controls + resolved cue; Debug / Tests should contain benchmarks/logs; Preview must stay visible in both modes; HUD Off/Basic/Full must work and color-code live runtime status. Then validate one Fireball play: moving head + trail → direction-following travel → existing Explosion at endpoint → no lingering projectile emitters.
 - **After Fireball:** implement a sustained **Environment emitter** with `start → live update position/intensity → stop`. Use that real effect to decide whether FXDeck needs first-class live `EffectInstance` parameter updates.
 
 ## Product target
@@ -94,7 +94,7 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - `FXDeckRuntime.getAssets({ target })` collects and deduplicates manifests across registered definitions.
 - `FXDeckRuntime.setAdapter(name, adapter)` allows registration/asset discovery before backend initialization.
 - Runtime Lab no longer hardcodes individual spark/explosion preload files; it builds the particle preload list from the registered effect catalog.
-- `site/fxdeck/effects/catalog.js` is now the production effect registration surface.
+- `site/fxdeck/effects/catalog.js` is the production effect registration surface.
 
 ### P3.6 Fireball moving-source archetype — IMPLEMENTED, VISUAL VALIDATION PENDING
 
@@ -107,11 +107,26 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - `spawnTracked` was added as the minimal lifecycle helper for explicit moving emitters.
 - No generic projectile system, timeline, child-effect framework or live-update API was added pre-emptively.
 
+### P3.6.1 Runtime Lab UX — IMPLEMENTED, VISUAL VALIDATION PENDING
+
+- Main workbench remains three columns with the existing width balance; Preview stays persistent in the center.
+- Workspace now has **Play** and **Debug / Tests** modes instead of exposing every dev control simultaneously.
+- Play left pane contains only effect/version/variant/path/intensity/direction plus `FXDeck.play()` and `stopAll()`.
+- Play right pane contains authored timing + resolved cue only; runtime telemetry was removed from the inspector.
+- Debug left pane contains overlap/A-B/cancellation/synthetic stress controls and stress parameters.
+- Debug right pane contains the validation log, Copy/Clear actions, current public API call and HUD color legend.
+- Runtime diagnostics moved onto Preview as an engine-style translucent HUD with **Off / Basic / Full** modes.
+- Basic HUD: FPS, particle count, active instances.
+- Full HUD adds 1% low, p95/p99/worst/debt, >20ms frames, queued work, emitters, groups, queue pressure, quality shedding, burst path and canvas scale.
+- HUD health color coding: healthy FPS/no pressure = green, degraded/medium = amber, low FPS/high/critical pressure = red; particles/instances use informational blue.
+- Workspace mode and HUD mode persist locally in the browser.
+- UI behavior lives in `site/js/runtime-lab-ui.js`; it is Lab UX, not FXDeck Core.
+
 ---
 
 # Remaining P3 capability roadmap
 
-1. **Fireball visual/lifecycle validation** — current gate.
+1. **P3.6.1 UI visual validation + Fireball visual/lifecycle validation** — current gate.
 2. **Environment emitter** — sustained lifetime and real live-update pressure.
 3. **Effect-owned asset lifecycle hardening** — only if Fireball/Environment expose real preload/unload problems.
 4. **Rare Reward** — UI/DOM + particles to prove non-world-impact cue composition.
@@ -163,12 +178,17 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 6. Fireball intentionally reuses Explosion instead of duplicating impact logic.
 7. Performance diagnostics remain available, but optimization is not allowed to block completion of the representative effect set unless a real blocker appears.
 8. One Runtime Lab hosts all production effects; no page per effect.
-9. Every user-testable iteration advances visible build/cache keys.
+9. Runtime diagnostics are a toggleable preview HUD; test controls/logs belong to Debug / Tests, not the main authoring workflow.
+10. Lab UI concerns stay outside FXDeck Core.
+11. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
 # Changelog — 2026-08-18
 
+- **P3.6.1 — Runtime Lab UI cleanup:** split side panes into Play vs Debug / Tests while keeping the Preview persistent; removed benchmarks and telemetry clutter from normal authoring.
+- **P3.6.1 — runtime HUD:** added translucent engine-style Off/Basic/Full diagnostics overlay with FPS/queue health color coding and local mode persistence.
+- **P3.6.1 — debug workspace:** moved stress controls, overlap/A-B/cancellation tools, validation log, Copy/Clear and API preview into the Debug / Tests mode.
 - **P3.6.0 — product-capability priority reset:** stopped treating backpressure tuning as the current gate; performance remains diagnostic until representative runtime capabilities are complete.
 - **P3.6.0 — effect-owned assets:** added effect `assets`, runtime asset collection/deduplication, late adapter attachment, and production effect catalog; removed manual per-file particle preload ownership from Runtime Lab.
 - **P3.6.0 — Fireball:** added moving projectile head + trail through explicit tracked emitters, per-frame position updates, runtime direction, and impact handoff to existing Explosion.
