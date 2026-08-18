@@ -11,3 +11,11 @@
 .hud-stat{
   background:rgba(8,11,13,.22)!important;
 }
+
+/* HUD Off means a clean preview: hide diagnostic-only overlays, not authored effects. */
+body[data-hud-mode="off"] .caption,
+body[data-hud-mode="off"] .impact-target,
+body[data-hud-mode="off"] .fxdeck-env-source-marker,
+body[data-hud-mode="off"] .effect-grid-zoom-chip{
+  display:none!important;
+}
