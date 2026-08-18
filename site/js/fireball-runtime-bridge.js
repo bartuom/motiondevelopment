@@ -73,6 +73,7 @@ function normalizeVisibleBuild() {
 async function loadEffectGridLab() {
   try {
     await import('./effect-grid-lab.js?v=p3.7.0');
+    await import('./effect-grid-canvas-projection.js?v=p3.7.0');
   } catch (error) {
     appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
     console.error(error);
