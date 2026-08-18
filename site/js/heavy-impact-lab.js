@@ -1,6 +1,8 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
-import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.0.0';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.0.0';
+import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.2.0';
+import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.2.0';
+
+const BUILD = 'P3.2.0';
 
 const stage = document.querySelector('#impact-stage');
 const kickLayer = document.querySelector('#impact-kick-layer');
@@ -9,6 +11,7 @@ const target = document.querySelector('#impact-target');
 const playButton = document.querySelector('#play-impact');
 const overlapButton = document.querySelector('#play-overlap');
 const abButton = document.querySelector('#play-ab');
+const stressButton = document.querySelector('#play-stress-ab');
 const stopButton = document.querySelector('#stop-all');
 const intensityInput = document.querySelector('#intensity');
 const intensityValue = document.querySelector('#intensity-value');
@@ -62,7 +65,9 @@ function log(message) {
 }
 
 function pathLabel(path) {
-  return path === 'shared' ? 'shared-direct' : 'per-play-emitter';
+  if (path === 'scheduled') return 'shared-scheduled';
+  if (path === 'shared') return 'shared-direct';
+  return 'per-play-emitter';
 }
 
 function formatVector(vector) {
@@ -94,8 +99,9 @@ function setBenchmarkBusy(busy) {
   intensityInput.disabled = busy;
   directionInput.disabled = busy;
   particlePathInput.disabled = busy;
+  if (stressButton) stressButton.disabled = busy;
   overlapButton.textContent = busy ? 'Benchmark running…' : 'Overlap ×6 + perf';
-  abButton.textContent = busy ? 'A/B running…' : 'A/B emitter vs shared';
+  abButton.textContent = busy ? 'A/B running…' : 'Heavy Impact A/B';
 }
 
 function cancelBenchmarkTimers() {
@@ -151,6 +157,7 @@ function startPerfCapture(label, durationMs = 1500, onComplete = null) {
     peakParticles: 0,
     peakEmitters: 0,
     peakBurstGroups: 0,
+    peakQueuedParticles: 0,
     onComplete
   };
   log(`PERF ${label}: capture started (${durationMs} ms, ${pathLabel(state.perfCapture.path)})`);
@@ -179,6 +186,7 @@ function recordFrame(now, stats) {
   capture.peakParticles = Math.max(capture.peakParticles, stats.particles?.particles ?? 0);
   capture.peakEmitters = Math.max(capture.peakEmitters, stats.particles?.emitters ?? 0);
   capture.peakBurstGroups = Math.max(capture.peakBurstGroups, stats.particles?.burstGroups ?? 0);
+  capture.peakQueuedParticles = Math.max(capture.peakQueuedParticles, stats.particles?.queuedParticles ?? 0);
 
   if (now - capture.startedAt < capture.durationMs) return;
 
@@ -193,15 +201,17 @@ function recordFrame(now, stats) {
     peakInstances: capture.peakInstances,
     peakEmitters: capture.peakEmitters,
     peakBurstGroups: capture.peakBurstGroups,
+    peakQueuedParticles: capture.peakQueuedParticles,
     peakParticles: capture.peakParticles,
     finalInstances: finalStats.activeInstances ?? 0,
     finalEmitters: finalStats.particles?.emitters ?? 0,
     finalBurstGroups: finalStats.particles?.burstGroups ?? 0,
+    finalQueuedParticles: finalStats.particles?.queuedParticles ?? 0,
     finalParticles: finalStats.particles?.particles ?? 0
   };
 
   const finalResources = `${result.finalInstances}/${result.finalEmitters}/${result.finalParticles}`;
-  log(`PERF ${capture.label}: avg ${result.avgFps.toFixed(1)} FPS / 1% low ${result.low1.toFixed(1)} / >20ms ${result.spikes20} / peaks ${result.peakInstances} instances, ${result.peakEmitters} emitters, ${result.peakBurstGroups} shared groups, ${result.peakParticles} particles / final ${finalResources}, groups ${result.finalBurstGroups}`);
+  log(`PERF ${capture.label}: avg ${result.avgFps.toFixed(1)} FPS / 1% low ${result.low1.toFixed(1)} / >20ms ${result.spikes20} / peaks ${result.peakInstances} instances, ${result.peakEmitters} emitters, ${result.peakBurstGroups} shared groups, ${result.peakParticles} particles, ${result.peakQueuedParticles} queued / final ${finalResources}, groups ${result.finalBurstGroups}, queued ${result.finalQueuedParticles}`);
 
   const onComplete = capture.onComplete;
   state.perfCapture = null;
@@ -220,7 +230,6 @@ function createScreenKickController(element) {
     const decay = Math.pow(.72, dt);
     x *= decay;
     y *= decay;
-
     element.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
 
     if (Math.hypot(x, y) < .05) {
@@ -231,21 +240,18 @@ function createScreenKickController(element) {
       element.style.transform = 'translate3d(0,0,0)';
       return;
     }
-
     raf = requestAnimationFrame(frame);
   }
 
   function kick(direction, distance) {
     x += -direction.x * distance;
     y += -direction.y * distance;
-
     const magnitude = Math.hypot(x, y);
     const maxKick = 12;
     if (magnitude > maxKick) {
       x = (x / magnitude) * maxKick;
       y = (y / magnitude) * maxKick;
     }
-
     if (!raf) raf = requestAnimationFrame(frame);
   }
 
@@ -348,17 +354,12 @@ function resolvedPreview() {
   const spec = state.definition?.spec;
   if (!spec) return null;
   const intensity = Math.max(.25, params.intensity);
-  const speedScale = Math.max(.72, Math.sqrt(intensity));
   const direction = normalizeDirection(params.direction);
   return {
     intensity,
     direction,
     sparks: Math.max(1, Math.round(spec.sparks.baseCount * intensity)),
     debris: Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity))),
-    sparkSpeed: {
-      min: spec.sparks.speed.min * speedScale,
-      max: spec.sparks.speed.max * speedScale
-    },
     targetKick: 8.5 * intensity,
     screenKick: 4.5 * Math.min(1.5, intensity)
   };
@@ -410,14 +411,15 @@ function runOverlapLeg(path, label, onComplete) {
   state.fx.stopAll('perf-prep');
   screenKickController.reset();
   setParticlePath(path);
-  log(`PERF ${label}: preparing clean 0/0/0 baseline`);
+  log(`PERF ${label}: preparing clean baseline`);
 
   scheduleBenchmarkTask(() => {
     const cleanStats = state.fx.getStats();
     const cleanResources = `${cleanStats.activeInstances ?? 0}/${cleanStats.particles?.emitters ?? 0}/${cleanStats.particles?.particles ?? 0}`;
     const cleanGroups = cleanStats.particles?.burstGroups ?? 0;
-    if (cleanResources !== '0/0/0' || cleanGroups !== 0) {
-      log(`PERF ${label}: WARNING pre-test resources ${cleanResources}, groups ${cleanGroups}`);
+    const cleanQueued = cleanStats.particles?.queuedParticles ?? 0;
+    if (cleanResources !== '0/0/0' || cleanGroups !== 0 || cleanQueued !== 0) {
+      log(`PERF ${label}: WARNING pre-test resources ${cleanResources}, groups ${cleanGroups}, queued ${cleanQueued}`);
     }
 
     startPerfCapture(label, 1500, onComplete);
@@ -433,7 +435,6 @@ function playOverlap() {
     log('PERF Overlap ×6: ignored because a benchmark is already running');
     return;
   }
-
   setBenchmarkBusy(true);
   const path = particlePathInput.value;
   runOverlapLeg(path, `Overlap ×6 [${pathLabel(path)}]`, () => finishBenchmark());
@@ -441,25 +442,22 @@ function playOverlap() {
 
 function runABBenchmark() {
   if (state.benchmark.running) {
-    log('PERF A/B: ignored because a benchmark is already running');
+    log('PERF Heavy Impact A/B: ignored because a benchmark is already running');
     return;
   }
 
   const originalPath = particlePathInput.value;
-  const results = {};
   state.benchmark.restorePath = originalPath;
   setBenchmarkBusy(true);
-  log(`A/B START: matched Heavy Impact ×6 at intensity ${Number(intensityInput.value).toFixed(1)}; emitter path first, shared-direct path second`);
+  log(`HEAVY IMPACT A/B START: intensity ${Number(intensityInput.value).toFixed(1)}; per-play-emitter first, shared-scheduled second`);
 
-  runOverlapLeg('emitter', 'A/B emitter', (emitterResult) => {
-    results.emitter = emitterResult;
+  runOverlapLeg('emitter', 'Heavy A/B emitter', (emitterResult) => {
     scheduleBenchmarkTask(() => {
-      runOverlapLeg('shared', 'A/B shared-direct', (sharedResult) => {
-        results.shared = sharedResult;
-        const avgDelta = sharedResult.avgFps - emitterResult.avgFps;
-        const lowDelta = sharedResult.low1 - emitterResult.low1;
-        const particleDelta = sharedResult.peakParticles - emitterResult.peakParticles;
-        log(`A/B RESULT: emitter ${emitterResult.avgFps.toFixed(1)} avg / ${emitterResult.low1.toFixed(1)} low / ${emitterResult.spikes20} spikes / ${emitterResult.peakEmitters} emitters / ${emitterResult.peakParticles} particles | shared ${sharedResult.avgFps.toFixed(1)} avg / ${sharedResult.low1.toFixed(1)} low / ${sharedResult.spikes20} spikes / ${sharedResult.peakBurstGroups} groups / ${sharedResult.peakParticles} particles | Δ shared-emitter ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg FPS, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${particleDelta >= 0 ? '+' : ''}${particleDelta} peak particles`);
+      runOverlapLeg('scheduled', 'Heavy A/B shared-scheduled', (scheduledResult) => {
+        const avgDelta = scheduledResult.avgFps - emitterResult.avgFps;
+        const lowDelta = scheduledResult.low1 - emitterResult.low1;
+        const particleDelta = scheduledResult.peakParticles - emitterResult.peakParticles;
+        log(`HEAVY IMPACT A/B RESULT: emitter ${emitterResult.avgFps.toFixed(1)} avg / ${emitterResult.low1.toFixed(1)} low / ${emitterResult.spikes20} spikes / ${emitterResult.peakEmitters} emitters / ${emitterResult.peakParticles} particles | scheduled ${scheduledResult.avgFps.toFixed(1)} avg / ${scheduledResult.low1.toFixed(1)} low / ${scheduledResult.spikes20} spikes / ${scheduledResult.peakBurstGroups} groups / ${scheduledResult.peakParticles} particles / peak queued ${scheduledResult.peakQueuedParticles} | Δ scheduled-emitter ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)} avg FPS, ${lowDelta >= 0 ? '+' : ''}${lowDelta.toFixed(1)} low, ${particleDelta >= 0 ? '+' : ''}${particleDelta} peak particles`);
         finishBenchmark();
       });
     }, 320);
@@ -493,7 +491,10 @@ async function bootstrap() {
     stage,
     hostId: 'heavy-impact-particles',
     preload: [{ src: './assets/fxdeck-spark.svg', width: 32, height: 10 }],
-    burstMode: particlePathInput.value
+    burstMode: particlePathInput.value,
+    sharedFrameBudgetMs: 6,
+    sharedChunkSize: 8,
+    sharedImmediateCount: 8
   }).init();
 
   const fx = new FXDeckRuntime({ adapters: { particles: particleAdapter } });
@@ -531,7 +532,7 @@ async function bootstrap() {
     const cancelledBenchmark = abortBenchmark();
     fx.stopAll('manual-stop-all');
     screenKickController.reset();
-    log(`STOP ALL — instances, particle resources, screen kick${cancelledBenchmark ? ' and scheduled benchmark tasks' : ''} cleared`);
+    log(`STOP ALL — instances, particle resources, scheduler queue, screen kick${cancelledBenchmark ? ' and scheduled benchmark tasks' : ''} cleared`);
   });
 
   stage.addEventListener('pointerdown', (event) => {
@@ -557,6 +558,7 @@ async function bootstrap() {
   window.addEventListener('resize', () => {
     abortBenchmark();
     screenKickController.reset();
+    particleAdapter.clear();
     particleAdapter.resize();
     state.position = { x: stage.clientWidth * .5, y: stage.clientHeight * .5 };
     setTargetPosition(state.position);
@@ -580,9 +582,11 @@ async function bootstrap() {
   directionValue.textContent = `${directionInput.value}°`;
   updateApiPreview();
   requestAnimationFrame(metricsLoop);
-  log('PASS P3 bootstrap: Heavy Impact registered through burst abstraction');
-  log('P3.0 Shared Emission Point spike: emitter path uses addEmitter(startCount); shared-direct path uses one persistent container + ParticlesManager.push(position, options, group)');
-  log('A/B benchmark runs matched Heavy Impact ×6 sequentially through both paths and reports emitters/shared groups/particles/frame timing');
+
+  const schedulerStats = particleAdapter.getStats();
+  log(`PASS ${BUILD} bootstrap: Heavy Impact registered through burst abstraction`);
+  log(`${BUILD} integrated Shared Emission Scheduler: ${schedulerStats.schedulerBudgetMs}ms CPU budget/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate seed ${schedulerStats.schedulerImmediateCount}`);
+  log('Heavy Impact A/B now compares per-play emitter vs shared-scheduled; shared-direct remains available manually as the synchronous reference');
   log('Pressure wave remains a visual placeholder; P3 focus is runtime architecture and measured cost');
 }
 
