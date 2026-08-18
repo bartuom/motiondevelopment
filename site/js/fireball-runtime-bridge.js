@@ -1,4 +1,5 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.3';
+import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.3';
 
 const BUILD = 'P3.6.3';
 const host = document.querySelector('#impact-dom-layer');
@@ -58,10 +59,11 @@ if (!host) {
 } else {
   waitForFx()
     .then((fx) => {
+      registerFireball(fx);
       const visualAdapter = new DomSpriteAdapter({ host });
       fx.setAdapter('visuals', visualAdapter);
       if (globalThis.FXDeckLab) globalThis.FXDeckLab.visualAdapter = visualAdapter;
-      appendLog(`${BUILD} Fireball concurrency fix: independent visual handles attached; projectile trail uses sampled particle bursts`);
+      appendLog(`${BUILD} Fireball concurrency fix active: definition refreshed, independent visual handles attached, trail uses sampled particle bursts`);
       refreshFireballInspector();
     })
     .catch((error) => {
