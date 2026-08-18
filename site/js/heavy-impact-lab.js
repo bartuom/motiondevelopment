@@ -1,6 +1,6 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
 import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js';
+import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p2.2.1';
 
 const stage = document.querySelector('#impact-stage');
 const kickLayer = document.querySelector('#impact-kick-layer');
@@ -412,6 +412,7 @@ async function bootstrap() {
   updateApiPreview();
   requestAnimationFrame(metricsLoop);
   log('PASS P2 bootstrap: heavyImpact/v1/default registered');
+  log('P2.2.1 cache-bust: Heavy Impact effect module is loaded from a versioned URL');
   log('P2.2 visual hierarchy: aligned hero sparks, lower density, smaller debris, shorter flash and directional pressure wave');
   log('Overlap ×6 records avg FPS / 1% low / >20ms frames / peak resources / final cleanup state');
   log('Cue timing: flash 0ms / sparks 0ms / debris 14ms / wave 26ms / target 36ms / screen 48ms / cleanup 560ms');
