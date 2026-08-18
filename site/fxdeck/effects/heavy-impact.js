@@ -1,6 +1,6 @@
 const HEAVY_IMPACT_SPEC = {
   label: 'Heavy Impact',
-  revision: 'P2.2 visual hierarchy / v1',
+  revision: 'P3 burst abstraction / v1',
   summary: 'Composite directional gameplay hit with a tighter visual hierarchy: short contact flash, aligned hero sparks, smaller debris, directional pressure wave, target kick and screen kick.',
   duration: 560,
   timings: {
@@ -126,8 +126,12 @@ function runHook(instance, hooks, name, payload) {
   if (typeof cleanup === 'function') instance.addCleanup(cleanup);
 }
 
-async function spawnTracked(instance, particleAdapter, options, position) {
-  const handle = await particleAdapter.spawn(options, position);
+async function burstTracked(instance, particleAdapter, options, position) {
+  const burst = typeof particleAdapter.burst === 'function'
+    ? particleAdapter.burst(options, position)
+    : particleAdapter.spawn(options, position);
+  const handle = await burst;
+
   if (instance.state !== 'playing') {
     handle.stop();
     return null;
@@ -195,18 +199,16 @@ function heavyImpactDefinition() {
         screenKickPx: 4.5 * Math.min(1.5, intensity)
       };
 
-      // P2 intentionally sequences the real effect directly. Repeated patterns
-      // discovered here are candidates for extraction in P3, not before.
       runHook(instance, params.hooks, 'contactFlash', payload);
 
-      const sparkPromise = spawnTracked(
+      const sparkPromise = burstTracked(
         instance,
         particleAdapter,
         sparkEmitter(spec.sparks, sparks),
         params.position
       );
 
-      scheduleAsync(instance, spec.timings.debris, () => spawnTracked(
+      scheduleAsync(instance, spec.timings.debris, () => burstTracked(
         instance,
         particleAdapter,
         debrisEmitter(spec.debris, debris),
