@@ -11,9 +11,9 @@
 ## Current state
 
 - **Current milestone:** P2 — Heavy Impact Vertical Slice
-- **Status:** ACTIVE — effect behavior is working; overlap performance and visual polish are being characterized.
+- **Status:** ACTIVE — effect behavior and cleanup are working; measured desktop overlap performance now shows a real high-load frame-time cliff.
 - **Previous milestone:** P1 — Minimal FXDeck Core — **DONE** after automated browser validation reported `P1 VALIDATION: PASS` on 2026-08-18.
-- **Next action:** run `Overlap ×6 + perf` in P2.1.0 and capture its performance-summary log. Separate real frame-time cost from the visual effect of camera/screen kick before deciding how urgent Shared Emission Points are.
+- **Next action:** finish Heavy Impact desktop visual review, then use the measured P2.1 overlap baseline to design the P3 performance comparison. Do not assume emitter churn is the dominant cost: current results show identical peak emitter count with very different frame time as particle count rises.
 - **Current P2 Lab:** `site/heavy-impact-lab.html` — P2.1.0
 - **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
@@ -115,18 +115,18 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [x] Target recoil/kick hook implemented and demonstrated by the movable Lab target.
 - [x] Screen/camera kick hook implemented and demonstrated by the Lab stage.
 - [x] Minimum sequencing implemented directly inside `heavyImpact` at 0/18/32/40/52 ms; no generic timeline/layer framework added.
-- [x] Whole composite is owned by one `EffectInstance` with a 620 ms completion lifecycle and registered cleanup callbacks. **Code implementation complete; overlap cleanup validation still pending.**
+- [x] Whole composite is owned by one `EffectInstance` with a 620 ms completion lifecycle and registered cleanup callbacks. **Repeated-play browser validation returned final `0/0/0`.**
 - [x] Runtime `intensity` visibly increases particle count/impact strength and runtime `direction` visibly steers the effect. **User visually validated 2026-08-18.**
 - [x] `FXDeck.stopAll()` clears active Heavy Impact playback. **User validated 2026-08-18.**
 - [x] P2.1 isolates camera/screen kick from the outer stage: one persistent inner gameplay-layer kick controller accumulates overlapping impulses instead of starting multiple competing transform animations on the whole Lab canvas.
 - [x] P2.1 adds rolling FPS / 1% low / >20 ms telemetry and an automatic `Overlap ×6` capture logging avg FPS, 1% low, frame spikes, peak instances/emitters/particles and final resource state.
-- [x] **Scaling risk discovered:** repeated/overlapping plays currently create separate tsParticles emitter objects for each particle layer of each effect instance. User perceived slowdown during overlap, but P2.1 measurement must distinguish true frame-time cost from the previous whole-stage screen shake. Shared Emission Points remain a concrete P3 optimization candidate.
-- [ ] Run P2.1 `Overlap ×6 + perf`, inspect the logged performance summary, and confirm final `0/0/0` resource cleanup.
+- [x] Run P2.1 `Overlap ×6 + perf` and confirm final resource cleanup. **Measured 2026-08-18:** at intensity `0.5`, peak `6 emitters / 130 particles`, `60.0 FPS avg / 60.0 1% low / 0 >20ms`, final `0/0/0`; at intensity `2.0`, peak `6 emitters / 454 particles`, `55.4 FPS avg / 20.0 1% low / 5 >20ms`, final `0/0/0`.
+- [x] **High-load performance cliff confirmed:** the heavy overlap slowdown remains after screen-kick isolation. However, both measured loads peaked at the same `6 emitters`, while particle count rose from `130` to `454`; therefore current evidence points strongly to particle/render workload as a major bottleneck and does **not** prove emitter-object churn is the dominant cause.
 - [ ] Validate visual alignment/feel of flash, sparks, debris, pressure wave, target kick and the revised accumulated screen kick on desktop. **Initial review: cue is functional; ×6 stress view becomes visually dense and is not treated as the target look for one impact.**
 - [ ] Validate representative Heavy Impact performance/behavior on mobile.
 - [ ] Record which remaining code patterns are repeated or awkward enough to deserve extraction.
 
-**P2 exit:** Heavy Impact feels like one coherent gameplay cue and can be triggered from one `FXDeck.play("heavyImpact", ...)` call without backend-specific work in game code. The emitter-scaling problem may carry into P3 if measurement confirms it is a runtime-architecture cost rather than merely a presentation artifact.
+**P2 exit:** Heavy Impact feels like one coherent gameplay cue and can be triggered from one `FXDeck.play("heavyImpact", ...)` call without backend-specific work in game code. The overlap benchmark is now the baseline for P3 optimization; P3 must isolate particle-count cost from emitter-object cost instead of assuming Shared Emission Points solve the measured slowdown.
 
 ---
 
@@ -138,14 +138,15 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [ ] Extract reusable particle burst/helper patterns **only where P2 produced duplication**.
 - [ ] Extract DOM/screen/target helpers **only where P2 produced reusable behavior**.
 - [ ] **Shared Emission Points / Burst Pooling:** research, prototype and benchmark persistent shared particle systems that accept many runtime emission/burst points (`position`, `direction`, `intensity`, counts/speeds/variant data) instead of creating a new tsParticles emitter object for every particle layer of every `FXDeck.play()`. Adopt the shared-point path only if it materially reduces overlap cost without breaking per-impact variation, lifecycle, positioning or cleanup.
+- [ ] **Isolate emitter overhead from particle workload:** benchmark comparable total particle counts using many per-play emitters versus a small shared-emitter/emission-point path. P2.1 showed `6 emitters / 130 particles` can hold 60 FPS while `6 emitters / 454 particles` does not, so emitter count alone cannot explain the current frame-time cliff.
 - [ ] Formalize asset preload/ownership required by real effects.
 - [ ] Harden effect cancellation and cleanup for overlapping/restarted effects.
 - [ ] Add quality controls based on measured costs rather than arbitrary particle-count presets.
-- [ ] Re-run P0-style performance scenarios through FXDeck and compare runtime overhead against raw tsParticles, including a direct **per-play emitters vs Shared Emission Points** overlap benchmark.
+- [ ] Re-run P0-style performance scenarios through FXDeck and compare runtime overhead against raw tsParticles, including a direct **per-play emitters vs Shared Emission Points** overlap benchmark at matched particle counts.
 - [ ] Validate resize/DPR/mobile behavior through the production runtime, not only the spike harness.
 - [ ] Keep effect definitions predominantly declarative/config-driven where practical; flag any effect that requires large bespoke lifecycle code.
 
-**P3 exit:** runtime is stable enough that new effects should mostly exercise existing capabilities instead of forcing core redesign. High-frequency gameplay bursts must not scale primarily through expensive backend object churn when a measurably better shared emission-point path is available.
+**P3 exit:** runtime is stable enough that new effects should mostly exercise existing capabilities instead of forcing core redesign. High-frequency gameplay bursts must not scale primarily through expensive backend object churn when a measurably better shared emission-point path is available, and quality scaling must respect the measured particle/render budget.
 
 ---
 
@@ -208,7 +209,7 @@ Do not build these pre-emptively:
 7. **Active definitions are immutable for P1/P2.** Version/variant can be selected independently on every new `play()` call. Live parameter mutation on long-running instances is deferred until a real sustained effect proves it useful.
 8. **Runtime diagnostics must be portable.** Lab logs should remain easy to copy/paste so browser failures can be debugged from complete traces rather than screenshots alone.
 9. **P2 integration hooks remain explicit.** Target/camera behavior is supplied through effect hooks rather than hard-coded into Core. Browser-specific flash/wave implementations stay in the Lab until repetition proves a reusable DOM helper is warranted.
-10. **Shared Emission Points are a first-class P3 candidate.** The P2 overlap test exposed a plausible scaling weakness in the current one-emitter-per-burst/layer approach. FXDeck should investigate the Frostpunk-style model of a small number of persistent particle systems receiving many independent emission points, while preserving per-point runtime data and benchmarking the result before adopting it.
+10. **Shared Emission Points are a first-class P3 candidate, not a presumed fix.** P2 exposed a real overlap frame-time problem, but the first measured comparison kept peak emitter count at `6` while particle count changed from `130` to `454` and performance changed from locked 60 FPS to severe 1% lows. P3 must therefore benchmark matched particle counts before attributing the gain to reduced emitter churn.
 11. **Overlapping screen impulses should be aggregated.** P2.1 demonstrated that firing multiple independent transform animations on the same camera/stage target gives misleading and unstable feedback. The Lab now accumulates kick impulses through one controller; a reusable runtime helper is considered only if later effects prove the same need.
 
 ---
@@ -217,6 +218,7 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P2.1 measured baseline:** User ran `Overlap ×6 + perf`. Intensity `0.5` produced peak `6 emitters / 130 particles` at `60.0 FPS avg / 60.0 1% low / 0 >20ms`; intensity `2.0` produced peak `6 emitters / 454 particles` at `55.4 FPS avg / 20.0 1% low / 5 >20ms`. Both returned final `0/0/0`. This confirms a real high-load frame-time cliff while also showing that emitter count alone does not explain it; P3 must separate particle/render cost from emitter-object overhead.
 - **P2.1.0:** Added measured overlap diagnostics (rolling FPS, 1% low, >20 ms frame count, automatic `Overlap ×6` performance capture with peak resources and final cleanup state). Replaced competing whole-stage screen-kick animations with one accumulated kick controller on an inner gameplay layer, so visual camera motion no longer masquerades as frame stutter and overlapping kicks combine predictably.
 - **P2 finding / P3 requirement:** Repeated FXDeck plays exposed a possible scaling issue from many separately-created emitter objects. Added **Shared Emission Points / Burst Pooling** to P3 as a prioritized optimization candidate, but P2.1 now measures the overlap before attributing all perceived slowdown to emitter churn.
 - **P2.0.0:** Added the first Heavy Impact vertical slice. `heavyImpact/v1/default` orchestrates contact flash, directional SVG sparks, timed debris, pressure wave, target kick and screen kick from one `FXDeck.play()` call with a 620 ms owned lifecycle. Added dedicated three-column P2 Lab, runtime inspector, overlap test control, copyable logs and P2 navigation from P0/P1.
