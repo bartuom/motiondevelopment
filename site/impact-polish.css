@@ -81,7 +81,7 @@
   border-radius: var(--radius, 1px);
   background: var(--debris-color, #b9cbd8);
   opacity: 0;
-  animation: impact-debris-directed var(--dur, 280ms) cubic-bezier(.12,.58,.18,1) var(--delay, 0ms) both;
+  animation: impact-debris-directed var(--dur, 220ms) cubic-bezier(.12,.58,.18,1) var(--delay, 0ms) both;
 }
 
 @keyframes impact-debris-directed {
@@ -162,10 +162,10 @@
 .effect-root.impact-light .impact-burst span:nth-child(5) { --angle:-58deg; --len:18px; --travel:18px; --dur:96ms;  --delay:84ms; --thickness:1px; --alpha:.3; }
 
 .effect-root.impact-light .impact-debris i:nth-child(n+5) { display: none; }
-.effect-root.impact-light .impact-debris i:nth-child(1) { --dx:72px; --dy:-11px; --rot:128deg; --dur:230ms; --delay:84ms; --w:6px; --h:2px; --alpha:.78; }
-.effect-root.impact-light .impact-debris i:nth-child(2) { --dx:54px; --dy:18px;  --rot:244deg; --dur:245ms; --delay:91ms; --w:4px; --h:3px; --alpha:.72; }
-.effect-root.impact-light .impact-debris i:nth-child(3) { --dx:37px; --dy:-28px; --rot:176deg; --dur:218ms; --delay:96ms; --w:3px; --h:2px; --alpha:.56; }
-.effect-root.impact-light .impact-debris i:nth-child(4) { --dx:29px; --dy:34px;  --rot:305deg; --dur:255ms; --delay:89ms; --w:3px; --h:3px; --alpha:.48; }
+.effect-root.impact-light .impact-debris i:nth-child(1) { --dx:72px; --dy:-11px; --rot:128deg; --dur:190ms; --delay:84ms; --w:6px; --h:2px; --alpha:.78; }
+.effect-root.impact-light .impact-debris i:nth-child(2) { --dx:54px; --dy:18px;  --rot:244deg; --dur:202ms; --delay:91ms; --w:4px; --h:3px; --alpha:.72; }
+.effect-root.impact-light .impact-debris i:nth-child(3) { --dx:37px; --dy:-28px; --rot:176deg; --dur:182ms; --delay:96ms; --w:3px; --h:2px; --alpha:.56; }
+.effect-root.impact-light .impact-debris i:nth-child(4) { --dx:29px; --dy:34px;  --rot:305deg; --dur:198ms; --delay:89ms; --w:3px; --h:3px; --alpha:.48; }
 
 /* -------------------------
    HEAVY IMPACT
@@ -261,13 +261,13 @@
 
 .effect-root.impact-heavy .impact-debris i:nth-child(8) { display: none; }
 /* Hero chunk */
-.effect-root.impact-heavy .impact-debris i:nth-child(1) { --dx:124px; --dy:22px;  --rot:248deg; --dur:390ms; --delay:104ms; --w:15px; --h:7px; --radius:2px; --alpha:.92; --debris-color:#9eb3c2; }
-.effect-root.impact-heavy .impact-debris i:nth-child(2) { --dx:96px;  --dy:-28px; --rot:382deg; --dur:342ms; --delay:111ms; --w:8px;  --h:5px; --alpha:.82; --debris-color:#c4d3de; }
-.effect-root.impact-heavy .impact-debris i:nth-child(3) { --dx:79px;  --dy:46px;  --rot:294deg; --dur:365ms; --delay:118ms; --w:7px;  --h:4px; --alpha:.76; }
-.effect-root.impact-heavy .impact-debris i:nth-child(4) { --dx:65px;  --dy:-52px; --rot:436deg; --dur:330ms; --delay:121ms; --w:5px;  --h:4px; --alpha:.68; }
-.effect-root.impact-heavy .impact-debris i:nth-child(5) { --dx:51px;  --dy:64px;  --rot:318deg; --dur:384ms; --delay:126ms; --w:4px;  --h:3px; --alpha:.58; }
-.effect-root.impact-heavy .impact-debris i:nth-child(6) { --dx:39px;  --dy:-69px; --rot:510deg; --dur:354ms; --delay:128ms; --w:3px;  --h:3px; --alpha:.46; }
-.effect-root.impact-heavy .impact-debris i:nth-child(7) { --dx:34px;  --dy:31px;  --rot:228deg; --dur:310ms; --delay:132ms; --w:3px;  --h:2px; --alpha:.38; }
+.effect-root.impact-heavy .impact-debris i:nth-child(1) { --dx:124px; --dy:22px;  --rot:248deg; --dur:286ms; --delay:104ms; --w:15px; --h:7px; --radius:2px; --alpha:.92; --debris-color:#9eb3c2; }
+.effect-root.impact-heavy .impact-debris i:nth-child(2) { --dx:96px;  --dy:-28px; --rot:382deg; --dur:272ms; --delay:111ms; --w:8px;  --h:5px; --alpha:.82; --debris-color:#c4d3de; }
+.effect-root.impact-heavy .impact-debris i:nth-child(3) { --dx:79px;  --dy:46px;  --rot:294deg; --dur:278ms; --delay:118ms; --w:7px;  --h:4px; --alpha:.76; }
+.effect-root.impact-heavy .impact-debris i:nth-child(4) { --dx:65px;  --dy:-52px; --rot:436deg; --dur:264ms; --delay:121ms; --w:5px;  --h:4px; --alpha:.68; }
+.effect-root.impact-heavy .impact-debris i:nth-child(5) { --dx:51px;  --dy:64px;  --rot:318deg; --dur:272ms; --delay:126ms; --w:4px;  --h:3px; --alpha:.58; }
+.effect-root.impact-heavy .impact-debris i:nth-child(6) { --dx:39px;  --dy:-69px; --rot:510deg; --dur:258ms; --delay:128ms; --w:3px;  --h:3px; --alpha:.46; }
+.effect-root.impact-heavy .impact-debris i:nth-child(7) { --dx:34px;  --dy:31px;  --rot:228deg; --dur:246ms; --delay:132ms; --w:3px;  --h:2px; --alpha:.38; }
 
 /* Keep the heavy kick short. The weight comes from target compression and debris, not camera abuse. */
 .stage.is-kicked:has(.impact-heavy) {
