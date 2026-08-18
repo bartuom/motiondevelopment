@@ -1,1 +1,42 @@
-.fxdeck-fireball-projectile{position:absolute;z-index:7;width:54px;height:26px;pointer-events:none;transform:translate(-50%,-50%) rotate(var(--fxdeck-fireball-angle,0deg)) scale(var(--fxdeck-fireball-scale,1));transform-origin:50% 50%;will-change:left,top,transform;mix-blend-mode:screen;filter:drop-shadow(0 0 7px rgba(255,143,55,.72)) drop-shadow(0 0 16px rgba(255,86,35,.38));background:radial-gradient(ellipse at 68% 50%,rgba(255,255,255,1) 0 9%,rgba(255,242,158,.98) 15%,rgba(255,165,62,.94) 30%,rgba(255,79,34,.74) 48%,rgba(255,50,22,.2) 67%,transparent 76%);border-radius:50%}.fxdeck-fireball-projectile:before{content:"";position:absolute;left:-24px;top:50%;width:42px;height:13px;transform:translateY(-50%);background:linear-gradient(90deg,transparent 0%,rgba(255,63,24,.08) 14%,rgba(255,103,34,.5) 55%,rgba(255,208,94,.88) 100%);filter:blur(2px);border-radius:50%}.fxdeck-fireball-projectile:after{content:"";position:absolute;left:25px;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;box-shadow:0 0 6px #fff,0 0 12px rgba(255,223,126,.95),0 0 20px rgba(255,98,38,.7)}
+.fxdeck-fireball-projectile{
+  position:absolute;
+  left:0;
+  top:0;
+  z-index:7;
+  width:50px;
+  height:22px;
+  pointer-events:none;
+  transform:translate3d(var(--fxdeck-visual-x,0px),var(--fxdeck-visual-y,0px),0) translate(-50%,-50%) rotate(var(--fxdeck-fireball-angle,0deg)) scale(var(--fxdeck-fireball-scale,1));
+  transform-origin:50% 50%;
+  will-change:transform;
+  contain:layout paint style;
+  background:radial-gradient(ellipse at 68% 50%,#fff 0 8%,#fff0a7 15%,#ffb04c 31%,#ff6a34 49%,rgba(255,75,33,.18) 68%,transparent 77%);
+  border-radius:50%;
+}
+.fxdeck-fireball-projectile:before{
+  content:"";
+  position:absolute;
+  left:-22px;
+  top:50%;
+  width:40px;
+  height:11px;
+  transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent 0%,rgba(255,72,30,.05) 12%,rgba(255,104,35,.38) 58%,rgba(255,201,91,.82) 100%);
+  border-radius:50%;
+}
+.fxdeck-fireball-projectile:after{
+  content:"";
+  position:absolute;
+  left:24px;
+  top:50%;
+  width:8px;
+  height:8px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:#fff7d5;
+}
+@media(max-width:620px){
+  .fxdeck-fireball-projectile{width:46px;height:20px}
+  .fxdeck-fireball-projectile:before{left:-20px;width:36px;height:10px}
+  .fxdeck-fireball-projectile:after{left:22px;width:7px;height:7px}
+}
