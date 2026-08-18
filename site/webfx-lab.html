@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck technology spike for validating tsParticles as a gameplay VFX backend.">
   <title>FXDeck Technology Spike</title>
   <link rel="stylesheet" href="./webfx-lab.css">
-  <link rel="stylesheet" href="./fxdeck-log-tools.css?v=p0.2.1">
+  <link rel="stylesheet" href="./fxdeck-log-tools.css?v=p0.2.2">
 </head>
 <body>
   <main class="lab-shell">
@@ -37,7 +37,8 @@
         <dl class="meta-list">
           <div><dt>Backend</dt><dd>tsParticles 4.3.2</dd></div>
           <div><dt>Bundle</dt><dd>Full / spike only</dd></div>
-          <div><dt>Build</dt><dd class="build-id">P0.2.1</dd></div>
+          <div><dt>Loader</dt><dd>explicit loadFull()</dd></div>
+          <div><dt>Build</dt><dd class="build-id">P0.2.2</dd></div>
           <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
           <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
           <div><dt>Tracked emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -79,13 +80,41 @@
         <button id="clear-log" type="button">Clear log</button>
         <span id="copy-log-status" class="copy-status" aria-live="polite"></span>
       </div>
-      <pre id="spike-log" class="spike-log" tabindex="0">FXDeck spike ready. Build P0.2.1.</pre>
+      <pre id="spike-log" class="spike-log" tabindex="0">FXDeck spike ready. Build P0.2.2.</pre>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script src="./js/webfx-lab.js?v=p0.2.1" defer></script>
-  <script src="./js/fxdeck-log-tools.js?v=p0.2.1" defer></script>
+  <script type="module">
+    const output = document.querySelector('#spike-log');
+    const appendBootstrapLog = (message) => {
+      const stamp = new Date().toLocaleTimeString([], { hour12: false });
+      output.textContent += `\n[${stamp}] ${message}`;
+      output.scrollTop = output.scrollHeight;
+    };
+    const loadClassicScript = (src) => new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.body.appendChild(script);
+    });
+
+    try {
+      if (!globalThis.tsParticles) throw new Error('tsParticles engine global is missing');
+      if (typeof globalThis.loadFull !== 'function') throw new Error(`loadFull global is ${typeof globalThis.loadFull}`);
+
+      appendBootstrapLog('BOOTSTRAP loadFull(tsParticles) starting');
+      await globalThis.loadFull(globalThis.tsParticles);
+      appendBootstrapLog('PASS bootstrap: full bundle registered before container creation');
+
+      await loadClassicScript('./js/webfx-lab.js?v=p0.2.2');
+      await loadClassicScript('./js/fxdeck-log-tools.js?v=p0.2.2');
+    } catch (error) {
+      appendBootstrapLog(`BOOTSTRAP FAIL: ${error.message}`);
+      console.error(error);
+    }
+  </script>
 </body>
 </html>
