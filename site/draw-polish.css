@@ -1,0 +1,339 @@
+/* Draw 05 polish pass
+   Common = fast utility reward. Rare = anticipation, hold, payoff, settle.
+   Loaded after the base styles to keep the rest of the portfolio isolated. */
+
+/* Shared art direction */
+.effect-root.draw-common .draw-card,
+.effect-root.draw-rare .draw-card {
+  width: 138px;
+  height: 184px;
+}
+
+.effect-root.draw-common .draw-back,
+.effect-root.draw-rare .draw-back {
+  border-color: rgba(255,255,255,.22);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.045), transparent 38%),
+    linear-gradient(155deg, #26282b, #17191b 72%);
+  box-shadow: 0 20px 42px rgba(0,0,0,.34);
+}
+
+.effect-root.draw-common .draw-back span,
+.effect-root.draw-rare .draw-back span {
+  font-size: 1.55rem;
+  opacity: .72;
+}
+
+.effect-root.draw-common .draw-front,
+.effect-root.draw-rare .draw-front {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.42);
+}
+
+.effect-root.draw-common .draw-front::before,
+.effect-root.draw-rare .draw-front::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 28%, rgba(255,255,255,.38) 48%, transparent 62%);
+  transform: translateX(-135%);
+  opacity: 0;
+}
+
+.effect-root.draw-common .draw-front small,
+.effect-root.draw-common .draw-front span,
+.effect-root.draw-rare .draw-front small,
+.effect-root.draw-rare .draw-front span {
+  position: relative;
+  z-index: 2;
+}
+
+.effect-root.draw-common .draw-front strong,
+.effect-root.draw-rare .draw-front strong {
+  position: relative;
+  z-index: 2;
+}
+
+/* Base procedural burst is replaced with manually authored asymmetry. */
+.effect-root.draw-common .draw-rays span,
+.effect-root.draw-rare .draw-rays span {
+  width: var(--len, 72px);
+  height: var(--thickness, 1px);
+  transform: rotate(var(--angle, 0deg)) translateX(10px) scaleX(.15);
+  background: linear-gradient(90deg, rgba(255,255,255,var(--ray-alpha,.85)), rgba(255,255,255,.15) 48%, transparent);
+}
+
+.effect-root.draw-common .draw-particles i,
+.effect-root.draw-rare .draw-particles i {
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  border-radius: var(--radius, 50%);
+}
+
+@keyframes draw-ray-authored {
+  0% { opacity: 0; transform: rotate(var(--angle)) translateX(8px) scaleX(.12); }
+  10% { opacity: var(--ray-alpha,.8); }
+  42% { opacity: var(--ray-alpha,.8); transform: rotate(var(--angle)) translateX(calc(var(--travel, 34px) * .42)) scaleX(.86); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(var(--travel, 34px)) scaleX(.2); }
+}
+
+@keyframes draw-particle-authored {
+  0% { opacity: 0; transform: translate(-50%,-50%) translate3d(0,0,0) rotate(0) scale(.45); }
+  12% { opacity: var(--particle-alpha,.9); }
+  58% { opacity: var(--particle-alpha,.9); }
+  100% { opacity: 0; transform: translate(-50%,-50%) translate3d(var(--dx),var(--dy),0) rotate(var(--rot,0deg)) scale(.22); }
+}
+
+/* =========================
+   COMMON
+   Fast, readable, almost no ceremony.
+   Total visible motion: ~620 ms.
+   ========================= */
+.effect-root.draw-common .draw-front {
+  color: #17191b;
+  background: linear-gradient(145deg, #f3f4f4, #c7cbd0);
+}
+
+.effect-root.draw-common .draw-front strong {
+  width: 50px;
+  height: 50px;
+  background: #1c2024;
+  font-size: 1.45rem;
+}
+
+.effect-root.draw-common.draw-playing .draw-card {
+  animation: draw-common-anticipation 155ms cubic-bezier(.18,.76,.2,1) both;
+}
+
+@keyframes draw-common-anticipation {
+  0% { transform: translate(-50%,-50%) scale(1); }
+  42% { transform: translate(-50%,-50%) scale(.955,.93); }
+  72% { transform: translate(-50%,-50%) scale(.985,1.015); }
+  100% { transform: translate(-50%,-50%) scale(1); }
+}
+
+.effect-root.draw-common.draw-playing .draw-card-inner {
+  animation: draw-common-flip 260ms cubic-bezier(.12,.8,.18,1) 105ms both;
+}
+
+@keyframes draw-common-flip {
+  0% { transform: rotateY(0deg) scale(1); }
+  40% { transform: rotateY(82deg) scale(1.025); }
+  52% { transform: rotateY(103deg) scale(1.035); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+
+.effect-root.draw-common.draw-playing .draw-flash {
+  animation: draw-common-flash 46ms cubic-bezier(.06,.88,.14,1) 222ms both;
+}
+
+@keyframes draw-common-flash {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.2,.75); }
+  18% { opacity: .95; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(3.3,.45); }
+}
+
+.effect-root.draw-common.draw-playing .draw-glow {
+  animation: draw-common-glow 310ms ease-out 195ms both;
+}
+
+@keyframes draw-common-glow {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.45); }
+  26% { opacity: .34; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(.98); }
+}
+
+.effect-root.draw-common.draw-playing .draw-front::before {
+  animation: draw-common-sheen 220ms ease-out 300ms both;
+}
+
+@keyframes draw-common-sheen {
+  0% { opacity: 0; transform: translateX(-135%); }
+  18% { opacity: .55; }
+  100% { opacity: 0; transform: translateX(135%); }
+}
+
+/* Common: four accents, not a radial sunburst. */
+.effect-root.draw-common .draw-rays span:nth-child(n+5) { display: none; }
+.effect-root.draw-common .draw-rays span:nth-child(1) { --angle:-12deg; --len:76px; --travel:44px; --ray-alpha:.62; --thickness:1.5px; }
+.effect-root.draw-common .draw-rays span:nth-child(2) { --angle:28deg;  --len:48px; --travel:31px; --ray-alpha:.42; --thickness:1px; }
+.effect-root.draw-common .draw-rays span:nth-child(3) { --angle:154deg; --len:36px; --travel:24px; --ray-alpha:.3;  --thickness:1px; }
+.effect-root.draw-common .draw-rays span:nth-child(4) { --angle:214deg; --len:24px; --travel:18px; --ray-alpha:.22; --thickness:1px; }
+.effect-root.draw-common.draw-playing .draw-rays span {
+  animation: draw-ray-authored 185ms cubic-bezier(.08,.74,.16,1) calc(258ms + var(--i)*4ms) both;
+}
+
+.effect-root.draw-common .draw-particles i:nth-child(n+7) { display: none; }
+.effect-root.draw-common .draw-particles i:nth-child(1) { --dx:58px;  --dy:-31px; --rot:110deg; --size:4px; --particle-alpha:.7; }
+.effect-root.draw-common .draw-particles i:nth-child(2) { --dx:42px;  --dy:42px;  --rot:240deg; --size:3px; --particle-alpha:.62; }
+.effect-root.draw-common .draw-particles i:nth-child(3) { --dx:-35px; --dy:-24px; --rot:170deg; --size:3px; --particle-alpha:.48; }
+.effect-root.draw-common .draw-particles i:nth-child(4) { --dx:23px;  --dy:-52px; --rot:310deg; --size:2px; --particle-alpha:.5; }
+.effect-root.draw-common .draw-particles i:nth-child(5) { --dx:-28px; --dy:36px;  --rot:80deg;  --size:2px; --particle-alpha:.36; }
+.effect-root.draw-common .draw-particles i:nth-child(6) { --dx:68px;  --dy:12px;  --rot:205deg; --size:2px; --particle-alpha:.42; }
+.effect-root.draw-common.draw-playing .draw-particles i {
+  animation: draw-particle-authored 300ms cubic-bezier(.1,.58,.2,1) calc(275ms + var(--i)*7ms) both;
+}
+
+/* =========================
+   RARE
+   Anticipation -> HOLD -> violent reveal -> secondary settle.
+   The pause before payoff is intentional.
+   ========================= */
+.effect-root.draw-rare .draw-back {
+  border-color: rgba(220,184,91,.32);
+  background:
+    linear-gradient(135deg, rgba(238,205,115,.06), transparent 36%),
+    linear-gradient(155deg, #28251e, #171715 72%);
+}
+
+.effect-root.draw-rare .draw-front {
+  border-color: rgba(255,226,142,.78);
+  color: #241b0d;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255,250,220,.9), transparent 34%),
+    linear-gradient(145deg, #fff2bd, #d0a13e 68%, #8c651f);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.25), 0 0 32px rgba(225,170,54,.12);
+}
+
+.effect-root.draw-rare .draw-front strong {
+  width: 58px;
+  height: 58px;
+  color: #ffeab0;
+  background: linear-gradient(145deg, #76531c, #3c2a12);
+  box-shadow: inset 0 0 0 1px rgba(255,231,159,.24);
+}
+
+/* Build-up has three beats: compress, tremor, hold. */
+.effect-root.draw-rare.draw-playing .draw-card {
+  animation: draw-rare-build 535ms cubic-bezier(.16,.72,.18,1) both;
+}
+
+@keyframes draw-rare-build {
+  0%   { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  22%  { transform: translate(-50%,-50%) scale(.965,.93) rotate(-.35deg); }
+  39%  { transform: translate(calc(-50% - 1.5px),-50%) scale(.95,.92) rotate(.45deg); }
+  46%  { transform: translate(calc(-50% + 1.2px),-50%) scale(.95,.92) rotate(-.4deg); }
+  53%  { transform: translate(calc(-50% - .7px),-50%) scale(.95,.92) rotate(.28deg); }
+  60%  { transform: translate(-50%,-50%) scale(.95,.92) rotate(0deg); }
+  100% { transform: translate(-50%,-50%) scale(.95,.92) rotate(0deg); }
+}
+
+/* Light leaks begin before the reveal, but never become the payoff. */
+.effect-root.draw-rare.draw-playing .draw-glow {
+  animation: draw-rare-prelight 535ms cubic-bezier(.2,.7,.2,1) both;
+}
+
+@keyframes draw-rare-prelight {
+  0%,22% { opacity: 0; transform: translate(-50%,-50%) scale(.42); }
+  45% { opacity: .12; transform: translate(-50%,-50%) scale(.55); }
+  68% { opacity: .28; transform: translate(-50%,-50%) scale(.65); }
+  100% { opacity: .22; transform: translate(-50%,-50%) scale(.7); }
+}
+
+/* Reveal starts after a deliberate ~135 ms hold. */
+.effect-root.draw-rare.draw-playing .draw-card-inner {
+  animation: draw-rare-flip 330ms cubic-bezier(.09,.84,.15,1) 535ms both;
+}
+
+@keyframes draw-rare-flip {
+  0% { transform: rotateY(0deg) scale(.95,.92); }
+  32% { transform: rotateY(78deg) scale(1.03,1.02); }
+  48% { transform: rotateY(103deg) scale(1.09,1.06); }
+  76% { transform: rotateY(171deg) scale(1.055); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+
+.effect-root.draw-rare.draw-playing .draw-flash {
+  width: 32px;
+  height: 32px;
+  animation: draw-rare-flash 58ms cubic-bezier(.04,.9,.12,1) 650ms both;
+}
+
+@keyframes draw-rare-flash {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.12,.8); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(7,.42); }
+}
+
+/* Secondary bloom comes AFTER the white hit, so hierarchy stays readable. */
+.effect-root.draw-rare.draw-playing .draw-glow::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,226,132,.52), rgba(230,166,45,.15) 36%, transparent 68%);
+  animation: draw-rare-payoff-glow 430ms cubic-bezier(.08,.72,.16,1) 648ms both;
+}
+
+@keyframes draw-rare-payoff-glow {
+  0% { opacity: 0; transform: scale(.28); }
+  13% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.24); }
+}
+
+.effect-root.draw-rare.draw-playing .draw-front::before {
+  animation: draw-rare-sheen 360ms ease-out 755ms both;
+}
+
+@keyframes draw-rare-sheen {
+  0% { opacity: 0; transform: translateX(-140%); }
+  18% { opacity: .78; }
+  100% { opacity: 0; transform: translateX(145%); }
+}
+
+/* Rare: six deliberately uneven rays, hero streak biased upper-right. */
+.effect-root.draw-rare .draw-rays span:nth-child(n+7) { display: none; }
+.effect-root.draw-rare .draw-rays span:nth-child(1) { --angle:-18deg; --len:152px; --travel:74px; --ray-alpha:1;   --thickness:3px; }
+.effect-root.draw-rare .draw-rays span:nth-child(2) { --angle:9deg;   --len:88px;  --travel:54px; --ray-alpha:.72; --thickness:1.7px; }
+.effect-root.draw-rare .draw-rays span:nth-child(3) { --angle:61deg;  --len:55px;  --travel:36px; --ray-alpha:.46; --thickness:1.2px; }
+.effect-root.draw-rare .draw-rays span:nth-child(4) { --angle:166deg; --len:46px;  --travel:31px; --ray-alpha:.35; --thickness:1px; }
+.effect-root.draw-rare .draw-rays span:nth-child(5) { --angle:219deg; --len:34px;  --travel:24px; --ray-alpha:.28; --thickness:1px; }
+.effect-root.draw-rare .draw-rays span:nth-child(6) { --angle:286deg; --len:65px;  --travel:41px; --ray-alpha:.52; --thickness:1.3px; }
+.effect-root.draw-rare.draw-playing .draw-rays span {
+  background: linear-gradient(90deg, #fff4c6 0%, rgba(255,202,94,.72) 28%, rgba(231,159,43,.18) 66%, transparent);
+  animation: draw-ray-authored 340ms cubic-bezier(.07,.72,.15,1) calc(672ms + var(--i)*6ms) both;
+}
+
+.effect-root.draw-rare .draw-particles i:nth-child(n+11) { display: none; }
+.effect-root.draw-rare .draw-particles i { background: #ffd875; box-shadow: none; }
+.effect-root.draw-rare .draw-particles i:nth-child(1)  { --dx:96px;  --dy:-68px; --rot:180deg; --size:5px; --radius:1px; --particle-alpha:1; }
+.effect-root.draw-rare .draw-particles i:nth-child(2)  { --dx:78px;  --dy:52px;  --rot:330deg; --size:4px; --radius:1px; --particle-alpha:.92; }
+.effect-root.draw-rare .draw-particles i:nth-child(3)  { --dx:42px;  --dy:-91px; --rot:120deg; --size:3px; --particle-alpha:.82; }
+.effect-root.draw-rare .draw-particles i:nth-child(4)  { --dx:-61px; --dy:-54px; --rot:260deg; --size:4px; --radius:1px; --particle-alpha:.72; }
+.effect-root.draw-rare .draw-particles i:nth-child(5)  { --dx:-78px; --dy:27px;  --rot:95deg;  --size:3px; --particle-alpha:.62; }
+.effect-root.draw-rare .draw-particles i:nth-child(6)  { --dx:112px; --dy:8px;   --rot:215deg; --size:3px; --radius:1px; --particle-alpha:.82; }
+.effect-root.draw-rare .draw-particles i:nth-child(7)  { --dx:24px;  --dy:83px;  --rot:145deg; --size:3px; --particle-alpha:.58; }
+.effect-root.draw-rare .draw-particles i:nth-child(8)  { --dx:-27px; --dy:-104px;--rot:300deg; --size:2px; --particle-alpha:.48; }
+.effect-root.draw-rare .draw-particles i:nth-child(9)  { --dx:68px;  --dy:-31px; --rot:70deg;  --size:2px; --particle-alpha:.55; }
+.effect-root.draw-rare .draw-particles i:nth-child(10) { --dx:-43px; --dy:69px;  --rot:205deg; --size:2px; --particle-alpha:.42; }
+.effect-root.draw-rare.draw-playing .draw-particles i {
+  animation: draw-particle-authored 520ms cubic-bezier(.1,.56,.18,1) calc(700ms + var(--i)*9ms) both;
+}
+
+/* Card lands with a small secondary scale settle instead of endless glow. */
+.effect-root.draw-rare.draw-playing .draw-card {
+  animation-name: draw-rare-build, draw-rare-settle;
+  animation-duration: 535ms, 310ms;
+  animation-delay: 0ms, 850ms;
+  animation-timing-function: cubic-bezier(.16,.72,.18,1), cubic-bezier(.15,.72,.2,1);
+  animation-fill-mode: both, both;
+}
+
+@keyframes draw-rare-settle {
+  0% { transform: translate(-50%,-50%) scale(1.075); }
+  35% { transform: translate(-50%,-50%) scale(.986); }
+  68% { transform: translate(-50%,-50%) scale(1.012); }
+  100% { transform: translate(-50%,-50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .effect-root.draw-common.draw-playing .draw-card,
+  .effect-root.draw-rare.draw-playing .draw-card { animation: none; }
+  .effect-root.draw-common.draw-playing .draw-card-inner,
+  .effect-root.draw-rare.draw-playing .draw-card-inner { animation-duration: 1ms; animation-delay: 0ms; }
+  .effect-root.draw-common.draw-playing .draw-rays span,
+  .effect-root.draw-rare.draw-playing .draw-rays span,
+  .effect-root.draw-common.draw-playing .draw-particles i,
+  .effect-root.draw-rare.draw-playing .draw-particles i { animation: none; }
+}
