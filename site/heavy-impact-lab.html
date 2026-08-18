@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P3 production runtime and Shared Emission Points benchmark lab.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.3.0">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.1.0">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.0.0</p>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.1.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">Heavy Impact is now the production-runtime probe. P3 compares the existing per-play emitter path with Shared Emission Points using the same effect, counts, direction and lifecycle.</p>
+      <p class="intro">Heavy Impact remains the real-effect probe. P3.1 adds a matched synthetic particle-only stress benchmark so emitter and Shared Emission Point paths can be compared at the same requested workload.</p>
     </header>
 
     <section class="workbench">
@@ -56,7 +56,17 @@
             <option value="emitter">Per-play emitter — P2 baseline</option>
             <option value="shared">Shared direct particles — P3 spike</option>
           </select>
-          <p class="control-note">The effect definition stays identical. Only the adapter strategy changes: addEmitter(startCount) versus direct particles pushed into the persistent shared container.</p>
+          <p class="control-note">Manual Heavy Impact path. The effect definition stays identical; only ParticleAdapter execution changes.</p>
+        </div>
+
+        <div class="control">
+          <p class="label">Matched backend stress load</p>
+          <select id="stress-load">
+            <option value="400">400 particles / 16 emission points</option>
+            <option value="800" selected>800 particles / 24 emission points</option>
+            <option value="1200">1200 particles / 32 emission points</option>
+          </select>
+          <p class="control-note">Synthetic particle-only A/B. Same requested count, same simple particle config and same point layout for emitter and shared-direct paths.</p>
         </div>
 
         <div class="control">
@@ -73,13 +83,14 @@
         <div class="actions">
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
           <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
-          <button id="play-ab" class="secondary" type="button">A/B emitter vs shared</button>
+          <button id="play-ab" class="secondary" type="button">Heavy Impact A/B</button>
+          <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress A/B</button>
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
         <div class="input-note">
-          <p class="label">P3.0 focus</p>
-          <p>Run the A/B benchmark at the same intensity. It automatically executes the emitter path and then the shared-direct path, starting each leg from a clean resource state.</p>
+          <p class="label">P3.1 focus</p>
+          <p>Heavy Impact A/B checks a real gameplay cue. Synthetic Stress A/B isolates backend strategy with matched 400/800/1200-particle workloads and reports spawn time plus frame timing.</p>
         </div>
       </aside>
 
@@ -105,7 +116,7 @@
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
-            <span>same cue → two particle backend strategies</span>
+            <span>real cue A/B + matched particle-only stress A/B</span>
           </div>
         </div>
       </section>
@@ -116,7 +127,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p class="summary">The public FXDeck call and Heavy Impact definition are unchanged while the ParticleAdapter can switch between per-play emitters and a shared direct-particle path.</p>
+        <p class="summary">The public FXDeck call and Heavy Impact definition remain unchanged while ParticleAdapter can switch between per-play emitters and shared direct particles. P3.1 separately measures the backend under matched synthetic load.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -148,7 +159,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P3.0.0</dd></div>
+            <div><dt>Build</dt><dd>P3.1.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -177,13 +188,14 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.0.0.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.1.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.0.0"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.1.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.1.0"></script>
 </body>
 </html>
