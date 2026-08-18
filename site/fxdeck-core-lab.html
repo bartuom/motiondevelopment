@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P1 minimal core validation lab.">
   <title>FXDeck Core Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=1">
-  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.2.3">
+  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.3.0">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -23,7 +23,7 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P1 Minimal Core / Build P1.2.3</p>
+        <p class="eyebrow">FXDeck / P1 Minimal Core / Build P1.3.0</p>
         <h1>Core Lab</h1>
       </div>
       <p class="intro">Authored definition on the left, live VFX canvas in the center, resolved runtime output on the right.</p>
@@ -72,11 +72,13 @@
           <button id="play-effect" class="primary" type="button">FXDeck.play()</button>
           <button id="play-ten" class="secondary" type="button">Play ×10</button>
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
+          <button id="run-validation" class="validation-button" type="button">Run P1 validation</button>
         </div>
+        <div id="validation-status" class="validation-status" aria-live="polite">Validation not run</div>
 
         <div class="input-note">
           <p class="label">Runtime inputs</p>
-          <p><strong>Version / variant</strong> select authored data. <strong>Intensity / direction / position</strong> modify only the current play call.</p>
+          <p><strong>Version / variant</strong> select authored data for each new play. <strong>Intensity / direction / position</strong> modify only that play instance.</p>
         </div>
       </aside>
 
@@ -139,7 +141,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime state</p>
           <dl class="meta">
-            <div><dt>Build</dt><dd>P1.2.3</dd></div>
+            <div><dt>Build</dt><dd>P1.3.0</dd></div>
             <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
             <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
             <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
@@ -154,7 +156,7 @@
         <div class="diagnostic-heading">
           <p class="label">Public API / current call</p>
           <div class="gate">
-            <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>true direction</span>
+            <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>true direction</span><span>P1 validation</span>
           </div>
         </div>
         <pre id="api-preview" class="api"></pre>
@@ -162,13 +164,13 @@
 
       <article class="diagnostic-card log-card">
         <p class="label">P1 runtime log</p>
-        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.2.3.</pre>
+        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.3.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.2.3"></script>
+  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.3.0"></script>
 </body>
 </html>
