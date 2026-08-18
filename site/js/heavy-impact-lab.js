@@ -1,9 +1,9 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
-import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.5.0';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.5.0';
-import { registerExplosion } from '../fxdeck/effects/explosion.js?v=p3.5.0';
+import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.5.1';
+import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.5.1';
+import { registerExplosion } from '../fxdeck/effects/explosion.js?v=p3.5.1';
 
-const BUILD = 'P3.5.0';
+const BUILD = 'P3.5.1';
 const FRAME_BUDGET_MS = 1000 / 60;
 const PRESSURE_RANK = { none: 0, medium: 1, high: 2, critical: 3 };
 
@@ -537,7 +537,7 @@ function updateEffectUi() {
   previewNote.textContent = 'Click to move target + play selected effect';
   captionTitle.textContent = `${effectId} / v1 / default`;
   captionNote.textContent = effectId === 'explosion'
-    ? 'queue-aware quality / shared-scheduled production default'
+    ? 'projected-backlog quality / shared-scheduled production default'
     : 'priority-aware one-shot / shared-scheduled production default';
   effectSummary.textContent = state.definition.summary;
   effectTimeline.replaceChildren(...timelineEntries(effectId, spec).map(([ms, text]) => {
@@ -641,7 +641,7 @@ function runABBenchmark() {
   const effectId = selectedEffectId();
   state.benchmark.restorePath = originalPath;
   setBenchmarkBusy(true);
-  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; emitter reference first, production shared-scheduled + queue-aware quality second`);
+  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; emitter reference first, production shared-scheduled + projected-backlog quality second`);
 
   runOverlapLeg('emitter', `${effectId} A/B emitter`, (emitterResult) => {
     scheduleBenchmarkTask(() => {
@@ -853,10 +853,10 @@ async function bootstrap() {
   const schedulerStats = particleAdapter.getStats();
   const thresholds = schedulerStats.backpressureThresholds;
   log(`PASS ${BUILD} bootstrap: Heavy Impact + Explosion registered through the same FXDeck runtime`);
-  log(`${BUILD} queue-aware scheduler: ${schedulerStats.schedulerBudgetMs}ms/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate ${schedulerStats.schedulerImmediateCount}, backpressure ${thresholds.medium}/${thresholds.high}/${thresholds.critical} queued particles`);
-  log('Production burst priorities: hero > high > medium > low; hero is never shed, low-value layers shed first under backlog');
+  log(`${BUILD} projected-backlog scheduler: ${schedulerStats.schedulerBudgetMs}ms/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate ${schedulerStats.schedulerImmediateCount}, backpressure ${thresholds.medium}/${thresholds.high}/${thresholds.critical} projected queued particles`);
+  log('Production burst priorities: hero > high > medium > low; hero is never shed, low-value layers shed first before projected backlog crosses pressure tiers');
   log('Synthetic Stress keeps backpressure disabled so backend workload remains matched; real Effect A/B exercises production quality policy');
-  log('Frame telemetry now reports p95/p99/worst frame and frame-time debt in addition to FPS/1% low/>20ms count');
+  log('Frame telemetry reports p95/p99/worst frame and frame-time debt in addition to FPS/1% low/>20ms count');
 }
 
 bootstrap().catch((error) => {
