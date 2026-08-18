@@ -13,7 +13,7 @@
 - **Current milestone:** P1 — Minimal FXDeck Core
 - **Status:** ACTIVE — implementation complete enough for exit validation
 - **Next implementation:** no new Core feature. Validate P1 lifecycle/direction in-browser; fix only concrete failures found by that validation.
-- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.2.0
+- **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.2.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
 ## Product target
@@ -77,6 +77,7 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [x] Effect definitions support authored `variant`.
 - [x] P1 test effect has visibly different authored revisions instead of magic labels: V1 primitive-circle burst; V2 SVG-spark rebuild; V2 Heavy denser/larger/longer.
 - [x] Core Lab exposes a prefab-like definition inspector showing authored values separately from resolved runtime values.
+- [x] Core Lab desktop UI uses a three-column workbench: authored/runtime controls, central canvas, and resolved definition/runtime inspector.
 
 ### Runtime parameters
 
@@ -200,6 +201,7 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P1.2.1:** Rebuilt Core Lab as a widescreen three-column editor/workbench: controls on the left, large live canvas in the center, authored/resolved inspector and runtime metrics on the right. Diagnostics remain in a compact strip below; mobile/tablet collapse responsively.
 - **P1.2.0:** Replaced four-way direction bucketing with a true direction contract. `FXDeck.play()` now accepts degrees or `{x,y}`, Core normalizes to a unit vector, and `testBurst` uses continuous tsParticles angular offset with authored cone spread. Core Lab exposes full 0–359° control and the resolved unit vector.
 - **P1.1.0:** Added authored-definition inspector to Core Lab. V1/V2/Heavy now expose real construction and parameter differences; authored data and runtime-resolved values are displayed separately.
 - Added shared FXDeck project navigation between P0 Spike, P1 Core and the legacy portfolio.
