@@ -26,10 +26,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.8.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.8.1</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.8.0 moves beyond one-shots and projectiles: Environment Emitter proves a sustained FXDeck source with live position/intensity updates and owned stop cleanup. Fireball remains the accepted moving-source baseline.</p>
+      <p class="intro">P3.8.1 makes the sustained Environment archetype explicit and inspectable: multiple independent sources, active-source markers, live move/density updates and a much clearer intensity range. Fireball remains the accepted moving-source baseline.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -100,7 +100,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Use Play for a single cue or sustained source. Environment Emitter supports live position/intensity updates; Debug / Tests → Effect Grid Lab remains the real-effect scaling harness.</p>
+            <p>Use Play for a single cue or sustained source. Environment Emitter can create multiple independent sources and live-update the active source position/intensity; Debug / Tests → Effect Grid Lab remains the real-effect scaling harness.</p>
           </div>
         </div>
 
@@ -191,7 +191,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.8.0</span>
+              <span class="runtime-hud__build">P3.8.1</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -272,7 +272,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.8.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.8.1.</pre>
           </section>
 
           <section class="debug-section">
@@ -294,7 +294,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.8.0"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.8.1"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
