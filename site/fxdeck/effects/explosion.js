@@ -1,9 +1,9 @@
-import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.5.0';
+import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.6.0';
 
 const EXPLOSION_SPEC = {
   label: 'Explosion',
-  revision: 'P3.5 queue-aware quality / v1',
-  summary: 'Directional gameplay explosion with semantic layer priorities: hero core/fireball, high sparks, medium debris and low smoke. Low-value layers can shed particles under scheduler backlog.',
+  revision: 'P3.6 effect-owned assets / v1',
+  summary: 'Directional gameplay explosion composed from hero core/fireball, sparks, debris and smoke on the shared runtime path.',
   duration: 760,
   timings: {
     flash: 0,
@@ -47,6 +47,11 @@ const EXPLOSION_SPEC = {
     spread: 100
   }
 };
+
+const EXPLOSION_ASSETS = [
+  { target: 'particles', src: './assets/fxdeck-explosion-core.svg', width: 128, height: 128 },
+  { target: 'particles', src: './assets/fxdeck-spark.svg', width: 32, height: 10 }
+];
 
 function scaledRange(range, scale) {
   return { min: range.min * scale, max: range.max * scale };
@@ -131,6 +136,7 @@ function explosionDefinition() {
     label: spec.label,
     summary: spec.summary,
     spec: structuredClone(spec),
+    assets: structuredClone(EXPLOSION_ASSETS),
 
     async play({ params, particles: particleAdapter, instance }) {
       if (!particleAdapter) throw new Error('explosion requires the particles adapter.');
@@ -182,44 +188,12 @@ function explosionDefinition() {
 
       runHook(instance, params.hooks, 'explosionFlash', payload);
 
-      const corePromise = burstTracked(
-        instance,
-        particleAdapter,
-        coreEmitter(spec.core, core),
-        params.position,
-        { priority: 'hero' }
-      );
-      const fireballPromise = burstTracked(
-        instance,
-        particleAdapter,
-        fireballEmitter(spec.fireball, fireball),
-        params.position,
-        { priority: 'hero' }
-      );
+      const corePromise = burstTracked(instance, particleAdapter, coreEmitter(spec.core, core), params.position, { priority: 'hero' });
+      const fireballPromise = burstTracked(instance, particleAdapter, fireballEmitter(spec.fireball, fireball), params.position, { priority: 'hero' });
 
-      scheduleAsync(instance, spec.timings.sparks, () => burstTracked(
-        instance,
-        particleAdapter,
-        sparkEmitter(spec.sparks, sparks),
-        params.position,
-        { priority: 'high' }
-      ));
-
-      scheduleAsync(instance, spec.timings.debris, () => burstTracked(
-        instance,
-        particleAdapter,
-        debrisEmitter(spec.debris, debris),
-        params.position,
-        { priority: 'medium' }
-      ));
-
-      scheduleAsync(instance, spec.timings.smoke, () => burstTracked(
-        instance,
-        particleAdapter,
-        smokeEmitter(spec.smoke, smoke),
-        params.position,
-        { priority: 'low' }
-      ));
+      scheduleAsync(instance, spec.timings.sparks, () => burstTracked(instance, particleAdapter, sparkEmitter(spec.sparks, sparks), params.position, { priority: 'high' }));
+      scheduleAsync(instance, spec.timings.debris, () => burstTracked(instance, particleAdapter, debrisEmitter(spec.debris, debris), params.position, { priority: 'medium' }));
+      scheduleAsync(instance, spec.timings.smoke, () => burstTracked(instance, particleAdapter, smokeEmitter(spec.smoke, smoke), params.position, { priority: 'low' }));
 
       instance.timeout(() => runHook(instance, params.hooks, 'screenKick', {
         ...payload,
