@@ -7,6 +7,7 @@
 > - Do not add speculative framework work just to fill the roadmap. New abstractions should be added only when a real effect proves they are needed.
 > - Every material FXDeck change should update both the relevant checkbox(es) and the changelog below.
 > - P0 remains the raw-tsParticles reference benchmark; later runtime performance is compared against it rather than rewriting it.
+> - **Browser labs must cache-bust every changed local module, not only the top-level HTML/script.** A build is not considered ready for visual validation if an edited effect/module can still resolve from an older cached URL.
 
 ## Current state
 
@@ -14,7 +15,7 @@
 - **Status:** ACTIVE — behavior/cleanup are working; P2.2 is now the visual-hierarchy pass and must be visually/performance revalidated against the P2.1 measured baseline.
 - **Previous milestone:** P1 — Minimal FXDeck Core — **DONE** after automated browser validation reported `P1 VALIDATION: PASS` on 2026-08-18.
 - **Next action:** visually review P2.2 as a single Heavy Impact, then rerun `Overlap ×6 + perf` at intensity `2.0` and compare particle count/frame time against the P2.1 baseline (`454 particles`, `55.4 FPS avg`, `20.0 1% low`).
-- **Current P2 Lab:** `site/heavy-impact-lab.html` — P2.2.0
+- **Current P2 Lab:** `site/heavy-impact-lab.html` — P2.2.1
 - **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
@@ -123,6 +124,7 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [x] Run P2.1 `Overlap ×6 + perf` and confirm final resource cleanup. **Measured 2026-08-18:** at intensity `0.5`, peak `6 emitters / 130 particles`, `60.0 FPS avg / 60.0 1% low / 0 >20ms`, final `0/0/0`; at intensity `2.0`, peak `6 emitters / 454 particles`, `55.4 FPS avg / 20.0 1% low / 5 >20ms`, final `0/0/0`.
 - [x] **High-load performance cliff confirmed:** the heavy overlap slowdown remains after screen-kick isolation. Both measured loads peaked at the same `6 emitters`, while particle count rose from `130` to `454`; current evidence therefore points strongly to particle/render workload as a major bottleneck and does **not** prove emitter-object churn is the dominant cause.
 - [x] **P2.2 visual hierarchy pass implemented:** hero sparks reduced from base `34` to `22`, made faster/shorter/tighter and oriented roughly with the emission direction; debris reduced from base `16` to `10`, made smaller/shorter/darker; contact flash shortened/reduced; pressure wave changed from a generic circular ring to a directional offset ellipse/arc; target/screen kick amplitudes slightly reduced. Runtime API remains unchanged.
+- [x] **P2.2.1 cache-safe deployment fix:** the P2 Lab now versions the imported `heavy-impact.js` module itself (`?v=p2.2.1`) in addition to the HTML/top-level script, preventing an older effect definition from surviving behind a newer visible build label.
 - [ ] Visually validate P2.2 single-impact hierarchy: contact reads first, aligned hero sparks read as the primary particle gesture, debris remains secondary, directional wave supports rather than dominates, recoil feels coherent.
 - [ ] Rerun P2.2 `Overlap ×6 + perf` at intensity `2.0` and compare against the P2.1 baseline (`454 particles`, `55.4 FPS avg`, `20.0 1% low`, `5 >20ms`).
 - [ ] Validate representative Heavy Impact performance/behavior on mobile.
@@ -214,6 +216,7 @@ Do not build these pre-emptively:
 10. **Shared Emission Points are a first-class P3 candidate, not a presumed fix.** P2 exposed a real overlap frame-time problem, but the first measured comparison kept peak emitter count at `6` while particle count changed from `130` to `454` and performance changed from locked 60 FPS to severe 1% lows. P3 must therefore benchmark matched particle counts before attributing the gain to reduced emitter churn.
 11. **Overlapping screen impulses should be aggregated.** P2.1 demonstrated that firing multiple independent transform animations on the same camera/stage target gives misleading and unstable feedback. The Lab now accumulates kick impulses through one controller; a reusable runtime helper is considered only if later effects prove the same need.
 12. **Visual hierarchy is also a performance control.** P2.2 deliberately reduces low-value particle density before runtime-level optimization: fewer aligned hero particles can communicate a stronger hit while lowering render load. Runtime architecture should not compensate for effects that are simply over-authored.
+13. **Visible build labels must correspond to the modules actually executing.** When a local ESM dependency changes, its import URL must receive a new cache key/version. Versioning only the HTML or top-level controller is insufficient for reliable GitHub Pages iteration.
 
 ---
 
@@ -221,6 +224,7 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P2.2.1:** Fixed stale-module deployment behavior. `heavy-impact-lab.js` now imports `heavy-impact.js?v=p2.2.1`, and the Lab HTML/CSS/controller cache keys plus visible build label were bumped to P2.2.1. Added a project rule that every changed browser module must receive a new cache key before a build is considered ready for validation.
 - **P2.2.0:** Heavy Impact visual-hierarchy pass. Reduced hero spark base count `34 → 22`, tightened spread `38° → 28°`, shortened lifetime and aligned spark image rotation approximately with emission direction; reduced debris base count `16 → 10`, size/lifetime/brightness; shortened contact flash; converted the generic pressure ring into a directional offset elliptical arc; slightly reduced target/screen kick. Same public `FXDeck.play()` contract and lifecycle model. Rerun the P2.1 overlap benchmark to measure whether the cleaner authored look also lowers the high-load frame-time cliff.
 - **P2.1 measured baseline:** User ran `Overlap ×6 + perf`. Intensity `0.5` produced peak `6 emitters / 130 particles` at `60.0 FPS avg / 60.0 1% low / 0 >20ms`; intensity `2.0` produced peak `6 emitters / 454 particles` at `55.4 FPS avg / 20.0 1% low / 5 >20ms`. Both returned final `0/0/0`. This confirms a real high-load frame-time cliff while also showing that emitter count alone does not explain it; P3 must separate particle/render cost from emitter-object overhead.
 - **P2.1.0:** Added measured overlap diagnostics (rolling FPS, 1% low, >20 ms frame count, automatic `Overlap ×6` performance capture with peak resources and final cleanup state). Replaced competing whole-stage screen-kick animations with one accumulated kick controller on an inner gameplay layer, so visual camera motion no longer masquerades as frame stutter and overlapping kicks combine predictably.
