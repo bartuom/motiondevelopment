@@ -1,4 +1,4 @@
-const BUILD = 'P3.7.2';
+const BUILD = 'P3.7.3';
 
 const primary = {
   effect: document.querySelector('#effect-select'),
@@ -35,7 +35,7 @@ function addStylesheet() {
   if (document.querySelector('link[data-effect-grid-runtime-controls]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = './effect-grid-runtime-controls.css?v=p3.7.2';
+  link.href = './effect-grid-runtime-controls.css?v=p3.7.3';
   link.dataset.effectGridRuntimeControls = 'true';
   document.head.appendChild(link);
 }
