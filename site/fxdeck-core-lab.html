@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P1 minimal core validation lab.">
   <title>FXDeck Core Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=1">
-  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.2.0">
+  <link rel="stylesheet" href="./fxdeck-core-lab.css?v=p1.2.1">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -23,14 +23,19 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P1 Minimal Core</p>
-        <h1>FXDeck Core Lab</h1>
-        <p class="intro">Version = an authored revision of an effect. Variant = an authored alternative inside that revision. Position, intensity and true 360° direction are per-play runtime inputs normalized by FXDeck Core before the effect receives them.</p>
+        <p class="eyebrow">FXDeck / P1 Minimal Core / Build P1.2.1</p>
+        <h1>Core Lab</h1>
       </div>
+      <p class="intro">Authored definition on the left, live VFX canvas in the center, resolved runtime output on the right.</p>
     </header>
 
-    <section class="panel">
-      <aside class="sidebar">
+    <section class="workbench">
+      <aside class="controls-pane pane">
+        <div class="pane-heading">
+          <p class="label">01 / Input</p>
+          <h2>Effect controls</h2>
+        </div>
+
         <div class="control">
           <p class="label">Effect</p>
           <select disabled><option>testBurst</option></select>
@@ -60,7 +65,7 @@
         <div class="control">
           <div class="range-row"><span>Runtime direction</span><strong id="direction-value">25°</strong></div>
           <input id="direction" type="range" min="0" max="359" value="25" step="1">
-          <p class="control-note">Full 360° input. FXDeck normalizes this to a unit vector; the effect uses that vector as the axis of its authored directional cone.</p>
+          <p class="control-note">Full 360°. Core normalizes the angle to a unit vector used by the effect.</p>
         </div>
 
         <div class="actions">
@@ -69,38 +74,44 @@
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
-        <dl class="meta">
-          <div><dt>Build</dt><dd>P1.2.0</dd></div>
-          <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
-          <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
-          <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
-          <div><dt>Canvas scale</dt><dd id="metric-scale">--</dd></div>
-        </dl>
+        <div class="input-note">
+          <p class="label">Runtime inputs</p>
+          <p><strong>Version / variant</strong> select authored data. <strong>Intensity / direction / position</strong> modify only the current play call.</p>
+        </div>
       </aside>
 
-      <div id="fxdeck-stage" class="stage">
-        <div class="grid" aria-hidden="true"></div>
-        <div id="fxdeck-core-particles" class="particles" aria-hidden="true"></div>
-        <div id="spawn-marker" class="marker" aria-hidden="true"><span></span></div>
-        <div class="caption">
-          <strong>Click anywhere to play the selected EffectDefinition</strong>
-          <span>Direction is now continuous: try 25°, 73°, 211° or any other angle.</span>
+      <section class="canvas-pane">
+        <div class="canvas-toolbar">
+          <div>
+            <p class="label">02 / Preview</p>
+            <strong>Gameplay canvas</strong>
+          </div>
+          <span>Click to set position + play</span>
         </div>
-      </div>
-    </section>
 
-    <section class="definition-card">
-      <div class="definition-heading">
-        <div>
-          <p class="label">Selected definition / prefab-like inspector</p>
-          <h2 id="definition-title">testBurst / v2 / default</h2>
-          <p id="definition-summary" class="definition-summary"></p>
+        <div id="fxdeck-stage" class="stage">
+          <div class="grid" aria-hidden="true"></div>
+          <div id="fxdeck-core-particles" class="particles" aria-hidden="true"></div>
+          <div id="spawn-marker" class="marker" aria-hidden="true"><span></span></div>
+          <div class="caption">
+            <strong>Live EffectDefinition preview</strong>
+            <span>Try arbitrary directions such as 25°, 73° or 211°.</span>
+          </div>
         </div>
-        <span id="definition-revision" class="definition-revision"></span>
-      </div>
+      </section>
 
-      <div class="definition-columns">
-        <div class="definition-block">
+      <aside class="inspector-pane pane">
+        <div class="pane-heading inspector-heading">
+          <div>
+            <p class="label">03 / Output</p>
+            <h2 id="definition-title">testBurst / v2 / default</h2>
+          </div>
+          <span id="definition-revision" class="definition-revision"></span>
+        </div>
+
+        <p id="definition-summary" class="definition-summary"></p>
+
+        <section class="inspector-section">
           <p class="label">Authored definition</p>
           <dl class="definition-grid">
             <div><dt>Construction</dt><dd id="def-shape">--</dd></div>
@@ -111,10 +122,10 @@
             <div><dt>Direction spread</dt><dd id="def-spread">--</dd></div>
             <div><dt>Effect lifecycle</dt><dd id="def-stop">--</dd></div>
           </dl>
-        </div>
+        </section>
 
-        <div class="definition-block runtime-block">
-          <p class="label">Resolved for current play call</p>
+        <section class="inspector-section resolved-section">
+          <p class="label">Resolved for current play</p>
           <dl class="definition-grid">
             <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
             <div><dt>Particles</dt><dd id="resolved-count">--</dd></div>
@@ -123,32 +134,41 @@
             <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
             <div><dt>Selected asset</dt><dd id="resolved-id">--</dd></div>
           </dl>
-        </div>
-      </div>
+        </section>
 
-      <p class="definition-explainer"><strong>Version/variant select authored data.</strong> Intensity, direction and position are runtime inputs; direction is normalized to a unit vector and does not create a new authored version.</p>
+        <section class="inspector-section runtime-section">
+          <p class="label">Runtime state</p>
+          <dl class="meta">
+            <div><dt>Build</dt><dd>P1.2.1</dd></div>
+            <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
+            <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
+            <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
+            <div><dt>Canvas scale</dt><dd id="metric-scale">--</dd></div>
+          </dl>
+        </section>
+      </aside>
     </section>
 
-    <section class="lower">
-      <article class="card">
-        <p class="label">Public API being tested</p>
-        <h2>Current call</h2>
-        <pre id="api-preview" class="api"></pre>
-        <div class="gate">
-          <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>version</span><span>variant</span><span>true direction</span><span>EffectInstance</span><span>ParticleAdapter</span>
+    <section class="diagnostics">
+      <article class="diagnostic-card api-card">
+        <div class="diagnostic-heading">
+          <p class="label">Public API / current call</p>
+          <div class="gate">
+            <span>register</span><span>play</span><span>stop</span><span>stopAll</span><span>true direction</span>
+          </div>
         </div>
+        <pre id="api-preview" class="api"></pre>
       </article>
 
-      <article class="card">
+      <article class="diagnostic-card log-card">
         <p class="label">P1 runtime log</p>
-        <h2>Lifecycle</h2>
-        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.2.0.</pre>
+        <pre id="core-log" class="log">FXDeck Core Lab ready. Build P1.2.1.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.2.0"></script>
+  <script type="module" src="./js/fxdeck-core-lab.js?v=p1.2.1"></script>
 </body>
 </html>
