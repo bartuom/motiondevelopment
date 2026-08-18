@@ -14,10 +14,10 @@
 ## Current state
 
 - **Current milestone:** P3 — Extract Proven Abstractions / Production Runtime
-- **Status:** ACTIVE — P3.1 adds a matched synthetic particle-only A/B benchmark after the real Heavy Impact A/B showed a promising shared-direct result but unequal peak particle counts.
+- **Status:** ACTIVE — P3.1.1 hardens the matched synthetic particle-only A/B benchmark to three alternating emitter/shared rounds and reports median results, reducing the run-to-run noise observed in the real Heavy Impact test.
 - **Previous milestone:** P2 — Heavy Impact Vertical Slice — **DONE** after desktop visual acceptance and clean P2.3 overlap benchmark on 2026-08-18.
-- **Next action:** in Runtime Lab **Build P3.1.0**, run **`Synthetic Stress A/B` at 800 particles**. Accept the comparison only if the final log reports `workload MATCHED`. If both paths remain effectively locked at 60 FPS, repeat at 1200. Use spawn time, avg FPS, 1% low and >20 ms spikes to decide whether Shared Emission Points materially reduce backend cost.
-- **Current Runtime Lab:** `site/heavy-impact-lab.html` — P3.1.0
+- **Next action:** in Runtime Lab **Build P3.1.1**, run **`Synthetic Stress A/B` at 800 particles**. Accept the comparison only if the final median line reports `workload MATCHED` and `cleanup CLEAN`. If both paths remain effectively locked at 60 FPS, repeat at 1200. Use median spawn time, avg FPS, 1% low and >20 ms spikes to decide whether Shared Emission Points materially reduce backend cost.
+- **Current Runtime Lab:** `site/heavy-impact-lab.html` — P3.1.1
 - **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
@@ -148,10 +148,10 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [x] **Prototype Shared Emission Points path:** `TsParticlesAdapter` now supports `burstMode = "emitter" | "shared"`. The shared path pushes the authored particle options directly into the persistent container at the gameplay position, assigns a unique group per burst and removes only that group's remaining particles on instance cleanup.
 - [x] **P3 Runtime Lab A/B harness:** the existing Heavy Impact page is promoted to a Runtime Lab instead of creating another milestone page. It can switch the particle path manually or automatically run `Heavy Impact ×6` first with per-play emitters and then with shared-direct particles, recording avg FPS, 1% low, spikes, peak particles, emitter count and shared-group count.
 - [x] **P3.0 real-effect A/B directional result recorded:** at intensity `2.0`, emitter path reported `59.3 FPS avg / 30.0 1% low / 1 spike / 237 peak particles`; shared-direct reported `60.0 / 60.0 / 0 spikes / 384 peak particles`. Shared looks promising because it remained smoother despite ~62% more peak particles, but the unequal peaks mean this is **not** sufficient evidence for production adoption.
-- [x] **P3.1 matched synthetic backend benchmark implemented:** Runtime Lab now has particle-only presets `400 / 800 / 1200`, using the same requested count, simple stationary particle options and point layout for both paths. It reports burst spawn time, actual ready/peak particles, avg FPS, 1% low, spikes, backend resource counts and explicit `workload MATCHED/MISMATCHED`.
-- [ ] **Run P3.1 matched stress at 800 particles.** If both paths remain effectively locked at 60 FPS, repeat at 1200. A performance conclusion requires `workload MATCHED`.
+- [x] **P3.1.1 matched synthetic backend benchmark implemented:** Runtime Lab now has particle-only presets `400 / 800 / 1200`, using the same requested count, simple stationary particle options and point layout for both paths. Each load runs 3 rounds with alternating `emitter → shared` / `shared → emitter` order and reports the median spawn time/frame metrics plus actual peak particles, cleanup and explicit `workload MATCHED/MISMATCHED`.
+- [ ] **Run P3.1.1 matched stress at 800 particles.** If both paths remain effectively locked at 60 FPS, repeat at 1200. A performance conclusion requires `workload MATCHED` and `cleanup CLEAN`.
 - [ ] **Shared Emission Points / Burst Pooling adoption decision:** adopt shared path as production default only if matched stress materially reduces backend/spawn/frame cost without breaking visual equivalence, direction, positioning, lifecycle or cleanup.
-- [ ] **Isolate emitter overhead from particle workload:** use P3.1 matched stress to separate emitter construction/object churn from particle/render workload; do not infer this from Heavy Impact peaks that differ materially.
+- [ ] **Isolate emitter overhead from particle workload:** use P3.1.1 matched stress to separate emitter construction/object churn from particle/render workload; do not infer this from Heavy Impact peaks that differ materially.
 - [ ] Keep DOM flash/wave helpers Lab-local until a second production effect proves they are genuinely reusable.
 - [ ] Evaluate the accumulated screen-kick controller as a reusable gameplay/screen impulse helper when the next effect also needs it.
 - [ ] Formalize asset preload/ownership required by real effects.
@@ -234,7 +234,7 @@ Do not build these pre-emptively:
 17. **One-shot burst is now a semantic adapter operation.** Heavy Impact asks for a burst; `TsParticlesAdapter` may satisfy it through an emitter or direct persistent-container particles. Effect definitions should not encode backend object topology.
 18. **Shared direct bursts must retain per-instance ownership.** P3 groups directly-pushed particles by a unique burst id so `EffectInstance.stop()` can clean only its own particles rather than calling a global particle clear.
 19. **A visible browser build number is part of the release contract.** Any user-testable behavior, benchmark, UI or runtime change must advance the visible `P#.x.x` label; commits under an unchanged label are internal work and must not be handed off as a new build.
-20. **Real-effect A/B and matched backend A/B answer different questions.** Heavy Impact measures production behavior but may produce different temporal particle peaks across strategies. P3.1 synthetic stress is the authoritative test for emitter-object/backend overhead because it explicitly verifies matched particle workload.
+20. **Real-effect A/B and matched backend A/B answer different questions.** Heavy Impact measures production behavior but may produce different temporal particle peaks across strategies. P3.1 synthetic stress is the authoritative test for emitter-object/backend overhead because it explicitly verifies matched particle workload; P3.1.1 uses three rounds and alternating order because the user observed meaningful run-to-run variance at the same shared-direct load.
 
 ---
 
@@ -242,6 +242,7 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P3.1.1 — benchmark repeatability:** Hardened Synthetic Stress A/B to 3 rounds per path with alternating execution order (`emitter → shared`, then `shared → emitter`, then `emitter → shared`). Final decision line reports median spawn/frame metrics and requires both `workload MATCHED` and `cleanup CLEAN`. This addresses observed run-to-run variance where the same shared-direct `384`-particle Heavy Impact load produced both `59.3/30/1 spike` and `60/60/0` samples.
 - **P3.1.0 — matched synthetic backend stress:** Added `Synthetic Stress A/B` to Runtime Lab with `400 / 800 / 1200` particle presets spread across `16 / 24 / 32` emission points. Both paths receive the same requested particle count and same simple particle options. The harness reports spawn time, actual ready/peak particles, avg FPS, 1% low, >20 ms spikes, emitter/shared-group counts, cleanup and an explicit `workload MATCHED/MISMATCHED` verdict.
 - **P3.1.0 — release/version discipline:** Advanced the visible Runtime Lab build from P3.0.0 to P3.1.0, refreshed module cache keys, and made visible version advancement mandatory for every user-testable browser iteration. Repository release flow is now explicitly `change → push main → Pages → live/cache verification → user test`.
 - **P3.0 real-effect A/B result:** User tested intensity `2.0`. Per-play emitter path reported `59.3 FPS avg / 30.0 1% low / 1 >20ms / 237 peak particles`; shared-direct reported `60.0 / 60.0 / 0 / 384 peak particles`. This is encouraging for shared direct, but because shared carried ~62% more peak particles the result is directional evidence only, not a matched adoption benchmark.
