@@ -6,7 +6,7 @@
   <meta name="description" content="FXDeck P2 Heavy Impact vertical slice lab.">
   <title>FXDeck Heavy Impact Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.2.1">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.3.0">
 </head>
 <body>
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.2.1</p>
+        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.3.0</p>
         <h1>Heavy Impact</h1>
       </div>
-      <p class="intro">Visual-hierarchy pass: fewer aligned hero sparks, smaller debris, shorter flash and a directional pressure wave while preserving the same FXDeck.play() contract.</p>
+      <p class="intro">Readability pass: the directional pressure response now has a stronger leading edge and clearer separation from the contact flash while preserving the same FXDeck.play() contract.</p>
     </header>
 
     <section class="workbench">
@@ -68,8 +68,8 @@
         </div>
 
         <div class="input-note">
-          <p class="label">P2.2 focus</p>
-          <p>One impact should read as contact first, then a small set of hero sparks, secondary debris and a pressure response. Overlap remains a stress test, not the target look.</p>
+          <p class="label">P2.3 focus</p>
+          <p>The pressure wave should now be clearly visible as a short directional response just after contact, while remaining secondary to the flash and hero sparks.</p>
         </div>
       </aside>
 
@@ -137,7 +137,7 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P2.2.1</dd></div>
+            <div><dt>Build</dt><dd>P2.3.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
@@ -165,13 +165,13 @@
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.2.1.</pre>
+        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.3.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p2.2.1"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p2.3.0"></script>
 </body>
 </html>
