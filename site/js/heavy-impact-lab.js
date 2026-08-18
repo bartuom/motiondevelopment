@@ -1,9 +1,8 @@
-import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
-import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.5.1';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.5.1';
-import { registerExplosion } from '../fxdeck/effects/explosion.js?v=p3.5.1';
+import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.6.0';
+import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.6.0';
+import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.6.0';
 
-const BUILD = 'P3.5.1';
+const BUILD = 'P3.6.0';
 const FRAME_BUDGET_MS = 1000 / 60;
 const PRESSURE_RANK = { none: 0, medium: 1, high: 2, critical: 3 };
 
@@ -96,7 +95,9 @@ function nextFrame() {
 }
 
 function selectedEffectId() {
-  return effectInput?.value === 'heavyImpact' ? 'heavyImpact' : 'explosion';
+  const value = effectInput?.value;
+  if (value === 'heavyImpact' || value === 'explosion' || value === 'fireball') return value;
+  return 'fireball';
 }
 
 function pathLabel(path) {
@@ -401,6 +402,16 @@ function animateTransient(element, keyframes, options) {
 
 function createHooks() {
   return {
+    fireballLaunch({ position, directionDegrees, intensity }) {
+      const flash = createTransient('impact-flash', position);
+      const scale = .48 + Math.min(1.4, intensity) * .12;
+      return animateTransient(flash, [
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(.2)` },
+        { opacity: .75, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${scale})`, offset: .25 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${scale * 1.35})` }
+      ], { duration: 120, easing: 'cubic-bezier(.08,.74,.14,1)', fill: 'forwards' });
+    },
+
     contactFlash({ position, directionDegrees, intensity }) {
       const flash = createTransient('impact-flash', position);
       const scale = Math.min(1.35, .76 + intensity * .2);
@@ -466,7 +477,7 @@ function timelineEntries(effectId, spec) {
     return [
       [spec.timings.contactFlash, 'Contact flash'],
       [spec.timings.sparks, 'Hero sparks'],
-      [spec.timings.debris, 'Medium-priority debris'],
+      [spec.timings.debris, 'Directional debris'],
       [spec.timings.pressureWave, 'Directional pressure wave'],
       [spec.timings.targetKick, 'Target kick hook'],
       [spec.timings.screenKick, 'Screen kick hook'],
@@ -474,13 +485,22 @@ function timelineEntries(effectId, spec) {
     ];
   }
 
+  if (effectId === 'fireball') {
+    return [
+      [0, 'Launch + moving head/trail emitters'],
+      [spec.travelDuration, 'Impact position reached'],
+      [spec.travelDuration, 'Reuse Explosion cue'],
+      [spec.travelDuration, 'Projectile lifecycle ends']
+    ];
+  }
+
   return [
     [spec.timings.flash, 'Explosion flash hook'],
-    [spec.timings.core, 'Hero core sprite + fireball'],
-    [spec.timings.sparks, 'High-priority sparks'],
-    [spec.timings.debris, 'Medium-priority debris'],
+    [spec.timings.core, 'Core sprite + fireball'],
+    [spec.timings.sparks, 'Directional sparks'],
+    [spec.timings.debris, 'Blast debris'],
     [spec.timings.screenKick, 'Screen kick hook'],
-    [spec.timings.smoke, 'Low-priority smoke'],
+    [spec.timings.smoke, 'Smoke tail'],
     [spec.duration, 'Lifecycle cleanup']
   ];
 }
@@ -499,13 +519,29 @@ function resolvedPreview() {
       intensity,
       direction,
       layers: [
-        ['Sparks / hero', `${Math.max(1, Math.round(spec.sparks.baseCount * intensity))} particles`],
-        ['Debris / medium', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
+        ['Sparks', `${Math.max(1, Math.round(spec.sparks.baseCount * intensity))} particles`],
+        ['Debris', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
         ['Pressure wave', `${spec.timings.pressureWave} ms hook`],
         ['Contact flash', `${spec.timings.contactFlash} ms hook`],
         ['Target kick', `${(8.5 * intensity).toFixed(1)} px`]
       ],
       screenKick: 4.5 * Math.min(1.5, intensity)
+    };
+  }
+
+  if (effectId === 'fireball') {
+    return {
+      effectId,
+      intensity,
+      direction,
+      layers: [
+        ['Projectile head', 'explicit moving emitter'],
+        ['Trail', 'explicit moving emitter'],
+        ['Travel', `${spec.travelDistance} px`],
+        ['Duration', `${spec.travelDuration} ms`],
+        ['Impact', 'FXDeck.play("explosion")']
+      ],
+      screenKick: 0
     };
   }
 
@@ -515,11 +551,11 @@ function resolvedPreview() {
     intensity,
     direction,
     layers: [
-      ['Core / hero', '1 image particle'],
-      ['Fireball / hero', `${Math.max(1, Math.round(spec.fireball.baseCount * countScale))} particles`],
-      ['Sparks / high', `${Math.max(1, Math.round(spec.sparks.baseCount * countScale))} particles`],
-      ['Debris / medium', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
-      ['Smoke / low', `${Math.max(1, Math.round(spec.smoke.baseCount * Math.max(.75, intensity)))} particles`]
+      ['Core', '1 image particle'],
+      ['Fireball', `${Math.max(1, Math.round(spec.fireball.baseCount * countScale))} particles`],
+      ['Sparks', `${Math.max(1, Math.round(spec.sparks.baseCount * countScale))} particles`],
+      ['Debris', `${Math.max(1, Math.round(spec.debris.baseCount * Math.max(.7, intensity)))} particles`],
+      ['Smoke', `${Math.max(1, Math.round(spec.smoke.baseCount * Math.max(.75, intensity)))} particles`]
     ],
     screenKick: 6.2 * Math.min(1.6, intensity)
   };
@@ -534,11 +570,13 @@ function updateEffectUi() {
 
   authoredVersionLabel.textContent = `v1 — ${label}`;
   previewTitle.textContent = `${label} production probe`;
-  previewNote.textContent = 'Click to move target + play selected effect';
+  previewNote.textContent = effectId === 'fireball'
+    ? 'Click to choose launch point; direction controls travel'
+    : 'Click to move target + play selected effect';
   captionTitle.textContent = `${effectId} / v1 / default`;
-  captionNote.textContent = effectId === 'explosion'
-    ? 'projected-backlog quality / shared-scheduled production default'
-    : 'priority-aware one-shot / shared-scheduled production default';
+  captionNote.textContent = effectId === 'fireball'
+    ? 'moving source → trail → Explosion handoff'
+    : 'production runtime cue';
   effectSummary.textContent = state.definition.summary;
   effectTimeline.replaceChildren(...timelineEntries(effectId, spec).map(([ms, text]) => {
     const row = document.createElement('div');
@@ -558,14 +596,16 @@ function updateInspector() {
   inspector.effect.textContent = `${resolved.effectId}/v1/default`;
   inspector.direction.textContent = `${resolved.direction.degrees.toFixed(0)}° → ${formatVector(resolved.direction.vector)}`;
   inspector.intensity.textContent = `${resolved.intensity.toFixed(1)}×`;
-  inspector.path.textContent = pathLabel(state.particleAdapter?.getBurstMode?.() ?? particlePathInput.value);
+  inspector.path.textContent = resolved.effectId === 'fireball'
+    ? `moving emitter + ${pathLabel(state.particleAdapter?.getBurstMode?.() ?? particlePathInput.value)} impact`
+    : pathLabel(state.particleAdapter?.getBurstMode?.() ?? particlePathInput.value);
   resolved.layers.forEach(([label, value], index) => {
     const row = inspector.layers[index];
     if (!row) return;
     row.label.textContent = label;
     row.value.textContent = value;
   });
-  inspector.screenKick.textContent = `${resolved.screenKick.toFixed(1)} px`;
+  inspector.screenKick.textContent = resolved.effectId === 'fireball' ? 'on impact' : `${resolved.screenKick.toFixed(1)} px`;
   inspector.position.textContent = `${Math.round(state.position.x)}, ${Math.round(state.position.y)} CSS px`;
 }
 
@@ -578,6 +618,9 @@ function updateApiPreview() {
 function readySummary(effectId, resolved) {
   if (effectId === 'heavyImpact') {
     return `sparks ${resolved.sparks.count}, debris ${resolved.debris.count}, duration ${resolved.duration}ms`;
+  }
+  if (effectId === 'fireball') {
+    return `moving head + trail, ${resolved.distance}px over ${resolved.travelDuration}ms → ${resolved.impactEffect}`;
   }
   return `core ${resolved.core.count}, fireball ${resolved.fireball.count}, sparks ${resolved.sparks.count}, debris ${resolved.debris.count}, smoke ${resolved.smoke.count}, duration ${resolved.duration}ms`;
 }
@@ -641,7 +684,7 @@ function runABBenchmark() {
   const effectId = selectedEffectId();
   state.benchmark.restorePath = originalPath;
   setBenchmarkBusy(true);
-  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; emitter reference first, production shared-scheduled + projected-backlog quality second`);
+  log(`EFFECT A/B START: ${effectId} intensity ${Number(intensityInput.value).toFixed(1)}; diagnostic emitter first, shared-scheduled second`);
 
   runOverlapLeg('emitter', `${effectId} A/B emitter`, (emitterResult) => {
     scheduleBenchmarkTask(() => {
@@ -707,7 +750,7 @@ async function runCancellationGate() {
     await nextFrame();
     assertResourcesClean(state.fx.getStats(), 'stopAll late-respawn check');
     log('PASS CANCEL GATE phase 2: FXDeck.stopAll() cleared instances/groups/particles/queue and delayed work did not respawn');
-    log(`${BUILD} CANCEL GATE: PASS — ownership and cancellation remain clean with priority-aware scheduler`);
+    log(`${BUILD} CANCEL GATE: PASS — ownership and cancellation remain clean`);
   } catch (error) {
     state.fx.stopAll('cancel-gate-failed');
     screenKickController.reset();
@@ -740,14 +783,17 @@ async function bootstrap() {
   log('BOOTSTRAP loadFull(tsParticles)');
   await globalThis.loadFull(globalThis.tsParticles);
 
+  const fx = new FXDeckRuntime();
+  registerProductionEffects(fx);
+  const particlePreload = fx
+    .getAssets({ target: 'particles' })
+    .map(({ target, ...asset }) => asset);
+
   const particleAdapter = await new TsParticlesAdapter({
     engine: globalThis.tsParticles,
     stage,
     hostId: 'heavy-impact-particles',
-    preload: [
-      { src: './assets/fxdeck-spark.svg', width: 32, height: 10 },
-      { src: './assets/fxdeck-explosion-core.svg', width: 128, height: 128 }
-    ],
+    preload: particlePreload,
     burstMode: particlePathInput.value,
     sharedFrameBudgetMs: 6,
     sharedChunkSize: 8,
@@ -757,9 +803,7 @@ async function bootstrap() {
     backpressureCritical: 240
   }).init();
 
-  const fx = new FXDeckRuntime({ adapters: { particles: particleAdapter } });
-  registerHeavyImpact(fx);
-  registerExplosion(fx);
+  fx.setAdapter('particles', particleAdapter);
   state.fx = fx;
   state.particleAdapter = particleAdapter;
 
@@ -850,13 +894,10 @@ async function bootstrap() {
   updateEffectUi();
   requestAnimationFrame(metricsLoop);
 
-  const schedulerStats = particleAdapter.getStats();
-  const thresholds = schedulerStats.backpressureThresholds;
-  log(`PASS ${BUILD} bootstrap: Heavy Impact + Explosion registered through the same FXDeck runtime`);
-  log(`${BUILD} projected-backlog scheduler: ${schedulerStats.schedulerBudgetMs}ms/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate ${schedulerStats.schedulerImmediateCount}, backpressure ${thresholds.medium}/${thresholds.high}/${thresholds.critical} projected queued particles`);
-  log('Production burst priorities: hero > high > medium > low; hero is never shed, low-value layers shed first before projected backlog crosses pressure tiers');
-  log('Synthetic Stress keeps backpressure disabled so backend workload remains matched; real Effect A/B exercises production quality policy');
-  log('Frame telemetry reports p95/p99/worst frame and frame-time debt in addition to FPS/1% low/>20ms count');
+  log(`PASS ${BUILD} bootstrap: Heavy Impact + Explosion + Fireball registered from production catalog`);
+  log(`${BUILD} effect-owned assets: ${particlePreload.length} unique particle preload assets collected from registered definitions`);
+  log('Fireball architecture: explicit moving head/trail emitters → runtime position updates → existing Explosion cue at impact');
+  log('Performance/backpressure diagnostics remain available but are not the P3.6 gate; current focus is completing runtime capabilities');
 }
 
 bootstrap().catch((error) => {
