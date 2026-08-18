@@ -5,10 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="FXDeck technology spike for validating tsParticles as a gameplay VFX backend.">
   <title>FXDeck Technology Spike</title>
+  <link rel="stylesheet" href="./fxdeck-project-nav.css?v=1">
   <link rel="stylesheet" href="./webfx-lab.css">
   <link rel="stylesheet" href="./fxdeck-log-tools.css?v=p0.3.0">
 </head>
 <body>
+  <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
+    <div class="fxdeck-project-nav__inner">
+      <a class="fxdeck-project-nav__brand" href="./webfx-lab.html">FXDeck</a>
+      <div class="fxdeck-project-nav__links">
+        <a href="./webfx-lab.html" aria-current="page">P0 Spike</a>
+        <a href="./fxdeck-core-lab.html">P1 Core</a>
+        <a class="is-legacy" href="./">Portfolio</a>
+      </div>
+    </div>
+  </nav>
+
   <main class="lab-shell">
     <header class="lab-header">
       <div>
@@ -16,7 +28,6 @@
         <h1>FXDeck Lab</h1>
         <p class="intro">Backend validation before framework work: exact spawn, moving emitter, burst stress, cleanup, resize, image particles, DOM/particle compositing and measured performance headroom.</p>
       </div>
-      <a class="back-link" href="./">Legacy portfolio</a>
     </header>
 
     <section class="lab-panel">
