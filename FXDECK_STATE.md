@@ -12,10 +12,10 @@
 ## Current state
 
 - **Current milestone:** P2 — Heavy Impact Vertical Slice
-- **Status:** ACTIVE — behavior/cleanup are working; P2.3 is the pressure-wave readability pass and still needs visual/performance revalidation.
+- **Status:** ACTIVE — the authored P2.2/P2.3 simplification materially improved the provisional high-load result, and P2.3.1 now hardens the benchmark so the final desktop comparison is uncontaminated by manual/re-entrant plays.
 - **Previous milestone:** P1 — Minimal FXDeck Core — **DONE** after automated browser validation reported `P1 VALIDATION: PASS` on 2026-08-18.
-- **Next action:** visually review P2.3 as a single Heavy Impact, confirm the directional pressure wave is now clearly readable, then rerun `Overlap ×6 + perf` at intensity `2.0` and compare against the P2.1 baseline (`454 particles`, `55.4 FPS avg`, `20.0 1% low`).
-- **Current P2 Lab:** `site/heavy-impact-lab.html` — P2.3.0
+- **Next action:** on P2.3.1 set intensity `2.0`, allow the stage to become idle, then run exactly one `Overlap ×6 + perf`. The harness now resets to `0/0/0` itself and locks competing input. Compare the clean result against P2.1 (`454 particles`, `55.4 FPS avg`, `20.0 1% low`, `5 >20ms`). Also confirm the P2.3 pressure wave is visually readable in a single impact.
+- **Current P2 Lab:** `site/heavy-impact-lab.html` — P2.3.1
 - **Current Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1
 - **Reference benchmark:** `site/webfx-lab.html` — P0.3.0
 
@@ -126,12 +126,14 @@ FXDeck is **not** intended to become another particle simulator, node editor, mi
 - [x] **P2.2 visual hierarchy pass implemented:** hero sparks reduced from base `34` to `22`, made faster/shorter/tighter and oriented roughly with the emission direction; debris reduced from base `16` to `10`, made smaller/shorter/darker; contact flash shortened/reduced; pressure wave changed from a generic circular ring to a directional offset ellipse/arc; target/screen kick amplitudes slightly reduced. Runtime API remains unchanged.
 - [x] **P2.2.1 cache-safe deployment fix:** the P2 Lab versions the imported `heavy-impact.js` module itself (`?v=p2.2.1`) in addition to the HTML/top-level script, preventing an older effect definition from surviving behind a newer visible build label.
 - [x] **P2.3 pressure-wave readability pass implemented:** enlarged the directional arc, increased its contrast/glow and leading-edge emphasis, moved it farther forward along the runtime direction, and changed its animation to a short high-opacity peak followed by a fast fade. No Core/API change.
+- [x] **P2.3 provisional high-load improvement observed:** one intensity `2.0` run reported `269 particles`, `58.0 FPS avg`, `30.0 1% low`, `3 >20ms`, final `0/0/0`, versus the P2.1 baseline `454 particles`, `55.4 FPS avg`, `20.0 1% low`, `5 >20ms`. This is roughly 41% fewer peak particles, +2.6 avg FPS, +50% 1% low and 40% fewer >20ms frames. **Not accepted as the final A/B result because a manual impact was still active, producing a peak of 7 instances instead of the intended 6.**
+- [x] **P2.3.1 benchmark harness hardened:** `Overlap ×6 + perf` now performs a clean pre-test `stopAll`, waits briefly for a `0/0/0` baseline, prevents re-entrant benchmark starts, disables competing Play/intensity/direction input while capture is active, ignores stage clicks during capture, owns all scheduled overlap timers, and cancels them on Stop All/resize. This fixes the observed Lab case where `STOP ALL` could be followed by a previously scheduled play.
 - [ ] Visually validate P2.3 single-impact hierarchy: contact reads first, aligned hero sparks read as the primary particle gesture, debris remains secondary, directional pressure wave is clearly visible but subordinate, recoil feels coherent.
-- [ ] Rerun P2.3 `Overlap ×6 + perf` at intensity `2.0` and compare against the P2.1 baseline (`454 particles`, `55.4 FPS avg`, `20.0 1% low`, `5 >20ms`).
+- [ ] Run one clean P2.3.1 `Overlap ×6 + perf` at intensity `2.0` and compare against P2.1 (`454 particles`, `55.4 FPS avg`, `20.0 1% low`, `5 >20ms`). Expected benchmark peak is exactly 6 instances and final resources `0/0/0`.
 - [ ] Validate representative Heavy Impact performance/behavior on mobile.
 - [ ] Record which remaining code patterns are repeated or awkward enough to deserve extraction.
 
-**P2 exit:** Heavy Impact feels like one coherent gameplay cue and can be triggered from one `FXDeck.play("heavyImpact", ...)` call without backend-specific work in game code. P2.1 provides the pre-polish high-load baseline; P2.3 must confirm the desktop visual hierarchy and updated authored load before P3 changes runtime architecture.
+**P2 exit:** Heavy Impact feels like one coherent gameplay cue and can be triggered from one `FXDeck.play("heavyImpact", ...)` call without backend-specific work in game code. P2.1 provides the pre-polish baseline; P2.3.1 must produce the clean post-polish desktop A/B result and the single-impact look still needs explicit visual acceptance before P3 changes runtime architecture.
 
 ---
 
@@ -218,6 +220,7 @@ Do not build these pre-emptively:
 11. **Overlapping screen impulses should be aggregated.** P2.1 demonstrated that firing multiple independent transform animations on the same camera/stage target gives misleading and unstable feedback. The Lab now accumulates kick impulses through one controller; a reusable runtime helper is considered only if later effects prove the same need.
 12. **Visual hierarchy is also a performance control.** P2.2 deliberately reduces low-value particle density before runtime-level optimization: fewer aligned hero particles can communicate a stronger hit while lowering render load. Runtime architecture should not compensate for effects that are simply over-authored.
 13. **Visible build labels must correspond to the modules actually executing.** When a local ESM dependency changes, its import URL must receive a new cache key/version. Versioning only the HTML or top-level controller is insufficient for reliable GitHub Pages iteration.
+14. **Performance harness scheduling is part of measurement integrity.** A benchmark must own and cancel its own scheduled plays, prevent re-entrant captures and competing manual input, start from a known clean resource state, and distinguish harness scheduling from FXDeck lifecycle behavior. Lab timeout leakage must never be misdiagnosed as a Core resource leak.
 
 ---
 
@@ -225,6 +228,8 @@ Do not build these pre-emptively:
 
 ## 2026-08-18
 
+- **P2.3.1:** Hardened the overlap benchmark after the user stress-tested the Lab rapidly. The harness now runs one capture at a time, resets FXDeck to a clean resource state before capture, locks competing manual input, tracks/cancels all overlap timers, and makes Stop All cancel pending scheduled plays as well as current FXDeck resources. This fixes measurement contamination and the observed `STOP ALL` followed by a scheduled play.
+- **P2.3 provisional measurement:** User stress test produced a clean-ending intensity `2.0` sample at `269 particles`, `58.0 FPS avg`, `30.0 1% low`, `3 >20ms`, final `0/0/0`, materially better than P2.1 (`454`, `55.4`, `20.0`, `5`). It is recorded as directional evidence rather than the final A/B because an extra manual play made the peak `7 instances` instead of `6`.
 - **P2.3.0:** Pressure-wave readability pass after visual review found the P2.2 arc too subtle. Increased the directional wave footprint, leading-edge contrast/glow and forward offset, and changed its browser animation to a short strong peak followed by a fast fade. No Core/API change; visual validation still required before P2 desktop look is accepted.
 - **P2.2.1:** Fixed stale-module deployment behavior. `heavy-impact-lab.js` imports `heavy-impact.js?v=p2.2.1`, and the Lab HTML/CSS/controller cache keys plus visible build label were bumped to P2.2.1. Added a project rule that every changed browser module must receive a new cache key before a build is considered ready for validation.
 - **P2.2.0:** Heavy Impact visual-hierarchy pass. Reduced hero spark base count `34 → 22`, tightened spread `38° → 28°`, shortened lifetime and aligned spark image rotation approximately with emission direction; reduced debris base count `16 → 10`, size/lifetime/brightness; shortened contact flash; converted the generic pressure ring into a directional offset elliptical arc; slightly reduced target/screen kick. Same public `FXDeck.play()` contract and lifecycle model. Rerun the P2.1 overlap benchmark to measure whether the cleaner authored look also lowers the high-load frame-time cliff.
