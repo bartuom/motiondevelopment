@@ -1,9 +1,9 @@
-import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.5.0';
+import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.6.0';
 
 const HEAVY_IMPACT_SPEC = {
   label: 'Heavy Impact',
-  revision: 'P3.5 priority-aware scheduled bursts / v1',
-  summary: 'Composite directional gameplay hit with hero sparks and medium-priority debris running through the production queue-aware scheduler.',
+  revision: 'P3.6 effect-owned assets / v1',
+  summary: 'Composite directional gameplay hit with hero sparks and medium-priority debris running through the production shared scheduler.',
   duration: 560,
   timings: {
     contactFlash: 0,
@@ -28,6 +28,10 @@ const HEAVY_IMPACT_SPEC = {
     spread: 46
   }
 };
+
+const HEAVY_IMPACT_ASSETS = [
+  { target: 'particles', src: './assets/fxdeck-spark.svg', width: 32, height: 10 }
+];
 
 function scaledRange(range, scale) {
   return { min: range.min * scale, max: range.max * scale };
@@ -77,6 +81,7 @@ function heavyImpactDefinition() {
   return {
     id: 'heavyImpact', version: 'v1', variant: 'default', default: true,
     label: spec.label, summary: spec.summary, spec: structuredClone(spec),
+    assets: structuredClone(HEAVY_IMPACT_ASSETS),
     async play({ params, particles: particleAdapter, instance }) {
       if (!particleAdapter) throw new Error('heavyImpact requires the particles adapter.');
       const intensity = Math.max(.25, params.intensity);
