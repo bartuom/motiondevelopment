@@ -76,7 +76,7 @@ async function loadEffectGridLab() {
   try {
     await import('./effect-grid-lab.js?v=p3.7.3');
     await import('./effect-grid-canvas-projection.js?v=p3.7.3');
-    await import('./effect-grid-runtime-controls.js?v=p3.8.1');
+    await import('./effect-grid-runtime-controls.js?v=p3.9.0');
   } catch (error) {
     appendLog(`${BUILD} Effect Grid import FAIL: ${error.message}`);
     console.error(error);
