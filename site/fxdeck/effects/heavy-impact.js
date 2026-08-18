@@ -1,9 +1,9 @@
-import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.4.0';
+import { burstTracked, runHook, scheduleAsync } from './effect-utils.js?v=p3.5.0';
 
 const HEAVY_IMPACT_SPEC = {
   label: 'Heavy Impact',
-  revision: 'P3.4 shared effect helpers / v1',
-  summary: 'Composite directional gameplay hit with a tighter visual hierarchy: short contact flash, aligned hero sparks, smaller debris, directional pressure wave, target kick and screen kick.',
+  revision: 'P3.5 priority-aware scheduled bursts / v1',
+  summary: 'Composite directional gameplay hit with hero sparks and medium-priority debris running through the production queue-aware scheduler.',
   duration: 560,
   timings: {
     contactFlash: 0,
@@ -92,8 +92,20 @@ function heavyImpactDefinition() {
       };
 
       runHook(instance, params.hooks, 'contactFlash', payload);
-      const sparkPromise = burstTracked(instance, particleAdapter, sparkEmitter(spec.sparks, sparks), params.position);
-      scheduleAsync(instance, spec.timings.debris, () => burstTracked(instance, particleAdapter, debrisEmitter(spec.debris, debris), params.position));
+      const sparkPromise = burstTracked(
+        instance,
+        particleAdapter,
+        sparkEmitter(spec.sparks, sparks),
+        params.position,
+        { priority: 'hero' }
+      );
+      scheduleAsync(instance, spec.timings.debris, () => burstTracked(
+        instance,
+        particleAdapter,
+        debrisEmitter(spec.debris, debris),
+        params.position,
+        { priority: 'medium' }
+      ));
       instance.timeout(() => runHook(instance, params.hooks, 'pressureWave', payload), spec.timings.pressureWave);
       instance.timeout(() => runHook(instance, params.hooks, 'targetKick', { ...payload, distance: instance.resolved.targetKickPx }), spec.timings.targetKick);
       instance.timeout(() => runHook(instance, params.hooks, 'screenKick', { ...payload, distance: instance.resolved.screenKickPx }), spec.timings.screenKick);
