@@ -12,7 +12,6 @@ const variantSelect = document.querySelector('#variant');
 const intensityInput = document.querySelector('#intensity');
 const intensityValue = document.querySelector('#intensity-value');
 const directionInput = document.querySelector('#direction');
-const directionValue = document.querySelector('#direction-value');
 const activeMetric = document.querySelector('#metric-instances');
 const particleMetric = document.querySelector('#metric-particles');
 const emitterMetric = document.querySelector('#metric-emitters');
@@ -20,8 +19,27 @@ const scaleMetric = document.querySelector('#metric-scale');
 const logOutput = document.querySelector('#core-log');
 const apiPreview = document.querySelector('#api-preview');
 
+const inspector = {
+  title: document.querySelector('#definition-title'),
+  summary: document.querySelector('#definition-summary'),
+  revision: document.querySelector('#definition-revision'),
+  shape: document.querySelector('#def-shape'),
+  count: document.querySelector('#def-count'),
+  speed: document.querySelector('#def-speed'),
+  size: document.querySelector('#def-size'),
+  life: document.querySelector('#def-life'),
+  stop: document.querySelector('#def-stop'),
+  resolvedIntensity: document.querySelector('#resolved-intensity'),
+  resolvedCount: document.querySelector('#resolved-count'),
+  resolvedSpeed: document.querySelector('#resolved-speed'),
+  resolvedDirection: document.querySelector('#resolved-direction'),
+  resolvedPosition: document.querySelector('#resolved-position'),
+  resolvedId: document.querySelector('#resolved-id')
+};
+
 const state = {
-  position: { x: stage.clientWidth * .5, y: stage.clientHeight * .5 }
+  position: { x: stage.clientWidth * .5, y: stage.clientHeight * .5 },
+  fx: null
 };
 
 function log(message) {
@@ -45,9 +63,60 @@ function currentParams(position = state.position) {
   };
 }
 
+function directionName(degrees) {
+  const angle = ((degrees % 360) + 360) % 360;
+  if (angle >= 315 || angle < 45) return 'right';
+  if (angle < 135) return 'down';
+  if (angle < 225) return 'left';
+  return 'up';
+}
+
+function formatRange(range, digits = 1) {
+  const format = (value) => Number(value).toFixed(digits).replace(/\.0$/, '');
+  return `${format(range.min)}–${format(range.max)}`;
+}
+
+function getResolvedDefinition(params = currentParams()) {
+  if (!state.fx) return null;
+  return state.fx.resolve('testBurst', params).definition;
+}
+
+function updateInspector() {
+  const params = currentParams();
+  const definition = getResolvedDefinition(params);
+  if (!definition?.spec) return;
+
+  const spec = definition.spec;
+  const intensity = Math.max(.1, params.intensity);
+  const speedScale = Math.max(.65, intensity);
+  const runtimeCount = Math.max(1, Math.round(spec.baseCount * intensity));
+  const runtimeSpeed = {
+    min: spec.speed.min * speedScale,
+    max: spec.speed.max * speedScale
+  };
+
+  inspector.title.textContent = `testBurst / ${definition.version} / ${definition.variant} — ${definition.label}`;
+  inspector.summary.textContent = definition.summary;
+  inspector.revision.textContent = spec.revision;
+  inspector.shape.textContent = spec.shape === 'image' ? 'SVG spark image' : 'Primitive circle';
+  inspector.count.textContent = String(spec.baseCount);
+  inspector.speed.textContent = formatRange(spec.speed);
+  inspector.size.textContent = formatRange(spec.size);
+  inspector.life.textContent = `${formatRange(spec.life, 2)} s`;
+  inspector.stop.textContent = `${spec.stopAfter} ms auto-stop`;
+
+  inspector.resolvedIntensity.textContent = `${intensity.toFixed(1)}×`;
+  inspector.resolvedCount.textContent = `${runtimeCount} (${spec.baseCount} × ${intensity.toFixed(1)})`;
+  inspector.resolvedSpeed.textContent = `${formatRange(runtimeSpeed)} px/frame-scale`;
+  inspector.resolvedDirection.textContent = `${params.direction}° → ${directionName(params.direction)}`;
+  inspector.resolvedPosition.textContent = `${Math.round(params.position.x)}, ${Math.round(params.position.y)} CSS px`;
+  inspector.resolvedId.textContent = `testBurst/${definition.version}/${definition.variant}`;
+}
+
 function updateApiPreview() {
   const params = currentParams();
   apiPreview.textContent = `FXDeck.play("testBurst", {\n  version: "${params.version}",\n  variant: "${params.variant}",\n  position: { x: ${Math.round(params.position.x)}, y: ${Math.round(params.position.y)} },\n  direction: ${params.direction},\n  intensity: ${params.intensity.toFixed(1)}\n});`;
+  updateInspector();
 }
 
 function syncVariantAvailability() {
@@ -74,14 +143,16 @@ async function bootstrap() {
 
   const fx = new FXDeckRuntime({ adapters: { particles: particleAdapter } });
   registerTestBurst(fx);
+  state.fx = fx;
 
   globalThis.FXDeck = fx;
   globalThis.FXDeckP1 = { fx, particleAdapter };
 
   function playAt(position = state.position) {
     const params = currentParams(position);
+    const definition = fx.resolve('testBurst', params).definition;
     const instance = fx.play('testBurst', params);
-    log(`PLAY ${instance.id} testBurst ${instance.version}/${instance.variant} @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)}`);
+    log(`PLAY ${instance.id} ${instance.version}/${instance.variant} "${definition.label}" @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)}`);
     instance.ready.catch((error) => log(`ERROR ${instance.id}: ${error.message}`));
     return instance;
   }
@@ -115,10 +186,7 @@ async function bootstrap() {
     intensityValue.textContent = Number(intensityInput.value).toFixed(1);
     updateApiPreview();
   });
-  directionInput.addEventListener('input', () => {
-    directionValue.textContent = `${directionInput.value}°`;
-    updateApiPreview();
-  });
+  directionInput.addEventListener('change', updateApiPreview);
 
   window.addEventListener('resize', () => {
     particleAdapter.resize();
@@ -140,9 +208,9 @@ async function bootstrap() {
   setMarker(state.position);
   syncVariantAvailability();
   intensityValue.textContent = Number(intensityInput.value).toFixed(1);
-  directionValue.textContent = `${directionInput.value}°`;
   requestAnimationFrame(metricsLoop);
   log('PASS P1 bootstrap: FXDeck Core + TsParticlesAdapter ready');
+  log('EffectDefinition inspector is reading metadata from the runtime registry');
   log('Console API available as window.FXDeck');
 }
 
