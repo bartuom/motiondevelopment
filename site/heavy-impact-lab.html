@@ -26,10 +26,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.6.4</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.7.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.6.4 is a real-device Fireball pass for mobile: projectile motion stays compositor-only, expensive moving CSS filters are removed, trail particles are sparse embers instead of a burst every 32 ms, and the diagnostics HUD no longer uses backdrop blur.</p>
+      <p class="intro">P3.7.0 adds a generic Effect Grid Lab for real FXDeck effects: preset instance grids, virtual-world Fit, mouse-wheel zoom, drag pan, direction patterns and looping. The P3.6.4 mobile Fireball path remains active underneath it.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -100,7 +100,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Each Fireball owns an independent compositor visual with a built-in visual tail. Particle embers are sampled sparsely, then the cue hands off to Explosion. Current gate is real-device concurrency on the Galaxy S20+.</p>
+            <p>Use Play for a single cue. Use Debug / Tests → Effect Grid Lab to scale the same selected effect to 4, 10, 15, 24, 36 or 64 real runtime instances and inspect it through a zoomable virtual viewport.</p>
           </div>
         </div>
 
@@ -191,7 +191,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.6.4</span>
+              <span class="runtime-hud__build">P3.7.0</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -272,7 +272,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.6.4.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.7.0.</pre>
           </section>
 
           <section class="debug-section">
@@ -294,7 +294,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.6.4"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.7.0"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
 </body>
