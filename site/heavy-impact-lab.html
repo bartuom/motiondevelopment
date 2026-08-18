@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FXDeck P2 Heavy Impact vertical slice lab.">
-  <title>FXDeck Heavy Impact Lab</title>
+  <meta name="description" content="FXDeck P3 production runtime and Shared Emission Points benchmark lab.">
+  <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
   <link rel="stylesheet" href="./heavy-impact-lab.css?v=p2.3.0">
 </head>
@@ -15,7 +15,7 @@
       <div class="fxdeck-project-nav__links">
         <a href="./webfx-lab.html">P0 Spike</a>
         <a href="./fxdeck-core-lab.html">P1 Core</a>
-        <a href="./heavy-impact-lab.html" aria-current="page">P2 Heavy Impact</a>
+        <a href="./heavy-impact-lab.html" aria-current="page">Runtime Lab</a>
         <a class="is-legacy" href="./">Portfolio</a>
       </div>
     </div>
@@ -24,10 +24,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / P2 Heavy Impact / Build P2.3.1</p>
-        <h1>Heavy Impact</h1>
+        <p class="eyebrow">FXDeck / P3 Runtime / Build P3.0.0</p>
+        <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">Readability pass plus a hardened overlap benchmark: one clean capture at a time, cancellable scheduled plays and reliable final cleanup reporting.</p>
+      <p class="intro">Heavy Impact is now the production-runtime probe. P3 compares the existing per-play emitter path with Shared Emission Points using the same effect, counts, direction and lifecycle.</p>
     </header>
 
     <section class="workbench">
@@ -51,6 +51,15 @@
         </div>
 
         <div class="control">
+          <p class="label">Particle burst path</p>
+          <select id="particle-path">
+            <option value="emitter">Per-play emitter — P2 baseline</option>
+            <option value="shared">Shared direct particles — P3 spike</option>
+          </select>
+          <p class="control-note">The effect definition stays identical. Only the adapter strategy changes: addEmitter(startCount) versus direct particles pushed into the persistent shared container.</p>
+        </div>
+
+        <div class="control">
           <div class="range-row"><span>Runtime intensity</span><strong id="intensity-value">1.0</strong></div>
           <input id="intensity" type="range" min="0.5" max="2" value="1" step="0.1">
         </div>
@@ -64,12 +73,13 @@
         <div class="actions">
           <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
           <button id="play-overlap" class="secondary" type="button">Overlap ×6 + perf</button>
+          <button id="play-ab" class="secondary" type="button">A/B emitter vs shared</button>
           <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
         </div>
 
         <div class="input-note">
-          <p class="label">P2.3.1 focus</p>
-          <p>Overlap benchmark now starts from a clean resource state, blocks competing manual input during capture and cancels scheduled plays when Stop All is used.</p>
+          <p class="label">P3.0 focus</p>
+          <p>Run the A/B benchmark at the same intensity. It automatically executes the emitter path and then the shared-direct path, starting each leg from a clean resource state.</p>
         </div>
       </aside>
 
@@ -77,7 +87,7 @@
         <div class="canvas-toolbar">
           <div>
             <p class="label">02 / Preview</p>
-            <strong>Composite gameplay cue</strong>
+            <strong>Heavy Impact production probe</strong>
           </div>
           <span>Click to move target + impact</span>
         </div>
@@ -95,7 +105,7 @@
           </div>
           <div class="caption">
             <strong>heavyImpact / v1 / default</strong>
-            <span>contact → aligned hero sparks → debris → directional wave → recoil</span>
+            <span>same cue → two particle backend strategies</span>
           </div>
         </div>
       </section>
@@ -106,7 +116,7 @@
           <h2>Resolved cue</h2>
         </div>
 
-        <p class="summary">A single short-lived EffectInstance owns the complete hit lifecycle and cleans all spawned particle resources when it completes or is stopped.</p>
+        <p class="summary">The public FXDeck call and Heavy Impact definition are unchanged while the ParticleAdapter can switch between per-play emitters and a shared direct-particle path.</p>
 
         <section class="inspector-section">
           <p class="label">Authored timing</p>
@@ -124,6 +134,7 @@
         <section class="inspector-section resolved-section">
           <p class="label">Resolved for current play</p>
           <dl class="definition-grid">
+            <div><dt>Particle path</dt><dd id="resolved-path">--</dd></div>
             <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
             <div><dt>Direction</dt><dd id="resolved-direction">--</dd></div>
             <div><dt>Sparks</dt><dd id="resolved-sparks">--</dd></div>
@@ -137,13 +148,14 @@
         <section class="inspector-section runtime-section">
           <p class="label">Runtime / performance</p>
           <dl class="definition-grid">
-            <div><dt>Build</dt><dd>P2.3.1</dd></div>
+            <div><dt>Build</dt><dd>P3.0.0</dd></div>
             <div><dt>FPS</dt><dd id="metric-fps">--</dd></div>
             <div><dt>1% low</dt><dd id="metric-low">--</dd></div>
             <div><dt>&gt;20 ms frames</dt><dd id="metric-spikes">0</dd></div>
             <div><dt>Active instances</dt><dd id="metric-instances">0</dd></div>
             <div><dt>Particles</dt><dd id="metric-particles">0</dd></div>
             <div><dt>Emitters</dt><dd id="metric-emitters">0</dd></div>
+            <div><dt>Shared burst groups</dt><dd id="metric-burst-groups">0</dd></div>
             <div><dt>Canvas scale</dt><dd id="metric-scale">--</dd></div>
           </dl>
         </section>
@@ -158,20 +170,20 @@
 
       <article class="diagnostic-card log-card">
         <div class="log-heading">
-          <p class="label">P2 runtime log</p>
+          <p class="label">Runtime / A-B log</p>
           <div class="log-tools">
             <span id="p2-log-status" class="log-status" aria-live="polite"></span>
             <button id="copy-p2-log" type="button">Copy log</button>
             <button id="clear-p2-log" type="button">Clear</button>
           </div>
         </div>
-        <pre id="p2-log" class="log">FXDeck Heavy Impact Lab ready. Build P2.3.1.</pre>
+        <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.0.0.</pre>
       </article>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p2.3.1"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.0.0"></script>
 </body>
 </html>
