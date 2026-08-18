@@ -12,9 +12,9 @@
 ## Current state
 
 - **Milestone:** P3 — Production Runtime Capability Completion
-- **Current build:** **P3.7.2**
+- **Current build:** **P3.7.3**
 - **Status:** ACTIVE.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.7.2.
+- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.7.3.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1.
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0.
 - **Primary real-effect test:** Debug / Tests → **Effect Grid Lab**.
@@ -31,6 +31,7 @@
 - P3.7.0 introduced the generic Effect Grid Lab with preset real-effect instance grids, virtual-world zoom/pan/Fit and direction patterns.
 - P3.7.0 desktop grid testing proved that real effects scale into meaningful heavy workloads. With Explosion selected, the HUD showed roughly 567 particles for a 3×3 / 9-instance grid. User-observed desktop scaling: 16 instances already dip below the 60 FPS ceiling, 24 are around ~55 FPS, 36 around ~50 FPS, and a 36-instance one-second loop could dip toward ~33 FPS on a high-end desktop.
 - That result is not treated as a grid failure by itself: one Explosion grid batch can represent thousands of live particles and repeated cue setup. The grid is doing useful product-level load discovery.
+- P3.7.2 user feedback exposed a Grid framing bug: Fireball with `Radial` could travel beyond the outer cell layout and hand off to Explosion outside the logical particle canvas, causing the impact to disappear even though the effect lifecycle continued.
 
 ### P3.7.1 changes
 
@@ -44,38 +45,42 @@
 
 ### P3.7.2 changes
 
-- **Effect Grid is now self-contained.** Debug / Tests no longer requires switching back to Play to choose what is being tested.
-- Grid `Test setup` exposes and synchronizes:
-  - real effect under test,
-  - particle spawn topology,
-  - runtime intensity,
-  - base direction.
+- **Effect Grid is self-contained.** Debug / Tests no longer requires switching back to Play to choose what is being tested.
+- Grid `Test setup` exposes and synchronizes real effect, particle spawn topology, runtime intensity and base direction.
 - Debug and Play controls are two views of the same runtime state; changes remain synchronized both ways.
-- Grid exposes the three already-proven particle topology modes directly:
+- Grid exposes the three proven particle topology modes directly:
   - **Shared scheduled — Emission Points + scheduler** (`scheduled`) — production one-shot default;
   - **Shared direct — Emission Points immediate** (`shared`) — diagnostic immediate shared path;
   - **Per-play emitter — emitter per burst** (`emitter`) — reference topology.
-- Changing topology while a grid is active performs a clean real-effect respawn so the same grid/effect/load can be compared without stale workload.
-- Fireball note is explicit: its hero projectile remains an independent DOM visual; selected topology affects sparse ember bursts and the Explosion handoff. Explosion and Heavy Impact use the selected topology for their particle layers.
-- Grid readout is decorated with the current topology (`scheduled EP`, `direct EP`, or `per-burst emitter`).
-- The old Debug callout that instructed users to return to Play has been replaced with a statement that Debug owns the current test setup.
+- Changing topology while a grid is active performs a clean real-effect respawn.
+- Fireball note is explicit: hero projectile remains an independent DOM visual; selected topology affects sparse ember bursts and Explosion handoff.
+
+### P3.7.3 changes
+
+- **Effect-aware safe world / overscan:** the virtual particle world now extends beyond the visible cell grid instead of ending exactly on the outer cells.
+- Current safe margins are intentionally effect-local in the Lab: Fireball gets a large travel/impact margin, Explosion and Heavy Impact smaller margins.
+- Grid cell positions are offset into that safe world; radial directions are still computed from the center of the actual cell layout.
+- `Fit Grid` fits the full safe world, not just the cell rectangle, so outward travel and impact remain inside the logical particle canvas.
+- The fixed viewport-sized tsParticles backing canvas is still used; projection stretches it across the larger logical safe world, so overscan does **not** allocate a huge DPR-scaled mobile canvas.
+- Changing the tested effect while Grid is active now rebuilds the logical world because overscan can change by effect.
+- Grid readout/HUD chip expose the safe margin so the framing behavior is not hidden.
+- **HUD transparency:** runtime diagnostics keep blur disabled but the overlay background is reduced from near-opaque to a lighter translucent layer; individual stat cells are also more transparent.
+- Stage itself remains the camera viewport boundary. Effects should not be clipped by arbitrary grid-cell/world edges, but manual camera zoom/pan can still move content outside the visible viewport, which is expected.
 
 ### Current gate
 
-Use P3.7.2 Effect Grid Lab as the standard scaling/topology harness:
+Use P3.7.3 Effect Grid Lab as the standard scaling/topology harness:
 
 1. Stay in **Debug / Tests**.
 2. Choose the real effect directly in Grid `Test setup`.
 3. Keep Loop behavior on **Replace batch** for normal performance/scalability tests.
-4. Test the same grid under:
-   - `Shared scheduled — Emission Points + scheduler`,
-   - `Shared direct — Emission Points immediate`,
-   - `Per-play emitter — emitter per burst`.
+4. Test the same grid under `shared-scheduled`, `shared-direct` and `per-play-emitter` when topology comparison is useful.
 5. Use representative tiers such as 2×5=10, 3×5=15, 4×6=24 and 6×6=36.
-6. Record `FPS / Particles / Visuals / Instances`, selected topology and visual correctness.
-7. Use **Stack / Soak** only when intentionally testing accumulated or sustained workload.
+6. For Fireball + `Radial`, verify that outer projectiles and their Explosion handoffs remain visible inside the fitted safe world instead of vanishing at the old logical canvas edge.
+7. Record `FPS / Particles / Visuals / Instances`, selected topology and visual correctness.
+8. Use **Stack / Soak** only when intentionally testing accumulated or sustained workload.
 
-This topology comparison is now the preferred way to investigate the unexpectedly poor scaling before adding more optimization machinery. It lets the same authored effect and same spatial workload isolate whether the dominant cost comes from shared scheduled work, immediate shared creation, per-burst emitters, or simply the total authored particle workload.
+This topology comparison remains the preferred way to investigate poor scaling before adding broader optimization machinery. It lets the same authored effect and spatial workload isolate whether dominant cost comes from scheduled shared work, immediate shared creation, per-burst emitters, or simply the authored particle workload.
 
 For Fireball specifically, repeat the Galaxy S20+ comparison using the grid. If mobile still collapses badly across all topology modes, isolate hero visual vs sparse embers vs Explosion handoff before creating broader optimization machinery.
 
@@ -178,6 +183,7 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - HUD avoids backdrop blur so diagnostics do not materially contaminate measured runtime cost.
 - P3.7.1 separates primary real-effect scaling from advanced backend isolation.
 - P3.7.2 makes Debug self-sufficient for effect/topology/intensity/direction selection.
+- P3.7.3 reduces HUD opacity while retaining contrast/status colors.
 
 ### Effect Grid Lab — PRIMARY REAL-EFFECT SCALING HARNESS
 
@@ -186,15 +192,16 @@ FXDeck is **not** intended to become a custom particle simulator, node editor, m
 - Direction patterns: Same, Radial, Alternating, Seeded spread.
 - Virtual logical world supports Fit Grid, 10–200% viewport zoom, mouse-wheel zoom and drag pan.
 - tsParticles backing canvas remains viewport-sized while the logical world is projected across it, avoiding huge DPR-scaled debug canvases on mobile.
+- P3.7.3 separates **cell layout bounds** from **logical particle world bounds** with effect-aware overscan. This prevents outward Fireball travel/impact from being clipped by the old world edge.
 - Lab-only shared target/screen hooks are omitted from grid cells so cells do not fight over one target. Effect-owned particles/adapters/child effects remain real.
 - Normal Loop mode replaces the previous batch; Stack / Soak is explicit advanced accumulation.
-- P3.7.2 adds direct topology comparison on identical grid/effect settings.
+- Direct topology comparison runs on identical grid/effect settings.
 
 ---
 
 # Remaining P3 capability roadmap
 
-1. **P3.7.2 real-effect topology/scaling validation** — desktop + Galaxy S20+ using Effect Grid and identical grids across scheduled/shared/emitter paths.
+1. **P3.7.3 real-effect topology/scaling validation** — desktop + Galaxy S20+ using Effect Grid, including Fireball radial safe-world validation.
 2. **Environment emitter** — sustained lifetime and real live-update pressure.
 3. **Effect-owned asset lifecycle hardening** — only if Fireball/Environment expose real preload/unload problems.
 4. **Rare Reward** — UI/DOM + particles; test large card-sized cells through the same zoomable grid.
@@ -209,7 +216,7 @@ P3 exits when representative one-shot, moving and sustained effects all use the 
 
 - [x] Heavy Impact — short composite impact.
 - [x] Explosion — multi-layer one-shot.
-- [ ] Fireball — concurrency visually fixed; P3.7.2 topology/mobile scaling validation pending.
+- [ ] Fireball — concurrency visually fixed; P3.7.3 topology/mobile scaling validation pending.
 - [ ] Environment emitter — sustained/long-running.
 - [ ] Rare Reward — UI/DOM + particles.
 - [ ] Critical Hit — ultra-short readability.
@@ -253,12 +260,16 @@ Primary success metric: adding a new gameplay VFX should be materially simpler t
 13. **Real-effect grid scaling is the default scalability test. Backend stress is an advanced isolation tool, not the product workflow.**
 14. Repeated grid tests default to **Replace batch** so measured workload is controlled. Accumulation must be explicit through Stack / Soak.
 15. Grid topology selection compares already-existing backend paths; it does not introduce a new particle engine abstraction.
-16. Every user-testable iteration advances visible build/cache keys.
+16. Grid camera framing must include authored travel/impact envelope; cell bounds are not particle-world clip bounds.
+17. Every user-testable iteration advances visible build/cache keys.
 
 ---
 
 # Changelog — 2026-08-18
 
+- **P3.7.3 — safe Grid world:** separated cell layout from logical particle bounds and added effect-aware overscan; Fireball radial travel + Explosion handoff now have room beyond outer cells without leaving the particle canvas.
+- **P3.7.3 — safe Fit/projection:** `Fit Grid` includes the overscan world while tsParticles still keeps a viewport-sized backing canvas projected across it.
+- **P3.7.3 — HUD transparency:** reduced Runtime HUD background opacity and stat-cell opacity while keeping backdrop blur disabled.
 - **P3.7.2 — self-contained Grid setup:** added effect, particle topology, intensity and base-direction controls directly to Effect Grid; synchronized them with Play.
 - **P3.7.2 — topology comparison:** exposed `shared-scheduled`, `shared-direct` and `per-play-emitter` under clear Emission Points/reference labels for identical real-effect grid tests.
 - **P3.7.2 — clean topology mutation:** changing particle topology while Grid is active respawns the selected grid cleanly; Fireball topology scope is explicitly documented.
