@@ -4,14 +4,21 @@ import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.8.0
 
 const BUILD = 'P3.8.0';
 const effectInput = document.querySelector('#effect-select');
+const particlePathInput = document.querySelector('#particle-path');
 const intensityInput = document.querySelector('#intensity');
 const directionInput = document.querySelector('#direction');
 const directionValue = document.querySelector('#direction-value');
 const playButton = document.querySelector('#play-impact');
 const stopButton = document.querySelector('#stop-all');
+const overlapButton = document.querySelector('#play-overlap');
+const abButton = document.querySelector('#play-ab');
 const stage = document.querySelector('#impact-stage');
 const logOutput = document.querySelector('#p2-log');
 const apiPreview = document.querySelector('#api-preview');
+const pathNote = particlePathInput?.closest('.control')?.querySelector('.control-note');
+const directionNote = directionInput?.closest('.control')?.querySelector('.control-note');
+const originalPathNote = pathNote?.textContent ?? '';
+const originalDirectionNote = directionNote?.textContent ?? '';
 
 let fx = null;
 let particleAdapter = null;
@@ -56,6 +63,27 @@ function ensureOption() {
 function setText(selector, text) {
   const node = document.querySelector(selector);
   if (node) node.textContent = text;
+}
+
+function setEnvironmentControlMode(enabled) {
+  if (particlePathInput) particlePathInput.disabled = enabled;
+  if (overlapButton) overlapButton.disabled = enabled;
+  if (abButton) abButton.disabled = enabled;
+
+  if (pathNote) {
+    pathNote.textContent = enabled
+      ? 'Sustained Environment uses one explicit emitter per source. One-shot burst topology does not apply to this archetype.'
+      : originalPathNote;
+  }
+
+  if (directionNote) {
+    directionNote.textContent = enabled
+      ? 'Environment direction is applied when the source starts. Position and intensity update live; restart to apply a new flow direction.'
+      : originalDirectionNote;
+  }
+
+  if (overlapButton) overlapButton.title = enabled ? 'Historical one-shot regression fixture; not applicable to sustained Environment.' : '';
+  if (abButton) abButton.title = enabled ? 'One-shot topology A/B is not applicable to sustained Environment.' : '';
 }
 
 function setTimeline() {
@@ -115,6 +143,7 @@ function updateEnvironmentInspector() {
 }
 
 function setEnvironmentUi() {
+  setEnvironmentControlMode(true);
   setText('#authored-version-label', 'v1 — Environment Emitter');
   setText('#preview-title', 'Environment Emitter sustained probe');
   setText('#preview-note', 'Click Preview to move the live source; intensity updates while it is running');
@@ -126,7 +155,8 @@ function setEnvironmentUi() {
   updateEnvironmentInspector();
 }
 
-function restorePlayButton() {
+function restoreOneShotUi() {
+  setEnvironmentControlMode(false);
   if (playButton) playButton.textContent = 'FXDeck.play()';
 }
 
@@ -149,18 +179,19 @@ function startEnvironment(position = sourcePosition) {
     fx.stop(activeEnvironment, 'environment-restart');
   }
 
-  activeEnvironment = fx.play('environmentEmitter', currentParams(sourcePosition));
-  appendLog(`ENV START ${activeEnvironment.id}: sustained explicit emitter @ ${Math.round(sourcePosition.x)},${Math.round(sourcePosition.y)} intensity ${Number(intensityInput?.value ?? 1).toFixed(1)}`);
+  const instance = fx.play('environmentEmitter', currentParams(sourcePosition));
+  activeEnvironment = instance;
+  appendLog(`ENV START ${instance.id}: sustained explicit emitter @ ${Math.round(sourcePosition.x)},${Math.round(sourcePosition.y)} intensity ${Number(intensityInput?.value ?? 1).toFixed(1)}`);
 
-  activeEnvironment.ready
+  instance.ready
     .then(() => {
-      appendLog(`ENV READY ${activeEnvironment.id}: live position + intensity updates enabled`);
+      appendLog(`ENV READY ${instance.id}: live position + intensity updates enabled`);
       updateEnvironmentInspector();
     })
-    .catch((error) => appendLog(`ENV ERROR ${activeEnvironment?.id ?? '--'}: ${error.message}`));
+    .catch((error) => appendLog(`ENV ERROR ${instance.id}: ${error.message}`));
 
   updateEnvironmentInspector();
-  return activeEnvironment;
+  return instance;
 }
 
 function updateActive(patch, reason) {
@@ -174,7 +205,7 @@ function updateActive(patch, reason) {
 
 function onEffectChangeCapture(event) {
   if (effectInput?.value !== 'environmentEmitter') {
-    restorePlayButton();
+    restoreOneShotUi();
     return;
   }
 
