@@ -1,7 +1,7 @@
 import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.9.0';
 import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.10.0';
+const BUILD = 'P3.10.1';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
@@ -68,8 +68,8 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.10.0 adds an interactive football-card pack-opening archetype: premium back-card idle/shimmer, click-driven 3D flip, staged player-information reveal, rarity hit and persistent final card. Rare Reward remains available as the fantasy UI reveal reference.';
-  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+|9\.[0-9]+)/g, BUILD);
+  if (intro) intro.textContent = 'P3.10.1 visually redirects Football Card Reveal toward a clean premium sports collectible: sculpted gold/ivory card shell, stronger football information hierarchy and restrained foil lighting instead of the earlier astral/cosmic language.';
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.(?:6\.[0-9]+|7\.[0-9]+|8\.[0-9]+|9\.[0-9]+|10\.0)/g, BUILD);
 }
 
 async function loadEffectGridLab() {
@@ -95,7 +95,7 @@ if (!host) {
 
       effectInput?.dispatchEvent(new Event('change'));
       normalizeVisibleBuild();
-      appendLog(`${BUILD} Runtime capability pass: football card reveal loading; Rare Reward / Fireball / Environment retained as independent archetypes`);
+      appendLog(`${BUILD} Football Card visual direction: premium sports collectible / gold + ivory / restrained foil; runtime behavior unchanged`);
       refreshFireballInspector();
       refreshVisualMetric();
 
