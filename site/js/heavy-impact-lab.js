@@ -1,8 +1,8 @@
 import { FXDeckRuntime, normalizeDirection } from '../fxdeck/core/fxdeck.js';
-import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.2.0';
-import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.2.0';
+import { TsParticlesAdapter } from '../fxdeck/adapters/tsparticles-adapter.js?v=p3.3.0';
+import { registerHeavyImpact } from '../fxdeck/effects/heavy-impact.js?v=p3.3.0';
 
-const BUILD = 'P3.2.0';
+const BUILD = 'P3.3.0';
 
 const stage = document.querySelector('#impact-stage');
 const kickLayer = document.querySelector('#impact-kick-layer');
@@ -12,6 +12,7 @@ const playButton = document.querySelector('#play-impact');
 const overlapButton = document.querySelector('#play-overlap');
 const abButton = document.querySelector('#play-ab');
 const stressButton = document.querySelector('#play-stress-ab');
+const cancelGateButton = document.querySelector('#run-cancel-gate');
 const stopButton = document.querySelector('#stop-all');
 const intensityInput = document.querySelector('#intensity');
 const intensityValue = document.querySelector('#intensity-value');
@@ -64,6 +65,14 @@ function log(message) {
   logOutput.scrollTop = logOutput.scrollHeight;
 }
 
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
 function pathLabel(path) {
   if (path === 'scheduled') return 'shared-scheduled';
   if (path === 'shared') return 'shared-direct';
@@ -91,6 +100,28 @@ function summarizeFrames(samples) {
   };
 }
 
+function resourceState(stats) {
+  return {
+    instances: stats.activeInstances ?? 0,
+    emitters: stats.particles?.emitters ?? 0,
+    groups: stats.particles?.burstGroups ?? 0,
+    particles: stats.particles?.particles ?? 0,
+    queued: stats.particles?.queuedParticles ?? 0
+  };
+}
+
+function resourceText(stats) {
+  const r = resourceState(stats);
+  return `${r.instances} instances / ${r.emitters} emitters / ${r.groups} groups / ${r.particles} particles / ${r.queued} queued`;
+}
+
+function assertResourcesClean(stats, label) {
+  const r = resourceState(stats);
+  if (r.instances || r.emitters || r.groups || r.particles || r.queued) {
+    throw new Error(`${label}: expected complete cleanup, got ${resourceText(stats)}.`);
+  }
+}
+
 function setBenchmarkBusy(busy) {
   state.benchmark.running = busy;
   overlapButton.disabled = busy;
@@ -100,8 +131,10 @@ function setBenchmarkBusy(busy) {
   directionInput.disabled = busy;
   particlePathInput.disabled = busy;
   if (stressButton) stressButton.disabled = busy;
+  if (cancelGateButton) cancelGateButton.disabled = busy;
   overlapButton.textContent = busy ? 'Benchmark running…' : 'Overlap ×6 + perf';
   abButton.textContent = busy ? 'A/B running…' : 'Heavy Impact A/B';
+  if (cancelGateButton) cancelGateButton.textContent = busy ? 'Runtime gate running…' : 'Cancel / Stop Gate';
 }
 
 function cancelBenchmarkTimers() {
@@ -277,6 +310,17 @@ function currentParams(position = state.position) {
     direction: Number(directionInput.value),
     intensity: Number(intensityInput.value),
     hooks: createHooks()
+  };
+}
+
+function cancellationParams(direction = Number(directionInput.value)) {
+  return {
+    version: 'v1',
+    variant: 'default',
+    position: { ...state.position },
+    direction,
+    intensity: 2,
+    hooks: {}
   };
 }
 
@@ -464,6 +508,75 @@ function runABBenchmark() {
   });
 }
 
+async function runCancellationGate() {
+  if (state.benchmark.running) {
+    log(`${BUILD} CANCEL GATE: ignored because a benchmark is already running`);
+    return;
+  }
+
+  const originalPath = particlePathInput.value;
+  state.benchmark.restorePath = originalPath;
+  setBenchmarkBusy(true);
+  cancelBenchmarkTimers();
+  state.perfCapture = null;
+
+  try {
+    state.fx.stopAll('cancel-gate-reset');
+    screenKickController.reset();
+    setParticlePath('scheduled');
+    await nextFrame();
+    await nextFrame();
+    assertResourcesClean(state.fx.getStats(), 'Cancel gate reset');
+
+    log(`${BUILD} CANCEL GATE START: production shared-scheduled path / Heavy Impact intensity 2.0`);
+
+    const single = state.fx.play('heavyImpact', cancellationParams());
+    await single.ready;
+    const singleQueued = state.fx.getStats();
+    if ((singleQueued.particles?.queuedParticles ?? 0) <= 0) {
+      throw new Error(`single-instance precondition missed active scheduler work: ${resourceText(singleQueued)}`);
+    }
+    log(`CANCEL GATE phase 1 pre-stop: ${resourceText(singleQueued)}`);
+
+    state.fx.stop(single, 'cancel-gate-instance-stop');
+    await nextFrame();
+    await nextFrame();
+    assertResourcesClean(state.fx.getStats(), 'Single EffectInstance stop');
+    await wait(120);
+    await nextFrame();
+    assertResourcesClean(state.fx.getStats(), 'Single EffectInstance late-respawn check');
+    log('PASS CANCEL GATE phase 1: FXDeck.stop(instance) cancelled owned particles + queued work; no late respawn');
+
+    const base = Number(directionInput.value);
+    const offsets = [-24, -14, -5, 6, 16, 27];
+    const instances = offsets.map((offset) => state.fx.play('heavyImpact', cancellationParams((base + offset + 360) % 360)));
+    await Promise.all(instances.map((instance) => instance.ready));
+
+    const overlapQueued = state.fx.getStats();
+    if ((overlapQueued.particles?.queuedParticles ?? 0) <= 0) {
+      throw new Error(`stopAll precondition missed active scheduler work: ${resourceText(overlapQueued)}`);
+    }
+    log(`CANCEL GATE phase 2 pre-stopAll: ${resourceText(overlapQueued)}`);
+
+    state.fx.stopAll('cancel-gate-stop-all');
+    await nextFrame();
+    await nextFrame();
+    assertResourcesClean(state.fx.getStats(), 'stopAll immediate cleanup');
+    await wait(140);
+    await nextFrame();
+    assertResourcesClean(state.fx.getStats(), 'stopAll late-respawn check');
+    log('PASS CANCEL GATE phase 2: FXDeck.stopAll() cleared instances/groups/particles/queue and delayed Heavy Impact work did not respawn');
+    log(`${BUILD} CANCEL GATE: PASS — per-instance ownership, queued-work cancellation and stopAll late-respawn protection are clean`);
+  } catch (error) {
+    state.fx.stopAll('cancel-gate-failed');
+    screenKickController.reset();
+    log(`${BUILD} CANCEL GATE: FAIL — ${error.message}`);
+    console.error(error);
+  } finally {
+    finishBenchmark();
+  }
+}
+
 async function copyLog() {
   try {
     await navigator.clipboard.writeText(logOutput.textContent.trim());
@@ -510,6 +623,7 @@ async function bootstrap() {
     playAt,
     playOverlap,
     runABBenchmark,
+    runCancellationGate,
     startPerfCapture,
     setParticlePath,
     screenKickController,
@@ -528,6 +642,7 @@ async function bootstrap() {
   });
   overlapButton.addEventListener('click', playOverlap);
   abButton.addEventListener('click', runABBenchmark);
+  cancelGateButton?.addEventListener('click', runCancellationGate);
   stopButton.addEventListener('click', () => {
     const cancelledBenchmark = abortBenchmark();
     fx.stopAll('manual-stop-all');
@@ -585,8 +700,9 @@ async function bootstrap() {
 
   const schedulerStats = particleAdapter.getStats();
   log(`PASS ${BUILD} bootstrap: Heavy Impact registered through burst abstraction`);
-  log(`${BUILD} integrated Shared Emission Scheduler: ${schedulerStats.schedulerBudgetMs}ms CPU budget/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate seed ${schedulerStats.schedulerImmediateCount}`);
-  log('Heavy Impact A/B now compares per-play emitter vs shared-scheduled; shared-direct remains available manually as the synchronous reference');
+  log(`${BUILD} production one-shot default: shared-scheduled (${schedulerStats.schedulerBudgetMs}ms CPU budget/frame, chunk ${schedulerStats.schedulerChunkSize}, immediate seed ${schedulerStats.schedulerImmediateCount})`);
+  log('Emitter and shared-direct remain explicit reference/debug paths; Heavy Impact A/B still compares emitter vs shared-scheduled');
+  log('Cancel / Stop Gate validates per-instance queue ownership, stopAll cleanup and protection against delayed respawn');
   log('Pressure wave remains a visual placeholder; P3 focus is runtime architecture and measured cost');
 }
 
