@@ -73,10 +73,11 @@
         <div class="control">
           <p class="label">Stress parameter profile</p>
           <select id="stress-profile">
+            <option value="both" selected>Both — uniform then heterogeneous</option>
             <option value="uniform">Uniform — same parameters at every point</option>
-            <option value="heterogeneous" selected>Heterogeneous — per-point runtime variation</option>
+            <option value="heterogeneous">Heterogeneous — per-point runtime variation</option>
           </select>
-          <p class="control-note">Heterogeneous keeps the total count fixed while each point gets normalized intensity weights (0.55–1.45) plus different color, direction, speed, size and opacity. Shape/lifetime stay fixed so the test isolates common per-point variation without changing renderer type.</p>
+          <p class="control-note">Heterogeneous keeps the total count fixed while each point gets normalized intensity weights (0.55–1.45) plus different color, direction, speed, size and opacity. Shape/lifetime stay fixed so common runtime variation is isolated without changing renderer type. “Both” runs the uniform baseline first, then the heterogeneous profile and reports the scheduler delta.</p>
         </div>
 
         <div class="control">
@@ -100,7 +101,7 @@
 
         <div class="input-note">
           <p class="label">P3.2.1 focus</p>
-          <p>The scheduler already preserves unique particle options per burst. This build tests whether that flexibility changes population hitch or steady-state cost when 24 shared emission points carry different runtime values instead of one uniform particle definition.</p>
+          <p>The scheduler already preserves unique particle options per burst. The default “Both” profile now measures the same 800-particle/24-point workload twice—uniform and heterogeneous—so we can see whether per-point variation itself changes population hitch, steady-state cost or scheduler viability.</p>
         </div>
       </aside>
 
