@@ -8,9 +8,10 @@
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
   <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.6.1">
   <link rel="stylesheet" href="./fireball-projectile.css?v=p3.6.4">
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.7.3">
+  <link rel="stylesheet" href="./environment-source.css?v=p3.8.2" data-environment-source>
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.8.2">
 </head>
-<body data-workspace-mode="play">
+<body data-workspace-mode="play" data-hud-mode="basic">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
     <div class="fxdeck-project-nav__inner">
       <a class="fxdeck-project-nav__brand" href="./webfx-lab.html">FXDeck</a>
@@ -26,10 +27,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.8.1</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.8.2</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.8.1 makes the sustained Environment archetype explicit and inspectable: multiple independent sources, active-source markers, live move/density updates and a much clearer intensity range. Fireball remains the accepted moving-source baseline.</p>
+      <p class="intro">P3.8.2 closes the sustained Environment probe UX: HUD Off now produces a clean preview with diagnostic reticles/markers hidden. Environment remains the accepted sustained-source baseline.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -191,7 +192,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.8.1</span>
+              <span class="runtime-hud__build">P3.8.2</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -272,7 +273,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.8.1.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.8.2.</pre>
           </section>
 
           <section class="debug-section">
@@ -294,8 +295,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.8.1"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.8.2"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
-  <script type="module" src="./js/runtime-lab-ui.js?v=p3.6.1"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p3.8.2"></script>
 </body>
 </html>
