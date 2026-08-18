@@ -1,11 +1,14 @@
-import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.3';
-import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.3';
+import { DomSpriteAdapter } from '../fxdeck/adapters/dom-sprite-adapter.js?v=p3.6.4';
+import { registerFireball } from '../fxdeck/effects/fireball.js?v=p3.6.4';
 
-const BUILD = 'P3.6.3';
+const BUILD = 'P3.6.4';
 const host = document.querySelector('#impact-dom-layer');
 const effectInput = document.querySelector('#effect-select');
 const particlePathInput = document.querySelector('#particle-path');
 const logOutput = document.querySelector('#p2-log');
+const visualMetric = document.querySelector('#metric-visuals');
+
+let visualAdapter = null;
 
 function waitForFx(timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
@@ -28,8 +31,8 @@ function pathLabel(path) {
 function refreshFireballInspector() {
   if (effectInput?.value !== 'fireball') return;
   const values = [
-    ['Projectile head', 'independent visual handle'],
-    ['Trail', 'sampled emission-point bursts'],
+    ['Projectile head', 'independent compositor visual'],
+    ['Trail', 'built-in tail + sparse embers (96 ms)'],
     ['Travel', '250 px'],
     ['Duration', '560 ms'],
     ['Impact', 'FXDeck.play("explosion")']
@@ -44,7 +47,12 @@ function refreshFireballInspector() {
   });
 
   const pathNode = document.querySelector('#resolved-path');
-  if (pathNode) pathNode.textContent = `visual handle + ${pathLabel(particlePathInput?.value)} trail/impact`;
+  if (pathNode) pathNode.textContent = `compositor visual + ${pathLabel(particlePathInput?.value)} sparse trail/impact`;
+}
+
+function refreshVisualMetric() {
+  if (!visualMetric) return;
+  visualMetric.textContent = String(visualAdapter?.getStats?.().activeVisuals ?? 0);
 }
 
 function appendLog(message) {
@@ -54,17 +62,30 @@ function appendLog(message) {
   logOutput.scrollTop = logOutput.scrollHeight;
 }
 
+function normalizeVisibleBuild() {
+  const eyebrow = document.querySelector('.eyebrow');
+  const hudBuild = document.querySelector('.runtime-hud__build');
+  if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
+  if (hudBuild) hudBuild.textContent = BUILD;
+  if (logOutput) logOutput.textContent = logOutput.textContent.replace(/P3\.6\.2|P3\.6\.3/g, BUILD);
+}
+
 if (!host) {
   console.error(`${BUILD} Fireball bridge: #impact-dom-layer is missing.`);
 } else {
   waitForFx()
     .then((fx) => {
       registerFireball(fx);
-      const visualAdapter = new DomSpriteAdapter({ host });
+      visualAdapter = new DomSpriteAdapter({ host });
       fx.setAdapter('visuals', visualAdapter);
       if (globalThis.FXDeckLab) globalThis.FXDeckLab.visualAdapter = visualAdapter;
-      appendLog(`${BUILD} Fireball concurrency fix active: definition refreshed, independent visual handles attached, trail uses sampled particle bursts`);
+
+      // Re-resolve the selected definition after replacing Fireball v1 with P3.6.4.
+      effectInput?.dispatchEvent(new Event('change'));
+      normalizeVisibleBuild();
+      appendLog(`${BUILD} mobile Fireball pass active: transform-only projectile movement, cheap compositor visual, sparse 96ms embers, HUD backdrop blur disabled`);
       refreshFireballInspector();
+      refreshVisualMetric();
     })
     .catch((error) => {
       appendLog(`${BUILD} Fireball bridge FAIL: ${error.message}`);
@@ -77,4 +98,7 @@ for (const element of [effectInput, particlePathInput, document.querySelector('#
   element?.addEventListener('input', () => window.setTimeout(refreshFireballInspector, 0));
 }
 
-window.setInterval(refreshFireballInspector, 300);
+window.setInterval(() => {
+  refreshFireballInspector();
+  refreshVisualMetric();
+}, 250);
