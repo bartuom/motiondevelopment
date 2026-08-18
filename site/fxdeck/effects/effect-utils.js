@@ -20,12 +20,12 @@ export async function burstTracked(instance, particleAdapter, options, position,
   return handle;
 }
 
-export async function spawnTracked(instance, particleAdapter, options, position) {
-  if (typeof particleAdapter?.spawn !== 'function') {
-    throw new Error('spawnTracked requires ParticleAdapter.spawn().');
+export async function spawnTracked(instance, adapter, options, position) {
+  if (typeof adapter?.spawn !== 'function') {
+    throw new Error('spawnTracked requires an adapter with spawn().');
   }
 
-  const handle = await particleAdapter.spawn(options, position);
+  const handle = await adapter.spawn(options, position);
   if (instance.state !== 'playing') {
     handle.stop();
     return null;
