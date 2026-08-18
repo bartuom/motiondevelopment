@@ -1,5 +1,9 @@
 # Motion FX Portfolio
 
+> **Active development:** FXDeck — Gameplay VFX Runtime for Web Games. See [`FXDECK_STATE.md`](./FXDECK_STATE.md) for the canonical roadmap, milestone checklists, architectural decisions, current status, and changelog.
+
+The original portfolio remains in the repository as a reference while FXDeck is developed as a reusable gameplay VFX runtime.
+
 A neutral, lightweight browser portfolio focused on six motion / game FX categories:
 
 1. Explosions
