@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="WebFX lab for testing a reusable browser VFX runtime on top of tsParticles.">
+  <title>WebFX Lab</title>
+  <link rel="stylesheet" href="./webfx-lab.css">
+</head>
+<body>
+  <main class="lab-shell">
+    <header class="lab-header">
+      <div>
+        <p class="eyebrow">Motion Development / Experimental</p>
+        <h1>WebFX Lab</h1>
+        <p class="intro">First runtime spike: tsParticles 4.3.2 behind a tiny effect registry with explicit effect versions.</p>
+      </div>
+      <a class="back-link" href="./">Back to portfolio</a>
+    </header>
+
+    <section class="lab-panel">
+      <aside class="lab-sidebar">
+        <div class="control-group">
+          <span class="control-label">Effect</span>
+          <div class="segmented" id="effect-controls">
+            <button type="button" data-effect="burst" class="is-active">Burst</button>
+            <button type="button" data-effect="fountain">Fountain</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Version</span>
+          <div class="segmented" id="version-controls"></div>
+        </div>
+
+        <dl class="meta-list">
+          <div><dt>Runtime</dt><dd>tsParticles 4.3.2</dd></div>
+          <div><dt>Bundle</dt><dd>Full / lab only</dd></div>
+          <div><dt>Target FPS</dt><dd>60</dd></div>
+          <div><dt>Dependencies</dt><dd>1</dd></div>
+        </dl>
+
+        <button class="play-button" id="play-effect" type="button">Play effect</button>
+      </aside>
+
+      <div class="stage" id="webfx-stage">
+        <div class="stage-grid" aria-hidden="true"></div>
+        <div id="webfx-particles" class="particles-layer" aria-hidden="true"></div>
+        <div class="origin-marker" aria-hidden="true"><span></span></div>
+        <div class="stage-caption">
+          <strong id="active-name">Burst</strong>
+          <span id="active-description">One-shot directional gameplay burst.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="notes">
+      <h2>What this proves</h2>
+      <p>The portfolio stays untouched. This page tests a future WebFX API where effects are registered by id and version, while tsParticles handles particle simulation and rendering.</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
+  <script src="./js/webfx-lab.js" defer></script>
+</body>
+</html>
