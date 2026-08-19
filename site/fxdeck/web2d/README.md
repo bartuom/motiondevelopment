@@ -1,13 +1,17 @@
 # FXDeck Web2D backend boundary
 
-Build: **P4.1.0 / Session 1**
+Build: **P4.3.0 / Session 3**
 
-This directory is the canonical production boundary between FXDeck Core and the current 2D web renderer.
+This directory is the canonical production boundary between FXDeck Core/schema data and the current 2D web renderer.
 
 ## Contract
 
 ```text
-FXDeck Core
+FXDeck Effect JSON
+  ↓
+validator + asset hydration
+  ↓
+compileWeb2D()
   ↓
 Web2D backend boundary
   ↓
@@ -18,57 +22,45 @@ one persistent transparent tsParticles container
 
 Rules:
 
-- tsParticles is the only production particle runtime in Web2D V1.
-- FXDeck public authoring data must not expose tsParticles-specific keys.
-- capability/plugin registration happens before the persistent container is created.
-- `play()` must never dynamically register particle plugins.
-- normal effect playback reuses the persistent container.
-- Particlr/Pixi reference runtimes are not part of the production dependency graph.
+- tsParticles is the only production particle runtime in Web2D V1;
+- FXDeck public authoring data must not expose tsParticles-specific keys;
+- capability/plugin registration happens before the persistent container is created;
+- `play()` must never dynamically register particle plugins;
+- normal effect playback reuses the persistent container;
+- Particlr/Pixi reference runtimes are not part of the production dependency graph;
 - Three.js/3D code does not belong in this cycle.
 
-## Session 1 implementation
+## Current development bundle
 
-`create-web2d-runtime.js` deliberately keeps `loadFull(tsParticles)` for the reset phase. This is temporary. Session 6 replaces the full prototype bundle with a measured custom capability build after the schema-driven hero effects prove which features are actually required.
+`create-web2d-runtime.js` still deliberately uses `loadFull(tsParticles)` while real schema-driven hero effects establish the actual feature set. Session 6 replaces it with a measured custom/slim build.
 
-The canonical Runtime Lab registers only the three legacy baseline effects directly:
+## Effect paths
+
+Three legacy baseline definitions remain temporarily for regression:
 
 - Heavy Impact v1
 - Explosion v1
 - Fireball v1
 
-Rejected/experimental P3 effects are not loaded into the P4 canonical lab. They remain available through `legacy-p3.15` and Git history.
+Normal new effects use Schema V1. `Dust Puff` is the first real effect on that path and introduces no effect-specific runtime bridge.
+
+## Asset boundary
+
+Production effect data may use stable asset ids. `FXDeckAssetManager` resolves/prefetches them before the Web2D compiler receives hydrated runtime asset records.
+
+The backend does not own provenance or authoring metadata; it receives only the URL/dimensions needed to render.
 
 ## Lifecycle invariant
 
 A Web2D runtime instance owns exactly one particle container for its lifetime. Repeated `FXDeck.play()` / `stop()` calls may create effect-owned emitters/groups/visual handles, but must not replace the particle container.
 
-The canonical lab exposes:
+The canonical Runtime Lab keeps Session 1/2 regression gates and P4.3 adds an asset/Dust Puff technical gate checking:
 
-```js
-FXDeckLab.topology()
-FXDeckLab.runSession1Gate()
-```
-
-The Session 1 gate checks:
-
-- authoritative bootstrap count is exactly one,
-- tsParticles engine identity is stable,
-- persistent container identity is stable,
-- exactly one particle canvas exists,
-- repeated play/stop cycles leave zero instances/particles/emitters/groups/queued particles.
-
-## Next boundary change
-
-Session 2 adds a schema/compiler layer **above** this backend:
-
-```text
-Effect JSON
-  ↓
-structural + semantic validation
-  ↓
-compileWeb2D(effect)
-  ↓
-this backend
-```
+- manifest resolution,
+- cold load then warm cache hit,
+- schema-driven Dust Puff playback,
+- complete cleanup,
+- stable persistent container identity,
+- exactly one particle canvas.
 
 No effect-specific bridge scripts should return to the canonical path.
