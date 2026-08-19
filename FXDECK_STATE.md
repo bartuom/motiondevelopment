@@ -1,107 +1,108 @@
 # FXDeck — Canonical Project State
 
-> Update after material implementation changes.
+> Current execution status only. The canonical implementation roadmap is [`FXDECK_PLAN.md`](./FXDECK_PLAN.md).
 
 ## Current state — 2026-08-19
 
-- **Milestone:** **P3.15 — Native Reference Integration**.
-- **Current user-testable build:** **P3.15.0**.
-- **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
-- **Core/runtime capability work:** FROZEN while visual quality catches up.
-- **Particle architecture remains:** `FXDeck → TsParticlesAdapter → tsParticles`.
-- **Important correction:** P3.14's isolated iframe/source-runtime calibration was the wrong main-lab workflow and is retired from the canonical Runtime Lab.
+- **Milestone:** **P4.0 — Web2D V1 Controlled Reset**.
+- **Execution status:** planning complete; implementation reset not started yet.
+- **Canonical plan:** [`FXDECK_PLAN.md`](./FXDECK_PLAN.md).
+- **Legacy prototype baseline:** **P3.15.0** at commit `26b4622e68f4a2457dda6b84bf55c0fdb9a7112c`.
+- **Canonical Runtime Lab today:** `site/heavy-impact-lab.html` — still legacy P3.15 until Session 1 rewires it.
+- **Production Web2D backend decision:** tsParticles only.
+- **Particlr decision:** authoring/reference source only; no default production runtime dependency.
+- **3D decision:** architectural boundary only; zero 3D implementation in Web2D V1.
 
-## Architecture rule
+## Product direction
 
-FXDeck is **not** a replacement particle engine.
+FXDeck is a lightweight, AI-friendly gameplay VFX framework for 2D web games.
 
 ```text
 GAME
   ↓
-FXDeck
+FXDeck API
+  ↓
+FXDeck Core
+  ↓
+FXDeck Effect Schema
+  ↓
+Web2D Compiler
   ↓
 TsParticlesAdapter
   ↓
-one persistent transparent tsParticles container
+custom modular tsParticles build
+  ↓
+one persistent transparent canvas/container
 ```
 
-Reference examples should be harvested into this backend whenever technically possible. Do not spin up a second tsParticles container or standalone demo just to reproduce a tsParticles example.
+The normal authoring unit must become **effect data + reusable assets**, not effect-specific JavaScript.
 
-## P3.15 reference recipes
+Primary architecture KPI:
 
-The Runtime Lab selector now adds:
+> A new gameplay effect should be approximately 90% effect data + reusable assets. If a normal effect requires another `*-runtime-bridge.js`, the architecture is failing.
 
-- `REF — tsParticles Ribbons / FXDeck canvas`
-- `REF — tsParticles Fireworks / FXDeck canvas`
+## What is frozen / legacy
 
-Both run on the **existing `FXDeckLab.particleAdapter.container`**.
+Do not continue P3.x visual iteration as the main development path.
 
-### Ribbons
+Legacy/prototype material includes:
 
-Source: official `@tsparticles/ribbons@4.3.2` recipe.
+- current effect-specific runtime bridges,
+- P3 build-label synchronization hacks,
+- rejected Explosion V2 / Magic Burst V2 visual experiments,
+- old iframe/source-runtime calibration work,
+- Football Card showcase direction.
 
-Integrated via the same container's `addEmitter()`:
+Keep them recoverable through Git history while the Web2D V1 path replaces them.
 
-```text
-count: 5
-emitter: top / width 100%
-shape: ribbon
-ribbon points: 60
-drag: 0.02
-oscillationDistance: 100–140
-oscillationSpeed: 3–5
-velocity: 4–6
-```
+## What survives the reset
 
-No iframe. No second canvas. No external runtime boot.
+- FXDeck runtime/lifecycle concepts,
+- registry and instance ownership where useful,
+- coordinate adapter concept,
+- one persistent tsParticles container,
+- performance/mobile baseline,
+- reference/provenance material,
+- Runtime Lab as a debug/authoring shell,
+- quality/backpressure logic only where it stays isolated from effect authoring.
 
-### Fireworks
+## Immediate next work
 
-Source: official `@tsparticles/fireworks@4.3.2` recipe.
+### Session 0 — Safety checkpoint
 
-Integrated into the existing container:
+- record/retain the P3.15 baseline,
+- optionally tag/branch the prototype before destructive cleanup.
 
-```text
-bottom emitter
-→ line rocket
-→ inverse gravity
-→ top bound 10–30%
-→ destroy: split
-→ 100 fragments
-→ lighter blend
-→ 0.5–1.0 s decay
-```
+### Session 1 — Architecture Reset
 
-The standalone demo's blue background is intentionally **not** copied. FXDeck retains its own transparent gameplay stage.
+- one authoritative boot path,
+- one tsParticles engine/container,
+- no iframe runtime,
+- capabilities registered before container creation,
+- begin retiring effect-specific bridge/build-label plumbing,
+- no new showcase effect.
 
-## Particlr
+### Session 2 — Schema + Compiler + Validator
 
-Particlr is a different runtime, so it is now treated as **reference/config/art research only** inside the canonical FXDeck workflow.
+- `effect.schema.json`,
+- structural + semantic validation,
+- FXDeck V1 → tsParticles compiler,
+- synthetic burst/smoke/rain definitions with zero effect-specific runtime JS.
 
-The public Explosion fixture remains harvested under `references/particlr/`, but the Particlr runtime is no longer booted inside the main Runtime Lab. If a Particlr preset is worth reproducing, translate its assets/config/timing into the FXDeck/tsParticles backend and label the result as an adaptation rather than claiming exact runtime fidelity.
+Only after Session 2 do we resume visual authoring.
 
-The previous P3.14 Particlr iframe error (`Extension type batcher already has a handler`) is therefore no longer relevant to the canonical path.
+## Planned public V1 effect set
 
-## Visual status
+1. Dust Puff
+2. Critical Hit
+3. Goal Celebration
+4. Explosion
+5. Magic Burst
+6. Rain / Environment
 
-- Heavy Impact v1 — technically accepted; not showcase hero.
-- Fireball v1 — technically accepted moving-source archetype.
-- Environment Emitter v1 — technically accepted sustained archetype.
-- Critical Hit v1 — visually rejected.
-- Football Card Reveal v1 — visually rejected/frozen.
-- Explosion v2 — experimental reference adaptation; visually rejected so far.
-- Magic Burst v2 — experimental ribbon adaptation; visually rejected so far.
-- Ribbons native reference — calibration/reference recipe on the real FXDeck backend.
-- Fireworks native reference — calibration/reference recipe on the real FXDeck backend.
+Visual quality is the release gate; six mediocre effects do not pass.
 
-## Immediate next gate
-
-1. Verify P3.15 native Ribbons in the canonical Runtime Lab.
-2. Verify P3.15 native Fireworks in the same stage/background as every other FXDeck effect.
-3. If these look correct, derive gameplay effects from them **one change at a time**.
-4. For Particlr Explosion/Dust Puff/Rain, obtain exact editor exports/assets where possible, then translate them to tsParticles rather than adding Particlr as a second production runtime.
-
-## P0 performance baseline
+## P0 mobile baseline retained
 
 Galaxy S20+ 5G:
 
@@ -111,13 +112,12 @@ Galaxy S20+ 5G:
 ~800 simple particles   57.4 avg / 30.0 1% low
 ```
 
-Keep for later raw-tsParticles vs FXDeck overhead comparison.
+This remains a reference baseline for later Web2D V1 overhead/performance comparisons.
 
 ## Changelog
 
-- **P3.15.0:** retired isolated source iframe from canonical workflow.
-- **P3.15.0:** Ribbons recipe moved onto the existing FXDeck tsParticles container.
-- **P3.15.0:** Fireworks launch/split recipe moved onto the existing FXDeck tsParticles container.
-- **P3.15.0:** standalone Fireworks background removed; Runtime Lab background remains canonical.
-- **P3.15.0:** Particlr returned to reference-only status for the main FXDeck runtime.
-- **P3.14.x:** source-fidelity iframe experiment; useful diagnosis, wrong production/main-lab integration model.
+- **P4.0 plan reset:** created canonical `FXDECK_PLAN.md` for Web2D V1.
+- **P4.0 plan reset:** tsParticles retained as the sole Web2D production backend.
+- **P4.0 plan reset:** Particlr moved to authoring/reference role.
+- **P4.0 plan reset:** schema/compiler/validator becomes the next framework milestone before new hero effects.
+- **P3.15.0:** final legacy prototype baseline before the controlled reset.
