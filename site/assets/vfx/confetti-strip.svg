@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 14" width="48" height="14">
+  <metadata>FXDeck original reusable tintable confetti strip.</metadata>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".82"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".7"/>
+    </linearGradient>
+  </defs>
+  <path d="M2 3 L45 1 L47 11 L4 13 Z" fill="url(#g)"/>
+  <path d="M7 5 L41 3" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".55"/>
+</svg>
