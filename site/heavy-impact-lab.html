@@ -6,14 +6,14 @@
   <meta name="description" content="FXDeck gameplay VFX runtime lab with clean play and debug workspaces.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.6.1">
-  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.6.4">
-  <link rel="stylesheet" href="./environment-source.css?v=p3.8.2" data-environment-source>
-  <link rel="stylesheet" href="./rare-reward.css?v=p3.9.0">
-  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.10.1" data-football-card-reveal>
-  <link rel="stylesheet" href="./critical-hit.css?v=p3.11.0" data-critical-hit>
-  <link rel="stylesheet" href="./magic-burst.css?v=p3.12.0" data-magic-burst>
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.8.2">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.13.2">
+  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.13.2">
+  <link rel="stylesheet" href="./environment-source.css?v=p3.13.2" data-environment-source>
+  <link rel="stylesheet" href="./rare-reward.css?v=p3.13.2">
+  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.13.2" data-football-card-reveal>
+  <link rel="stylesheet" href="./critical-hit.css?v=p3.13.2" data-critical-hit>
+  <link rel="stylesheet" href="./magic-burst.css?v=p3.13.2" data-magic-burst>
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.13.2">
 </head>
 <body data-workspace-mode="play" data-hud-mode="basic">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -31,10 +31,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.12.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.13.2</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.12.0 adds Magic Burst: an asymmetric stylized cue with curved DOM ribbons, directional color motes and an offset echo lobe. This completes the planned representative effect archetypes before P3 exit review.</p>
+      <p class="intro">P3.13.2 unifies the reference-driven visual pass back into the canonical Runtime Lab. Explosion V2 uses the Particlr-derived layered texture model; Magic Burst V2 uses the real tsParticles ribbon shape. Component bridges no longer define the visible global build.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -60,18 +60,18 @@
           <div class="control">
             <p class="label">Effect</p>
             <select id="effect-select">
-              <option value="fireball" selected>Fireball — moving-source proof</option>
-              <option value="explosion">Explosion — composite one-shot</option>
+              <option value="fireball">Fireball — moving-source proof</option>
+              <option value="explosion" selected>Explosion V2 — Particlr reference pass</option>
               <option value="heavyImpact">Heavy Impact — production one-shot</option>
               <option value="criticalHit">Critical Hit — ultra-short readability cue</option>
-              <option value="magicBurst">Magic Burst — asymmetric stylized cue</option>
+              <option value="magicBurst">Magic Burst V2 — real tsParticles ribbons</option>
             </select>
           </div>
 
           <div class="control-row">
             <div class="control control--compact">
               <p class="label">Version</p>
-              <select disabled><option id="authored-version-label">v1 — Fireball</option></select>
+              <select disabled><option id="authored-version-label">v2 — Explosion / Particlr harvest</option></select>
             </div>
             <div class="control control--compact">
               <p class="label">Variant</p>
@@ -101,13 +101,13 @@
           </div>
 
           <div class="actions actions--primary">
-            <button id="play-impact" class="primary" type="button">FXDeck.play()</button>
+            <button id="play-impact" class="primary" type="button">FXDeck.play("explosion")</button>
             <button id="stop-all" class="secondary" type="button">FXDeck.stopAll()</button>
           </div>
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>World one-shots, ultra-short hit cues, stylized asymmetric bursts, moving projectiles, sustained sources and UI/card-space reveals now share one runtime. The planned representative P3 effect set is implemented.</p>
+            <p>Reference-driven V2 effects now live in the same canonical Runtime Lab as the earlier runtime archetypes. Visual quality work stays here; the separate Visual Pass page is only a sandbox.</p>
           </div>
         </div>
 
@@ -168,10 +168,10 @@
         <div class="canvas-toolbar">
           <div>
             <p class="label">02 / Preview</p>
-            <strong id="preview-title">Fireball production probe</strong>
+            <strong id="preview-title">Explosion V2 — Particlr reference pass</strong>
           </div>
           <div class="canvas-toolbar__right">
-            <span id="preview-note">Click to choose launch point; direction controls travel</span>
+            <span id="preview-note">Click to move target + fire texture-driven layered explosion</span>
             <label class="hud-control" for="hud-mode">
               <span>HUD</span>
               <select id="hud-mode" aria-label="Runtime diagnostics HUD mode">
@@ -198,7 +198,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.12.0</span>
+              <span class="runtime-hud__build">P3.13.2</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -223,8 +223,8 @@
           </aside>
 
           <div class="caption">
-            <strong id="caption-title">fireball / v1 / default</strong>
-            <span id="caption-note">compositor visual → sparse embers → Explosion handoff</span>
+            <strong id="caption-title">explosion / v2 / default</strong>
+            <span id="caption-note">circle-soft flash → fireball mass → staged smoke texture</span>
           </div>
         </div>
       </section>
@@ -236,7 +236,7 @@
             <h2>Resolved cue</h2>
           </div>
 
-          <p id="effect-summary" class="summary">Moving projectile archetype with an independently owned visual head per FXDeck instance, a compositor-friendly built-in visual tail, sparse particle embers, and an Explosion handoff at impact.</p>
+          <p id="effect-summary" class="summary">Reference-driven Explosion V2 using the harvested Particlr layering model. The hero read comes from soft texture-driven fireball and staged smoke rather than primitive-only geometry.</p>
 
           <section class="inspector-section">
             <p class="label">Authored timing</p>
@@ -249,16 +249,16 @@
               <span class="status-pill">LIVE INPUT</span>
             </div>
             <dl class="definition-grid">
-              <div><dt>Effect</dt><dd id="resolved-effect">--</dd></div>
-              <div><dt>Particle path</dt><dd id="resolved-path">--</dd></div>
-              <div><dt>Intensity</dt><dd id="resolved-intensity">--</dd></div>
-              <div><dt>Direction</dt><dd id="resolved-direction">--</dd></div>
-              <div><dt id="resolved-layer-a-label">Layer A</dt><dd id="resolved-layer-a">--</dd></div>
-              <div><dt id="resolved-layer-b-label">Layer B</dt><dd id="resolved-layer-b">--</dd></div>
-              <div><dt id="resolved-layer-c-label">Layer C</dt><dd id="resolved-layer-c">--</dd></div>
-              <div><dt id="resolved-layer-d-label">Layer D</dt><dd id="resolved-layer-d">--</dd></div>
-              <div><dt id="resolved-layer-e-label">Layer E</dt><dd id="resolved-layer-e">--</dd></div>
-              <div><dt>Screen kick</dt><dd id="resolved-screen-kick">--</dd></div>
+              <div><dt>Effect</dt><dd id="resolved-effect">explosion / v2 / default</dd></div>
+              <div><dt>Particle path</dt><dd id="resolved-path">shared-scheduled</dd></div>
+              <div><dt>Intensity</dt><dd id="resolved-intensity">1.0×</dd></div>
+              <div><dt>Direction</dt><dd id="resolved-direction">18°</dd></div>
+              <div><dt id="resolved-layer-a-label">Flash texture</dt><dd id="resolved-layer-a">Particlr circle-soft / 0.15 s</dd></div>
+              <div><dt id="resolved-layer-b-label">Fireball mass</dt><dd id="resolved-layer-b">24 textured particles / 0.4–0.7 s</dd></div>
+              <div><dt id="resolved-layer-c-label">Smoke texture</dt><dd id="resolved-layer-c">22 particles in 3 delayed waves</dd></div>
+              <div><dt id="resolved-layer-d-label">Sparks</dt><dd id="resolved-layer-d">12 supporting image streaks</dd></div>
+              <div><dt id="resolved-layer-e-label">Source model</dt><dd id="resolved-layer-e">Particlr flash + fireball + smoke layering</dd></div>
+              <div><dt>Screen kick</dt><dd id="resolved-screen-kick">5.8 px</dd></div>
               <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
             </dl>
           </section>
@@ -279,7 +279,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.12.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P3.13.2.</pre>
           </section>
 
           <section class="debug-section">
@@ -300,12 +300,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
-  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.12.1"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.10.1"></script>
-  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.11.1"></script>
-  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.12.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
-  <script type="module" src="./js/runtime-lab-ui.js?v=p3.8.2"></script>
+  <script type="module" src="./js/heavy-impact-lab.js?v=p3.13.2"></script>
+  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.13.2"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.13.2"></script>
+  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.13.2"></script>
+  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.13.2"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.13.2"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p3.13.2"></script>
+  <script type="module" src="./js/runtime-main-authority.js?v=p3.13.2"></script>
 </body>
 </html>
