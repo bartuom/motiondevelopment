@@ -1,12 +1,15 @@
-import { FXDeckRuntime } from '../core/fxdeck.js?v=p4.3.0';
-import { DomSpriteAdapter } from '../adapters/dom-sprite-adapter.js?v=p4.3.0';
-import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.3.0';
-import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.3.0';
-import { registerExplosion } from '../effects/explosion.js?v=p4.3.0';
-import { registerFireball } from '../effects/fireball.js?v=p4.3.0';
-import { registerSchemaEffects } from './register-schema-effect.js?v=p4.3.0';
+import { FXDeckRuntime } from '../core/fxdeck.js?v=p4.4.1';
+import { DomSpriteAdapter } from '../adapters/dom-sprite-adapter.js?v=p4.4.1';
+import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.4.1';
+import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.4.1';
+import { registerExplosion } from '../effects/explosion.js?v=p4.4.1';
+import { registerFireball } from '../effects/fireball.js?v=p4.4.1';
+import { registerSchemaEffects } from './register-schema-effect.js?v=p4.4.1';
 
-export const WEB2D_BUILD = 'P4.3.0';
+export const WEB2D_BUILD = 'P4.4.1';
+
+const MOTION_PLUGIN_SRC = 'https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js';
+const RIBBON_SHAPE_SRC = 'https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js';
 
 function requireElement(value, label) {
   if (!(value instanceof Element)) throw new TypeError(`${label} must be a DOM Element.`);
@@ -18,15 +21,49 @@ function resolveHostId(host) {
   return host.id;
 }
 
+async function loadScriptOnce(src, readyCheck) {
+  if (readyCheck()) return;
+  const existing = [...document.scripts].find((script) => script.src === src);
+  if (existing) {
+    if (readyCheck()) return;
+    await new Promise((resolve, reject) => {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', reject, { once: true });
+    });
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.fxdeckCapability = 'true';
+    script.addEventListener('load', resolve, { once: true });
+    script.addEventListener('error', () => reject(new Error(`FXDeck Web2D failed to load capability script: ${src}`)), { once: true });
+    document.head.appendChild(script);
+  });
+}
+
 async function registerTsParticlesCapabilities(engine) {
   if (!engine) throw new Error('FXDeck Web2D requires the tsParticles engine.');
   if (typeof globalThis.loadFull !== 'function') {
     throw new Error('FXDeck Web2D requires loadFull() during the prototype phase.');
   }
 
-  // P4.3 still keeps the full development bundle. Capability slimming happens
-  // only after schema-driven hero effects prove the actual production set.
   await globalThis.loadFull(engine);
+
+  // Session 4 visual review proved Goal Celebration needs a real ribbon/trail shape.
+  // These capability bundles are loaded and registered during boot, before the
+  // persistent container exists. play() never performs plugin registration.
+  await loadScriptOnce(MOTION_PLUGIN_SRC, () => typeof globalThis.loadMotionPlugin === 'function');
+  await loadScriptOnce(RIBBON_SHAPE_SRC, () => typeof globalThis.loadRibbonShape === 'function');
+
+  if (typeof globalThis.loadMotionPlugin !== 'function' || typeof globalThis.loadRibbonShape !== 'function') {
+    throw new Error('FXDeck Web2D ribbon capability globals are unavailable after preload.');
+  }
+
+  await globalThis.loadMotionPlugin(engine);
+  await globalThis.loadRibbonShape(engine);
 }
 
 function registerLegacyBaselineEffects(fx) {
@@ -99,6 +136,7 @@ export async function createWeb2DRuntime({
     schemaEffects: structuredClone(resolvedSchemaEffects),
     assetManager,
     assetWarmup,
+    capabilities: Object.freeze({ ribbon: true }),
 
     async prefetchEffect(id) {
       if (!assetManager) return { effectId: id, requested: 0, coldLoads: 0, cacheHits: 0, durationMs: 0 };
@@ -116,7 +154,8 @@ export async function createWeb2DRuntime({
         schemaEffectCount: resolvedSchemaEffects.length,
         activeInstances: fx.getStats().activeInstances,
         particleCanvasCount: particleHost.querySelectorAll('canvas').length,
-        cachedAssets: assetManager?.getStats?.().cachedAssets ?? 0
+        cachedAssets: assetManager?.getStats?.().cachedAssets ?? 0,
+        ribbonCapability: true
       };
     },
 
