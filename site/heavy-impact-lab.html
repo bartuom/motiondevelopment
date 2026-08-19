@@ -6,14 +6,14 @@
   <meta name="description" content="FXDeck gameplay VFX Runtime Lab with preserved authoring and debug workspaces.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=3">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p4.3.0">
-  <link rel="stylesheet" href="./fireball-projectile.css?v=p4.3.0">
-  <link rel="stylesheet" href="./environment-source.css?v=p4.3.0" data-environment-source>
-  <link rel="stylesheet" href="./rare-reward.css?v=p4.3.0">
-  <link rel="stylesheet" href="./football-card-reveal.css?v=p4.3.0" data-football-card-reveal>
-  <link rel="stylesheet" href="./critical-hit.css?v=p4.3.0" data-critical-hit>
-  <link rel="stylesheet" href="./magic-burst.css?v=p4.3.0" data-magic-burst>
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p4.3.0">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p4.4.0">
+  <link rel="stylesheet" href="./fireball-projectile.css?v=p4.4.0">
+  <link rel="stylesheet" href="./environment-source.css?v=p4.4.0" data-environment-source>
+  <link rel="stylesheet" href="./rare-reward.css?v=p4.4.0">
+  <link rel="stylesheet" href="./football-card-reveal.css?v=p4.4.0" data-football-card-reveal>
+  <link rel="stylesheet" href="./critical-hit.css?v=p4.4.0" data-critical-hit>
+  <link rel="stylesheet" href="./magic-burst.css?v=p4.4.0" data-magic-burst>
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p4.4.0">
 </head>
 <body data-workspace-mode="play" data-hud-mode="basic">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -31,10 +31,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P4.3.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P4.4.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P4.3 Web2D V1: the existing Runtime Lab UI is preserved while FXDeck adds manifest-driven reusable assets and the first asset-first schema effect, Dust Puff.</p>
+      <p class="intro">P4.4 Web2D V1: the established Runtime Lab UI is preserved while FXDeck adds the first two client-facing schema hero effects: Critical Hit and Goal Celebration.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -103,7 +103,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Dust Puff is the first asset-first Schema V1 effect: JSON + manifest assets + generic compiler/runtime. Existing diagnostics stay available unchanged.</p>
+            <p>Dust Puff, Critical Hit and Goal Celebration are Schema V1 effects: JSON + manifest assets + generic compiler/runtime. Existing diagnostics stay available unchanged.</p>
           </div>
         </div>
 
@@ -194,7 +194,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P4.3.0</span>
+              <span class="runtime-hud__build">P4.4.0</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -275,7 +275,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P4.3.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P4.4.0.</pre>
           </section>
 
           <section class="debug-section">
@@ -296,8 +296,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p4.3.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p4.3.0"></script>
-  <script type="module" src="./js/runtime-lab-ui.js?v=p4.3.0"></script>
+  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p4.4.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p4.4.0"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p4.4.0"></script>
 </body>
 </html>
