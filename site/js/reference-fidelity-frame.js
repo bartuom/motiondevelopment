@@ -1,4 +1,4 @@
-const BUILD = 'P3.14.0';
+const BUILD = 'P3.14.1';
 const query = new URLSearchParams(location.search);
 const referenceId = query.get('ref') ?? 'particlr-explosion';
 const canvas = document.querySelector('#reference-canvas');
@@ -47,15 +47,21 @@ async function runParticlrExplosion() {
 
   const [PIXI, core, pixiAdapter] = await Promise.all([
     import('https://esm.sh/pixi.js@8.19.0'),
-    import('https://esm.sh/@particlr/runtime@0.8.0?deps=pixi.js@8.19.0'),
-    import('https://esm.sh/@particlr/runtime@0.8.0/pixi?deps=pixi.js@8.19.0')
+    import('https://esm.sh/@particlr/runtime@0.5.2?deps=pixi.js@8.19.0'),
+    import('https://esm.sh/@particlr/runtime@0.5.2/pixi?deps=pixi.js@8.19.0')
   ]);
 
   const { Application } = PIXI;
   const { parseParticle, Effect } = core;
   const { PixiParticleRenderer } = pixiAdapter;
 
-  const sourceText = await (await fetch('./reference-data/particlr-explosion.prt?v=p3.14.0')).text();
+  if (typeof parseParticle !== 'function' || typeof Effect !== 'function' || typeof PixiParticleRenderer !== 'function') {
+    throw new Error('Published @particlr/runtime 0.5.2 API surface is incomplete in CDN build.');
+  }
+
+  const sourceResponse = await fetch('./reference-data/particlr-explosion.prt?v=p3.14.1');
+  if (!sourceResponse.ok) throw new Error(`Particlr fixture fetch failed: HTTP ${sourceResponse.status}`);
+  const sourceText = await sourceResponse.text();
   const parsed = parseParticle(sourceText);
   if (!parsed?.doc) {
     throw new Error(`Particlr parse failed${parsed?.errors?.length ? `: ${parsed.errors.join(' | ')}` : ''}`);
@@ -105,11 +111,11 @@ async function runParticlrExplosion() {
     if (event.data?.type === 'fxdeck-reference-stop') destroyCurrent();
   });
 
-  setStatus('EXACT: Particlr runtime 0.8.0 / fixture seed 1337', 'ready');
+  setStatus('EXACT: Particlr runtime 0.5.2 / fixture seed 1337', 'ready');
   notify('fxdeck-reference-ready', {
     label: REFERENCES[referenceId].label,
-    engine: '@particlr/runtime 0.8.0 + PixiJS 8.19.0',
-    fidelity: 'exact fixture + exact runtime'
+    engine: '@particlr/runtime 0.5.2 + PixiJS 8.19.0',
+    fidelity: 'exact 0.5.2 fixture + matching published runtime'
   });
 }
 
