@@ -21,6 +21,11 @@ dust-soft-03
 critical-slash
 hero-streak
 hero-flare
+confetti-strip
 ```
 
-Assets are added only when a real effect proves the need. Session 4 reused `hero-streak` and `hero-flare` across multiple hero effects instead of creating effect-local sprite packs.
+Assets are added only when a real effect proves the need. P4.4.1 added `confetti-strip` because Goal Celebration needed readable rectangular confetti rather than more geometric point-burst noise.
+
+## Performance note
+
+The current Dust Puff soft sprites are deliberately retained for visual continuity, but repeated overlap was observed to be expensive. Their large translucent coverage and SVG blur make them explicit Session 6 optimization candidates. Measure raster WebP/PNG alternatives and overdraw before changing art or runtime behavior.
