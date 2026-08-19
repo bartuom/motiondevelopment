@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "assets": {
+    "dust-soft-01": {
+      "type": "image",
+      "src": "../../assets/vfx/dust-soft-01.svg",
+      "width": 128,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/dust-soft-01.svg"
+    },
+    "dust-soft-02": {
+      "type": "image",
+      "src": "../../assets/vfx/dust-soft-02.svg",
+      "width": 128,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/dust-soft-02.svg"
+    },
+    "dust-soft-03": {
+      "type": "image",
+      "src": "../../assets/vfx/dust-soft-03.svg",
+      "width": 128,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/dust-soft-03.svg"
+    }
+  }
+}
