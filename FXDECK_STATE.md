@@ -11,11 +11,12 @@
 
 ## Current state
 
-- **Milestone:** P3 — Production Runtime Capability Completion.
-- **Authored-effect build:** **P3.12.0**.
-- **Hardening patches:** Critical Hit bridge **P3.11.1**; production catalog smoke gate **P3.12.1**.
-- **Status:** ACTIVE — representative effect set implemented. Magic Burst, Critical Hit and Football Card still need visual acceptance. Code-level P3 exit review found no justified Core redesign.
-- **Runtime Lab:** `site/heavy-impact-lab.html` — P3.12.0 authored build with current hardening patches.
+- **Milestone:** **P3.13 — Reference-Driven Visual Quality Pass**.
+- **Last authored-effect build:** P3.12.0.
+- **Hardening patches:** Critical Hit bridge P3.11.1; production catalog smoke gate P3.12.1.
+- **Status:** ACTIVE — Core/runtime capability work is frozen while visual quality catches up.
+- **Runtime Lab:** `site/heavy-impact-lab.html`.
+- **Reference harvest:** `references/`.
 - **Core Lab:** `site/fxdeck-core-lab.html` — P1.3.1.
 - **Raw reference:** `site/webfx-lab.html` — P0.3.0.
 
@@ -26,166 +27,203 @@
 FXDeck is a lightweight gameplay VFX runtime for web games. Game code triggers complete, versioned cues while FXDeck owns adapters, sequencing and lifecycle.
 
 ```text
-Minimal Core
-↓
-Real effect
-↓
-Observe actual repetition / failure
-↓
-Extract only proven abstractions
+GAME
+  ↓
+FXDeck.play(effect, params)
+  ↓
+asset/config driven cue
+  ↓
+particles / sprite / ribbon / DOM / screen response
 ```
 
-Primary KPI: **how much bespoke runtime plumbing is required to add the next effect?**
+The runtime serves the visual effect. The visual effect must not exist merely to demonstrate the runtime.
+
+Primary visual gate:
+
+> **Would this effect be strong enough to show in a Senior VFX / Motion Developer portfolio?**
+
+If not, it is not finished regardless of how clean the runtime implementation is.
 
 ---
 
-# Production effect set
+# P3.13 direction change — 2026-08-19
 
-## Heavy Impact — accepted one-shot composite
-- flash / sparks / debris / target recoil / screen kick;
-- lifecycle and overlap cleanup validated.
+User review established that Football Card and Critical Hit are visually weak, while Magic Burst is the strongest recent cue but still below the desired bar. The main failure is not missing runtime capability; it is weak source art / shape language caused by over-reliance on circles, triangles, CSS gradients and improvised DOM shapes.
 
-## Explosion — accepted second one-shot composite
-- different authored cue without Core redesign;
-- reuses semantic particle bursts, ownership and screen hooks.
+## New rule: reference first
 
-## Fireball — accepted moving-source archetype
-- independently owned moving hero visual;
-- runtime direction/intensity;
-- sparse trail;
-- child `Explosion` handoff;
-- concurrent ownership / cleanup.
+For visual V2 work:
 
-## Environment Emitter — accepted sustained archetype
+1. choose a strong source reference;
+2. harvest its legal config/assets/behavior;
+3. record origin and license;
+4. identify what creates the visual quality: texture/sprite, blend, timing, curves, layering, trail/ribbon behavior;
+5. reproduce/adapt that language in FXDeck;
+6. preserve FXDeck lifecycle/API, not the old weak visuals.
 
-```js
-const source = FXDeck.play("environmentEmitter", {
-  position: origin,
-  direction: 270,
-  intensity: 1.0
-});
-FXDeck.update(source, { position: nextPosition, intensity: 1.6 });
-FXDeck.stop(source);
-```
+Do **not** rebuild a proven textured/ribbon effect from primitives unless profiling or licensing forces it.
 
-Proven: independent long-running sources, live position/intensity updates and explicit cleanup.
+## Core freeze
 
-## Rare Reward — retained fantasy UI/card reference
-Large DOM/SVG composition, staged Web Animations, particle accents and owned cleanup. Intentionally separate from Football Card.
+Until the visual pass produces strong showcase effects, do not spend time on:
+- new Core abstractions;
+- scheduler redesign;
+- generic node/timeline systems;
+- extra synthetic benchmarks;
+- quality tiers;
+- bundle slimming;
+- more unrelated archetypes.
 
-## Football Card Reveal — implemented, visual acceptance pending
-Persistent back-card idle → click reveal → 3D flip → staged football information → rarity hit → settled persistent front. P3.10.1 moved the art toward ivory/warm-white/metallic-gold premium football collectible language and away from astral/fantasy styling.
-
-## Critical Hit — implemented, visual acceptance pending
-
-```js
-FXDeck.play("criticalHit", {
-  position: hitPosition,
-  direction: hitDirection,
-  intensity: 1.0
-});
-```
-
-P3.11.0 timing:
-- 0 ms directional DOM slash + compact flash;
-- 0 ms hero streaks;
-- 6 ms shards;
-- 18 ms target snap;
-- 24 ms restrained screen kick;
-- 34 ms small `CRIT` accent;
-- 260 ms cleanup.
-
-Essential hit readability is immediate DOM work; scheduled particles remain secondary.
-
-### P3.11.1 inspector fix
-`normalizeDirection()` returns `{ vector, degrees }`. The Critical Hit inspector incorrectly read `direction.x/y`, which could throw when the effect was selected. It now reads `direction.vector.x/y`. Authored Critical Hit behavior is unchanged.
-
-## Magic Burst — implemented, visual acceptance pending
-
-```js
-FXDeck.play("magicBurst", {
-  position: origin,
-  direction: 35,
-  intensity: 1.0
-});
-```
-
-P3.12.0 timing:
-- 0 ms asymmetric core wedge + three curved DOM ribbons;
-- 18 ms primary colored mote fan;
-- 42 ms restrained screen response;
-- 72 ms offset secondary lobe + particle echo;
-- 118 ms irregular color pulse;
-- 640 ms cleanup.
-
-Design rule: curved/directional/displaced composition, not `core + radial ring + even burst`.
+Resume those only after visual acceptance or a measured blocker.
 
 ---
 
-# Production catalog
+# Reference Harvest
 
-`registerProductionEffects()` now registers all eight production effects:
+## Particlr — Explosion
 
-1. Heavy Impact
-2. Explosion
-3. Fireball
-4. Environment Emitter
-5. Rare Reward
-6. Football Card Reveal
-7. Critical Hit
-8. Magic Burst
+**Status: HARVESTED public runtime fixture.**
 
-P3.12 fixed the earlier inconsistency where Critical Hit existed through its Runtime Lab bridge but was absent from the canonical catalog.
+Files:
+- `references/particlr/explosion-runtime-fixture.prt`
+- `references/particlr/explosion-analysis.md`
 
-### P3.12.1 catalog smoke gate
-`site/js/production-catalog-runtime-sync.js` now:
-- imports the canonical P3.12 catalog with a fresh cache key;
-- re-registers it into the live Runtime Lab after bootstrap;
-- resolves all eight expected production IDs;
-- writes `globalThis.FXDeckCatalogSmoke`;
-- logs PASS/FAIL in the Runtime Lab console.
+Important language:
+- flash: additive `circle-soft`, 0.15 s;
+- fireball: 24 additive soft particles, 0.4–0.7 s, warm color decay, gravity + drag;
+- smoke: real `smoke` texture, normal blend, delayed 0.05 s, 0.8–1.4 s, expands while fading;
+- three distinct temporal/material layers rather than one radial burst.
 
-This regression guard exists because a real missing-catalog failure already occurred.
+**Target:** Explosion V2.
+
+## Particlr — Dust Puff
+
+**Status: exact editor preset export pending.**
+
+The public `brac/particlr-runtime` mirror explicitly says monorepo `presets/` fixtures are not shipped there. Do not invent numeric settings.
+
+File:
+- `references/particlr/dust-puff.pending.md`
+
+**Target:** Dust Puff V1.
+
+## Particlr — Rain
+
+**Status: exact editor preset export pending.**
+
+File:
+- `references/particlr/rain.pending.md`
+
+Supporting exact reference while waiting:
+- `references/pixi-particle-emitter/rain-reference.json`
+- upstream Pixi Rain uses `HardRain.png`, 0.81 s life, 0.004 s frequency, speed 3000, alpha 0.5, fixed 65° rotation and a long thin rectangular spawn field.
+
+**Target:** Rain V1.
+
+## tsParticles — Ribbons
+
+**Status: HARVESTED exact bundle defaults/runtime recipe.**
+
+File:
+- `references/tsparticles/ribbons-defaults.json`
+
+Key defaults:
+- count 5;
+- ribbon internal count 60;
+- drag 0.02;
+- oscillation distance 100–140;
+- oscillation speed 3–5;
+- particle distance 8;
+- velocity inherit 4–6;
+- particle shape `ribbon`;
+- actual ribbon plugin + motion plugin + emitter stack.
+
+**Target:** Magic Burst V2 should use actual ribbon behavior instead of DOM/CSS imitation.
+
+## tsParticles — Fireworks
+
+**Status: HARVESTED exact bundle defaults/runtime recipe.**
+
+File:
+- `references/tsparticles/fireworks-defaults.json`
+
+Important language:
+- bottom emitter launches one rocket at a time;
+- line/round-cap rocket follows path;
+- inverse gravity launch;
+- `destroy: split` triggers the detonation;
+- split particles move outside, decay, fade and die independently;
+- `lighter` blend creates luminous accumulation;
+- structure is **launch → split/detonation → secondary decay**, not all layers at t=0.
+
+**Target:** multi-stage language for Fireball V2 / spell launches / later explosive cues.
+
+## Provenance
+
+- `references/PROVENANCE.md`
+- `CREDITS.md`
+
+No third-party binary art/audio enters `site/assets/` without a provenance/license entry first.
 
 ---
 
-# P3 code-level exit review — 2026-08-19
+# Current production effect set
 
-## Result: **no Core redesign justified**
+1. Heavy Impact — technically accepted; visual quality not considered final showcase bar.
+2. Explosion — technically accepted; **visual V2 planned from Particlr language**.
+3. Fireball — moving-source archetype accepted; visual V2 later.
+4. Environment Emitter — sustained/update archetype accepted.
+5. Rare Reward — retained secondary reference, not current hero target.
+6. Football Card Reveal — implementation complete; **visual direction rejected/frozen for now**.
+7. Critical Hit — implementation complete; **visual quality rejected; V2 postponed until better slash/impact source art is chosen**.
+8. Magic Burst — strongest recent cue, but **V2 planned using actual tsParticles ribbon behavior**.
 
-Critical Hit and Magic Burst were both added without changes to `FXDeckRuntime`, EffectInstance ownership, CoordinateAdapter or the particle adapter contract.
-
-Existing proven helpers cover real runtime repetition:
-- `runHook()`;
-- `burstTracked()`;
-- `spawnTracked()`;
-- `scheduleAsync()`;
-- EffectInstance timeout/cleanup ownership;
-- semantic burst priority/scheduler;
-- `FXDeck.update()` for real sustained/interactive cases.
-
-### Repetition that should NOT move into Core
-Critical Hit and Magic Burst have similar Runtime Lab bridge plumbing: option injection, inspector text, API preview, capture-phase click handlers and authored DOM animations. This is **tooling/presentation duplication**, not consumer runtime plumbing. Do not turn it into a Core timeline/state/visual graph.
-
-A future Runtime Lab helper may be warranted if more effects are added to the lab, but that belongs under lab tooling, not `site/fxdeck/core`.
-
-### Minor effect-local repetition
-Small helpers such as numeric range scaling repeat across several authored effects. That is not currently expensive enough to justify a new public abstraction.
+`registerProductionEffects()` and the P3.12.1 catalog smoke gate still cover all eight canonical effects.
 
 ---
 
-# Runtime topology decisions
+# Immediate roadmap
+
+## A. Complete Reference Harvest
+- [x] Particlr public Explosion fixture.
+- [ ] Particlr exact Dust Puff editor export.
+- [ ] Particlr exact Rain editor export.
+- [x] tsParticles Ribbons exact source recipe.
+- [x] tsParticles Fireworks exact source recipe.
+- [x] Pixi Particle Emitter Rain supporting config.
+
+## B. First visual rebuilds
+1. **Magic Burst V2** — actual ribbon plugin/shape behavior, no fake CSS hero ribbons.
+2. **Explosion V2** — flash + fire mass + delayed textured smoke + secondary breakup based on harvested Particlr language.
+3. **Dust Puff V1** — after exact Particlr export.
+4. **Rain V1** — after exact Particlr export, using Pixi Rain as supporting texture/motion reference.
+
+## C. Then reassess
+- Fireball V2 using improved multi-stage language;
+- Critical Hit V2 only after sourcing/creating a good slash/impact sprite or flipbook;
+- Football Card remains frozen until gameplay VFX hero examples meet the quality bar.
+
+## D. Only after visual acceptance
+- production resize/DPR/orientation/device matrix;
+- matched raw tsParticles vs FXDeck overhead benchmark;
+- per-effect low/medium/high quality policy;
+- bundle slimming/custom tsParticles load;
+- P4 packaging/docs/productization.
+
+---
+
+# Runtime topology decisions retained
 
 ## One-shot particles
 - `shared-scheduled` — production default;
-- `shared-direct` — immediate diagnostic path;
+- `shared-direct` — diagnostic path;
 - `per-play emitter` — reference path.
 
 ## Sustained particles
 Environment uses one explicit sustained emitter per source.
 
 ## DOM/SVG
-Short transient hooks stay effect-local. `DomSpriteAdapter` remains for independently owned persistent/moving visuals where a real effect requires it.
+Use only where it is the correct authored medium. Do not use DOM primitives as a substitute for proper particle textures, spritesheets or ribbon behavior.
 
 ---
 
@@ -201,63 +239,34 @@ Short transient hooks stay effect-local. `DomSpriteAdapter` remains for independ
 
 ---
 
-# Remaining work
-
-1. **User visual acceptance:** Magic Burst.
-2. **User visual/readability acceptance:** Critical Hit.
-3. **User visual acceptance:** Football Card P3.10.1.
-4. Effect-local polish only where those reviews identify a problem.
-5. Production resize / DPR / orientation / device matrix.
-6. Asset/lifecycle hardening only if real tests expose a blocker.
-7. Matched raw-tsParticles vs FXDeck runtime-overhead benchmark.
-8. Per-effect low/medium/high quality policy from representative workloads.
-9. Bundle slimming/custom tsParticles load after behavior is locked.
-10. P4 productization: cleaner package/API docs, integration examples and optional schema/agent authoring layer.
-
-Do **not** add more effect archetypes before the visual gates and production hardening unless a real product requirement proves a missing capability.
-
----
-
-# P4 library status
-
-- [x] Heavy Impact.
-- [x] Explosion.
-- [x] Fireball.
-- [x] Environment Emitter.
-- [x] Rare Reward.
-- [~] Football Card Reveal — implementation complete, visual acceptance pending.
-- [~] Critical Hit — implementation complete, visual acceptance pending; P3.11.1 inspector bug fixed.
-- [~] Magic Burst — implementation complete, visual acceptance pending.
-
----
-
 # Key decisions
 
-1. tsParticles is backend, not public API.
-2. Real effects prove abstractions before extraction.
-3. Version/variant are authored; runtime params alter one play.
-4. Scheduled shared bursts are default for short one-shots.
-5. Every resource is owned by an EffectInstance or explicit adapter handle.
-6. Fireball reuses Explosion instead of duplicating impact logic.
-7. `FXDeck.update()` exists only because real sustained/interactive effects required it.
-8. Effect Grid is product-level scaling; synthetic stress is advanced isolation.
-9. Intensity affects authored visual energy, not only particle count.
-10. Critical Hit keeps essential readability outside deferred particle work.
-11. Magic Burst keeps curved/asymmetric hero motion effect-local.
-12. Runtime Lab presentation duplication is not a reason to grow FXDeck Core.
-13. Performance work resumes after visual acceptance or for a real blocker.
-14. Every changed browser module receives a fresh cache key before handoff.
+1. tsParticles remains the particle backend, not the public FXDeck API.
+2. FXDeck Core is frozen during P3.13 visual work.
+3. Reference assets/configs/behavior are preferred over re-inventing quality from primitives.
+4. Every copied third-party asset/config requires provenance/license tracking.
+5. Particlr exact Dust Puff/Rain values must come from real editor exports; never fabricate them.
+6. Magic Burst V2 should test the actual tsParticles ribbon technology.
+7. Explosion V2 should preserve the harvested layered timing/material logic, not the current weak visuals.
+8. Football Card is frozen and not a hero showcase target.
+9. Critical Hit V2 waits for better source art/flipbook language.
+10. Performance work resumes after visual acceptance or for a real blocker.
 
 ---
 
 # Changelog — 2026-08-19
 
-- **P3.12.1 hardening:** production catalog smoke gate validates all eight canonical effects.
-- **P3.11.1 fix:** corrected Critical Hit inspector access from `direction.x/y` to `direction.vector.x/y`.
-- **P3.12.0 Magic Burst:** asymmetric 640 ms stylized cue; no Core redesign.
-- **P3.12.0 catalog cleanup:** Critical Hit + Magic Burst added to `registerProductionEffects()`.
-- **P3.11.0 Critical Hit:** ultra-short scheduler-independent gameplay readability cue.
-- **P3.10.1 Football Card:** premium ivory/gold sports collectible visual pivot.
-- **P3.10.0 Football Card:** persistent interactive reveal lifecycle.
+- **P3.13 Reference Harvest:** added licensed/provenance-tracked source material under `references/`.
+- Harvested Particlr public Explosion runtime fixture and layer analysis.
+- Recorded Particlr Dust Puff/Rain as exact-export-pending instead of fabricating configs.
+- Harvested exact tsParticles Ribbons bundle defaults + runtime recipe.
+- Harvested exact tsParticles Fireworks defaults + launch/split/decay recipe.
+- Harvested exact Pixi Particle Emitter Rain config as supporting Rain reference.
+- Replaced old `CREDITS.md` assumption that all visuals are repository-native with a provenance-based third-party reference policy.
+- **P3.12.1:** production catalog smoke gate validates all eight canonical effects.
+- **P3.11.1:** Critical Hit inspector direction access fix.
+- **P3.12.0:** Magic Burst implementation; no Core redesign.
+- **P3.11.0:** Critical Hit implementation.
+- **P3.10.1:** Football Card visual pivot.
 
-Earlier accepted milestones: P3.9 Rare Reward; P3.8 Environment/live update; P3.7 Effect Grid/debug hierarchy; P3.6 Fireball; P3.5 scheduler quality experiments; P3.4 Explosion; P3.3 cancellation gate; P3.2 scheduler integration; P2 Heavy Impact; P1 Core; P0 raw tsParticles spike.
+Earlier accepted milestones: P3.9 Rare Reward; P3.8 Environment/live update; P3.7 Effect Grid/debug hierarchy; P3.6 Fireball; P3.5 scheduler experiments; P3.4 Explosion; P3.3 cancellation gate; P3.2 scheduler integration; P2 Heavy Impact; P1 Core; P0 raw tsParticles spike.
