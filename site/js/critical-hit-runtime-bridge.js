@@ -1,7 +1,7 @@
 import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.6.0';
 import { registerCriticalHit } from '../fxdeck/effects/critical-hit.js?v=p3.11.0';
 
-const BUILD = 'P3.11.0';
+const BUILD = 'P3.11.1';
 const stage = document.querySelector('#impact-stage');
 const domLayer = document.querySelector('#impact-dom-layer');
 const target = document.querySelector('#impact-target');
@@ -221,7 +221,7 @@ function updateInspector() {
   setText('#resolved-effect', 'criticalHit / v1 / default');
   setText('#resolved-path', pathLabel());
   setText('#resolved-intensity', `${intensity.toFixed(1)}×`);
-  setText('#resolved-direction', `${direction.degrees.toFixed(0)}°  { ${direction.x.toFixed(3)}, ${direction.y.toFixed(3)} }`);
+  setText('#resolved-direction', `${direction.degrees.toFixed(0)}°  { ${direction.vector.x.toFixed(3)}, ${direction.vector.y.toFixed(3)} }`);
   setText('#resolved-layer-a-label', 'Hero streaks');
   setText('#resolved-layer-a', `${streaks} particles / narrow 18° fan`);
   setText('#resolved-layer-b-label', 'Shards');
@@ -319,7 +319,7 @@ function normalizeVisibleBuild() {
   const intro = document.querySelector('.intro');
   if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
   if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.11.0 adds Critical Hit: an ultra-short directional gameplay cue where immediate slash/flash readability is decoupled from scheduled particle decoration. Football Card P3.10.1 remains visually pending.';
+  if (intro) intro.textContent = 'P3.11.1 fixes Critical Hit direction inspector vector formatting; the authored P3.11.0 effect behavior is unchanged.';
 }
 
 waitForRuntime()
@@ -330,7 +330,7 @@ waitForRuntime()
     ensureOption();
     installInterceptors();
     normalizeVisibleBuild();
-    appendLog(`${BUILD} Critical Hit registered: 0 ms slash/flash + hero streaks, 6 ms shards, 260 ms hard cleanup`);
+    appendLog(`${BUILD} Critical Hit registered: direction inspector fixed; 0 ms slash/flash + hero streaks, 6 ms shards, 260 ms hard cleanup`);
     if (isSelected()) updateUi();
 
     window.setInterval(() => {
