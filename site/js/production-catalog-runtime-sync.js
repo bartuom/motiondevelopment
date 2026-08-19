@@ -1,6 +1,6 @@
-import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.13.1';
+import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.13.2';
 
-const BUILD = 'P3.13.1';
+const BUILD = 'P3.13.2';
 const EXPECTED_EFFECTS = [
   'heavyImpact',
   'explosion',
