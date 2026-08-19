@@ -14,7 +14,7 @@
 ## Current state — 2026-08-19
 
 - **Milestone:** **P3.14 — Reference Fidelity Pass**.
-- **Current user-testable build:** **P3.14.0**.
+- **Current user-testable build:** **P3.14.1**.
 - **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
 - **Core/runtime capability work:** FROZEN while visual quality catches up.
 - **Current visual decision:** custom Explosion V2 and Magic Burst V2 are **experimental / visually rejected for showcase quality**.
@@ -67,10 +67,15 @@ The iframe is deliberate: fidelity references must run with their source runtime
 ## SOURCE — Particlr Explosion exact
 
 Source:
-- upstream: `brac/particlr-runtime/test/fixtures/explosion.prt`
+- upstream release commit: `brac/particlr-runtime@112a750a30ff61dae60058e3c600d2c8bf0ff726`
+- fixture: `test/fixtures/explosion.prt` from that **0.5.2 release commit**
 - deployed calibration copy: `site/reference-data/particlr-explosion.prt`
-- renderer: `@particlr/runtime@0.8.0` + PixiJS 8.19.0
+- renderer: published `@particlr/runtime@0.5.2` + PixiJS 8.19.0
 - deterministic seed: `1337`
+
+The 0.5.2 README explicitly documents the exact integration API used by the frame: `parseParticle` + `Effect` + `PixiParticleRenderer`.
+
+Important distinction: this is the exact public runtime **Explosion fixture**, not a claim that it is the separate CC0 editor preset named Explosion.
 
 Exact fixture layers:
 
@@ -216,7 +221,7 @@ Keep for later raw-tsParticles vs FXDeck overhead comparison.
 
 # Reference harvest status
 
-- Particlr Explosion — exact public fixture harvested and now directly rendered in P3.14.
+- Particlr Explosion — exact public 0.5.2 runtime fixture harvested and directly rendered with matching published runtime in P3.14.1.
 - Particlr Dust Puff — exact editor export still pending; do not fabricate.
 - Particlr Rain — exact editor export still pending; do not fabricate.
 - tsParticles Ribbons — exact source defaults harvested and direct bundle playback added.
@@ -231,14 +236,16 @@ See `references/PROVENANCE.md` for license/provenance.
 
 User must now judge the **SOURCE** entries first:
 
-1. Particlr Explosion exact — does it actually match the quality/reference the user had in mind?
+1. Particlr Explosion exact public fixture — does it match the quality/reference the user had in mind?
 2. tsParticles Ribbons exact — does it look like the good Playground Ribbons example?
 3. tsParticles Fireworks exact — does it look like the good Playground Fireworks example?
 
-Only after those are confirmed:
+If Particlr public fixture does not match the editor preset the user meant, acquire/export the actual CC0 editor Explosion preset before adapting it.
+
+Only after source references are confirmed:
 
 ```text
-Particlr Explosion exact
+Particlr Explosion source
 → Explosion V3 adaptation
 
 Ribbons exact
@@ -254,10 +261,12 @@ Change one visual/behavioral dimension at a time and compare against the exact s
 
 # Changelog — 2026-08-19
 
+- **P3.14.1:** corrected Particlr calibration from an unreleased `0.8.0` assumption to the matching published **0.5.2** runtime.
+- **P3.14.1:** verified in upstream release commit that schemaVersion 12 `explosion.prt` and `parseParticle` / `Effect` / `PixiParticleRenderer` all exist in 0.5.2.
+- **P3.14.1:** fresh cache keys across canonical Runtime Lab/reference frame.
 - **P3.14.0:** source-fidelity calibration added to canonical Runtime Lab.
-- **P3.14.0:** exact Particlr Explosion fixture promoted to browser calibration data and rendered through `@particlr/runtime@0.8.0` + PixiJS.
+- **P3.14.0:** exact public Particlr Explosion fixture promoted to browser calibration data.
 - **P3.14.0:** official tsParticles Ribbons bundle playback added with harvested exact defaults.
 - **P3.14.0:** official tsParticles Fireworks bundle playback added with harvested Playground settings.
 - **P3.14.0:** source references run in an isolated iframe so they do not mutate the production FXDeck engine.
-- **P3.14.0:** canonical boot opens the exact Particlr Explosion reference first.
 - **P3.13.x:** custom Explosion V2 / Magic Burst V2 experiments implemented; both later rejected as insufficiently faithful visually.
