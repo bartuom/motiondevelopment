@@ -6,14 +6,14 @@
   <meta name="description" content="FXDeck gameplay VFX runtime lab with clean play and debug workspaces.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.14.1">
-  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.14.1">
-  <link rel="stylesheet" href="./environment-source.css?v=p3.14.1" data-environment-source>
-  <link rel="stylesheet" href="./rare-reward.css?v=p3.14.1">
-  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.14.1" data-football-card-reveal>
-  <link rel="stylesheet" href="./critical-hit.css?v=p3.14.1" data-critical-hit>
-  <link rel="stylesheet" href="./magic-burst.css?v=p3.14.1" data-magic-burst>
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.14.1">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.15.0">
+  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.15.0">
+  <link rel="stylesheet" href="./environment-source.css?v=p3.15.0" data-environment-source>
+  <link rel="stylesheet" href="./rare-reward.css?v=p3.15.0">
+  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.15.0" data-football-card-reveal>
+  <link rel="stylesheet" href="./critical-hit.css?v=p3.15.0" data-critical-hit>
+  <link rel="stylesheet" href="./magic-burst.css?v=p3.15.0" data-magic-burst>
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.15.0">
 </head>
 <body data-workspace-mode="play" data-hud-mode="basic">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -31,10 +31,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.14.1</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.15.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.14.1 Reference Fidelity Pass: exact source references come before FXDeck reinterpretation. Particlr Explosion is pinned to its matching published 0.5.2 runtime/fixture; official tsParticles Ribbons and Fireworks bundle recipes remain direct calibration targets.</p>
+      <p class="intro">P3.15 Native Reference Integration: Ribbons and Fireworks reference recipes run directly inside the existing FXDeck TsParticlesAdapter container. No iframe, no second canvas and no standalone demo background.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -61,17 +61,17 @@
             <p class="label">Effect</p>
             <select id="effect-select">
               <option value="fireball">Fireball — moving-source proof</option>
-              <option value="explosion" selected>Explosion V2 — Particlr reference pass</option>
+              <option value="explosion" selected>Explosion V2 — experimental reference adaptation</option>
               <option value="heavyImpact">Heavy Impact — production one-shot</option>
               <option value="criticalHit">Critical Hit — ultra-short readability cue</option>
-              <option value="magicBurst">Magic Burst V2 — real tsParticles ribbons</option>
+              <option value="magicBurst">Magic Burst V2 — experimental ribbon adaptation</option>
             </select>
           </div>
 
           <div class="control-row">
             <div class="control control--compact">
               <p class="label">Version</p>
-              <select disabled><option id="authored-version-label">v2 — Explosion / Particlr harvest</option></select>
+              <select disabled><option id="authored-version-label">v2 — experimental</option></select>
             </div>
             <div class="control control--compact">
               <p class="label">Variant</p>
@@ -107,7 +107,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>P3.14 first calibrates against exact third-party source effects. Custom FXDeck V2 experiments remain available, but visual decisions should be made only after the source references are verified in this same lab.</p>
+            <p>Reference recipes now reuse the same persistent tsParticles backend as FXDeck gameplay effects. Particlr remains an external visual/config reference and is not booted as a second runtime inside this lab.</p>
           </div>
         </div>
 
@@ -168,10 +168,10 @@
         <div class="canvas-toolbar">
           <div>
             <p class="label">02 / Preview</p>
-            <strong id="preview-title">Explosion V2 — Particlr reference pass</strong>
+            <strong id="preview-title">Explosion V2 — experimental</strong>
           </div>
           <div class="canvas-toolbar__right">
-            <span id="preview-note">Click to move target + fire texture-driven layered explosion</span>
+            <span id="preview-note">Click to move target + fire current FXDeck effect</span>
             <label class="hud-control" for="hud-mode">
               <span>HUD</span>
               <select id="hud-mode" aria-label="Runtime diagnostics HUD mode">
@@ -198,7 +198,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.14.1</span>
+              <span class="runtime-hud__build">P3.15.0</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -224,7 +224,7 @@
 
           <div class="caption">
             <strong id="caption-title">explosion / v2 / default</strong>
-            <span id="caption-note">circle-soft flash → fireball mass → staged smoke texture</span>
+            <span id="caption-note">experimental reference adaptation</span>
           </div>
         </div>
       </section>
@@ -236,7 +236,7 @@
             <h2>Resolved cue</h2>
           </div>
 
-          <p id="effect-summary" class="summary">Reference-driven Explosion V2 using the harvested Particlr layering model. The hero read comes from soft texture-driven fireball and staged smoke rather than primitive-only geometry.</p>
+          <p id="effect-summary" class="summary">Current Explosion V2 remains an experimental reference adaptation. Use the native Ribbons/Fireworks reference recipes below the production effects to compare source behavior on the same FXDeck particle backend.</p>
 
           <section class="inspector-section">
             <p class="label">Authored timing</p>
@@ -279,7 +279,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P3.14.1.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P3.15.0.</pre>
           </section>
 
           <section class="debug-section">
@@ -302,13 +302,13 @@
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js"></script>
-  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p3.14.1"></script>
-  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.14.1"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.14.1"></script>
-  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.14.1"></script>
-  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.14.1"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.14.1"></script>
-  <script type="module" src="./js/runtime-lab-ui.js?v=p3.14.1"></script>
-  <script type="module" src="./js/runtime-main-authority.js?v=p3.14.1"></script>
+  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p3.15.0"></script>
+  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.15.0"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.15.0"></script>
+  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.15.0"></script>
+  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.15.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.15.0"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p3.15.0"></script>
+  <script type="module" src="./js/runtime-main-authority.js?v=p3.15.0"></script>
 </body>
 </html>
