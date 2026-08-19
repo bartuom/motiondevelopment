@@ -1,5 +1,5 @@
-const BUILD = 'P3.13.3';
-const INTRO = 'P3.13.3 fixes the reference-driven V2 boot path: Explosion V2 initializes independently, while Magic Burst V2 explicitly loads the tsParticles motion and ribbon plugins before use.';
+const BUILD = 'P3.13.4';
+const INTRO = 'P3.13.4 initializes tsParticles motion and ribbon support before the canonical particle container is created, so Magic Burst V2 can use the real ribbon drawer inside the same Runtime Lab.';
 const BOOT_SETTLE_MS = 1500;
 
 const effectInput = document.querySelector('#effect-select');
