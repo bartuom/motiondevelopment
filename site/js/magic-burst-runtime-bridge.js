@@ -1,7 +1,8 @@
 import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.6.0';
-import { registerMagicBurst } from '../fxdeck/effects/magic-burst.js?v=p3.12.0';
+import { registerExplosionV2 } from '../fxdeck/effects/explosion-v2.js?v=p3.13.1';
+import { registerMagicBurstV2 } from '../fxdeck/effects/magic-burst-v2.js?v=p3.13.1';
 
-const BUILD = 'P3.12.0';
+const BUILD = 'P3.13.1';
 const stage = document.querySelector('#impact-stage');
 const domLayer = document.querySelector('#impact-dom-layer');
 const target = document.querySelector('#impact-target');
@@ -16,23 +17,11 @@ const logOutput = document.querySelector('#p2-log');
 const apiPreview = document.querySelector('#api-preview');
 
 let fx = null;
-let active = false;
+let ready = false;
 let position = {
   x: Math.max(1, stage?.clientWidth ?? 1) * .5,
   y: Math.max(1, stage?.clientHeight ?? 1) * .5
 };
-
-function waitForRuntime(timeoutMs = 8000) {
-  return new Promise((resolve, reject) => {
-    const startedAt = performance.now();
-    const poll = () => {
-      if (globalThis.FXDeck?.play && globalThis.FXDeckLab?.screenKickController) return resolve(globalThis.FXDeck);
-      if (performance.now() - startedAt > timeoutMs) return reject(new Error('FXDeck runtime was not ready for Magic Burst.'));
-      window.setTimeout(poll, 20);
-    };
-    poll();
-  });
-}
 
 function appendLog(message) {
   if (!logOutput) return;
@@ -41,48 +30,71 @@ function appendLog(message) {
   logOutput.scrollTop = logOutput.scrollHeight;
 }
 
-function ensureStylesheet() {
-  if (document.querySelector('link[data-magic-burst]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = './magic-burst.css?v=p3.12.0';
-  link.dataset.magicBurst = 'true';
-  document.head.appendChild(link);
+function waitForRuntime(timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const startedAt = performance.now();
+    const poll = () => {
+      if (globalThis.FXDeck?.play && globalThis.FXDeckLab?.screenKickController && globalThis.tsParticles) {
+        resolve(globalThis.FXDeck);
+        return;
+      }
+      if (performance.now() - startedAt > timeoutMs) {
+        reject(new Error('FXDeck runtime was not ready for P3.13 V2 bridge.'));
+        return;
+      }
+      window.setTimeout(poll, 20);
+    };
+    poll();
+  });
 }
 
-function ensureOption() {
-  if (!effectInput || effectInput.querySelector('option[value="magicBurst"]')) return;
-  const option = document.createElement('option');
-  option.value = 'magicBurst';
-  option.textContent = 'Magic Burst — asymmetric stylized cue';
-  const critical = effectInput.querySelector('option[value="criticalHit"]');
-  const heavy = effectInput.querySelector('option[value="heavyImpact"]');
-  if (critical) critical.insertAdjacentElement('afterend', option);
-  else if (heavy) heavy.insertAdjacentElement('afterend', option);
-  else effectInput.appendChild(option);
+function loadScript(src, marker) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-fxdeck-plugin="${marker}"]`);
+    if (existing?.dataset.loaded === 'true') return resolve();
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.fxdeckPlugin = marker;
+    script.addEventListener('load', () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    }, { once: true });
+    script.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+    document.head.appendChild(script);
+  });
 }
 
-function ensureGridOption() {
-  const select = document.querySelector('#effect-grid-effect');
-  if (!select || select.querySelector('option[value="magicBurst"]')) return;
-  const source = effectInput?.querySelector('option[value="magicBurst"]');
-  const option = document.createElement('option');
-  option.value = 'magicBurst';
-  option.textContent = source?.textContent ?? 'Magic Burst — asymmetric stylized cue';
-  const critical = select.querySelector('option[value="criticalHit"]');
-  const heavy = select.querySelector('option[value="heavyImpact"]');
-  if (critical) critical.insertAdjacentElement('afterend', option);
-  else if (heavy) heavy.insertAdjacentElement('afterend', option);
-  else select.appendChild(option);
+async function ensureRibbonRuntime() {
+  await Promise.all([
+    loadScript('https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js', 'motion-4.3.2'),
+    loadScript('https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js', 'ribbon-4.3.2')
+  ]);
+
+  if (typeof globalThis.loadMotionPlugin !== 'function') throw new Error('loadMotionPlugin() unavailable after CDN load.');
+  if (typeof globalThis.loadRibbonShape !== 'function') throw new Error('loadRibbonShape() unavailable after CDN load.');
+
+  await globalThis.loadMotionPlugin(globalThis.tsParticles);
+  await globalThis.loadRibbonShape(globalThis.tsParticles);
+  appendLog(`PASS ${BUILD}: tsParticles motion + real ribbon shape registered on existing FXDeck engine`);
 }
 
-function isSelected() {
-  return effectInput?.value === 'magicBurst';
+function isV2Selected() {
+  return effectInput?.value === 'explosion' || effectInput?.value === 'magicBurst';
 }
 
-function setText(selector, text) {
+function selectedId() {
+  return effectInput?.value === 'magicBurst' ? 'magicBurst' : 'explosion';
+}
+
+function setText(selector, value) {
   const node = document.querySelector(selector);
-  if (node) node.textContent = text;
+  if (node) node.textContent = value;
 }
 
 function moveTarget(point) {
@@ -91,12 +103,11 @@ function moveTarget(point) {
   target.style.top = `${point.y}px`;
 }
 
-function createTransient(className, point, html = '') {
+function createTransient(className, point) {
   const element = document.createElement('div');
   element.className = className;
   element.style.left = `${point.x}px`;
   element.style.top = `${point.y}px`;
-  if (html) element.innerHTML = html;
   domLayer?.appendChild(element);
   return element;
 }
@@ -110,66 +121,56 @@ function animateTransient(element, keyframes, options) {
   };
 }
 
-function combineCleanups(cleanups) {
-  return () => {
-    for (const cleanup of cleanups) cleanup?.();
-  };
-}
-
-function createHooks() {
+function hooks() {
   return {
-    magicCore({ position: point, directionDegrees, intensity }) {
-      const core = createTransient('magic-burst-core', point, '<i></i>');
-      const scale = Math.min(1.5, .78 + intensity * .24);
-      return animateTransient(core, [
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees - 10}deg) scaleX(.16) scaleY(.58)` },
-        { opacity: .98, transform: `translate(-50%, -50%) rotate(${directionDegrees + 2}deg) scaleX(${scale}) scaleY(1)`, offset: .16 },
-        { opacity: .64, transform: `translate(-50%, -50%) rotate(${directionDegrees + 9}deg) scaleX(${scale * 1.08}) scaleY(.88)`, offset: .48 },
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees + 17}deg) scaleX(${scale * 1.24}) scaleY(.62)` }
-      ], { duration: 250, easing: 'cubic-bezier(.08,.78,.18,1)', fill: 'forwards' });
+    explosionFlash({ position: point, intensity }) {
+      const flash = createTransient('impact-flash', point);
+      flash.style.width = '132px';
+      flash.style.height = '132px';
+      flash.style.borderRadius = '50%';
+      flash.style.background = 'radial-gradient(circle, rgba(255,255,255,.98) 0%, rgba(255,239,164,.82) 20%, rgba(255,132,45,.36) 50%, transparent 76%)';
+      flash.style.mixBlendMode = 'screen';
+      const end = 1.05 + Math.min(1.4, intensity) * .28;
+      return animateTransient(flash, [
+        { opacity: 0, transform: 'translate(-50%, -50%) scale(.18)' },
+        { opacity: .95, transform: 'translate(-50%, -50%) scale(.58)', offset: .12 },
+        { opacity: .38, transform: `translate(-50%, -50%) scale(${end * .82})`, offset: .42 },
+        { opacity: 0, transform: `translate(-50%, -50%) scale(${end})` }
+      ], { duration: 190, easing: 'cubic-bezier(.08,.74,.14,1)', fill: 'forwards' });
     },
 
-    magicRibbons({ position: point, directionDegrees, intensity }) {
-      const configurations = [
-        { className: 'magic-burst-ribbon', delay: 0, angle: -26, side: -18, bend: 24, distance: 112 },
-        { className: 'magic-burst-ribbon magic-burst-ribbon--b', delay: 18, angle: 14, side: 14, bend: -20, distance: 94 },
-        { className: 'magic-burst-ribbon magic-burst-ribbon--c', delay: 42, angle: 38, side: -8, bend: 15, distance: 76 }
-      ];
-      const energyScale = Math.min(1.38, .82 + intensity * .18);
-      const cleanups = configurations.map((config) => {
-        const ribbon = createTransient(config.className, point);
-        ribbon.style.transformOrigin = '0 50%';
-        const angle = directionDegrees + config.angle;
-        return animateTransient(ribbon, [
-          { opacity: 0, transform: `translate(-8%, -50%) rotate(${angle - 8}deg) translate(0px, ${config.side}px) scaleX(.12) scaleY(.72)` },
-          { opacity: .82, transform: `translate(-8%, -50%) rotate(${angle}deg) translate(${config.distance * .24}px, ${config.side + config.bend}px) scaleX(${energyScale * .58}) scaleY(1)`, offset: .22 },
-          { opacity: .68, transform: `translate(-8%, -50%) rotate(${angle + 13}deg) translate(${config.distance * .62}px, ${config.side - config.bend * .45}px) scaleX(${energyScale}) scaleY(.86)`, offset: .56 },
-          { opacity: 0, transform: `translate(-8%, -50%) rotate(${angle + 22}deg) translate(${config.distance}px, ${config.side + config.bend * .18}px) scaleX(${energyScale * 1.12}) scaleY(.56)` }
-        ], { duration: 360, delay: config.delay, easing: 'cubic-bezier(.12,.7,.2,1)', fill: 'forwards' });
-      });
-      return combineCleanups(cleanups);
+    magicCore({ position: point, directionDegrees, intensity }) {
+      const core = createTransient('magic-burst-core', point);
+      core.innerHTML = '<i></i>';
+      const scale = Math.min(1.48, .82 + intensity * .22);
+      return animateTransient(core, [
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees - 8}deg) scaleX(.14) scaleY(.55)` },
+        { opacity: .92, transform: `translate(-50%, -50%) rotate(${directionDegrees + 2}deg) scaleX(${scale}) scaleY(.96)`, offset: .16 },
+        { opacity: .42, transform: `translate(-50%, -50%) rotate(${directionDegrees + 12}deg) scaleX(${scale * 1.12}) scaleY(.74)`, offset: .52 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees + 20}deg) scaleX(${scale * 1.24}) scaleY(.48)` }
+      ], { duration: 240, easing: 'cubic-bezier(.08,.78,.18,1)', fill: 'forwards' });
     },
 
     magicEcho({ position: point, directionDegrees, intensity }) {
       const echo = createTransient('magic-burst-echo', point);
-      const scale = Math.min(1.42, .78 + intensity * .2);
+      const scale = Math.min(1.38, .78 + intensity * .2);
       return animateTransient(echo, [
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees - 18}deg) scale(.2)` },
-        { opacity: .86, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${scale})`, offset: .2 },
-        { opacity: .48, transform: `translate(-50%, -50%) rotate(${directionDegrees + 16}deg) translateX(18px) scale(${scale * 1.08})`, offset: .58 },
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees + 28}deg) translateX(34px) scale(${scale * 1.2})` }
-      ], { duration: 300, easing: 'cubic-bezier(.12,.72,.18,1)', fill: 'forwards' });
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees - 14}deg) scale(.18)` },
+        { opacity: .74, transform: `translate(-50%, -50%) rotate(${directionDegrees}deg) scale(${scale})`, offset: .2 },
+        { opacity: .32, transform: `translate(-50%, -50%) rotate(${directionDegrees + 16}deg) scale(${scale * 1.08})`, offset: .58 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees + 26}deg) scale(${scale * 1.16})` }
+      ], { duration: 280, easing: 'cubic-bezier(.12,.72,.18,1)', fill: 'forwards' });
     },
 
     magicPulse({ position: point, directionDegrees, intensity }) {
       const pulse = createTransient('magic-burst-pulse', point);
-      const scale = Math.min(1.7, .8 + intensity * .3);
+      const scale = Math.min(1.62, .82 + intensity * .28);
       return animateTransient(pulse, [
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees - 22}deg) scale(.28)` },
-        { opacity: .72, transform: `translate(-50%, -50%) rotate(${directionDegrees + 14}deg) scale(${scale * .66})`, offset: .22 },
-        { opacity: .34, transform: `translate(-50%, -50%) rotate(${directionDegrees + 54}deg) scale(${scale})`, offset: .58 },
-        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees + 88}deg) scale(${scale * 1.22})` }
-      ], { duration: 320, easing: 'cubic-bezier(.12,.68,.2,1)', fill: 'forwards' });
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees - 18}deg) scale(.22)` },
+        { opacity: .54, transform: `translate(-50%, -50%) rotate(${directionDegrees + 8}deg) scale(${scale * .7})`, offset: .22 },
+        { opacity: .2, transform: `translate(-50%, -50%) rotate(${directionDegrees + 42}deg) scale(${scale})`, offset: .6 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${directionDegrees + 72}deg) scale(${scale * 1.15})` }
+      ], { duration: 310, easing: 'cubic-bezier(.12,.68,.2,1)', fill: 'forwards' });
     },
 
     screenKick({ direction, distance }) {
@@ -178,14 +179,14 @@ function createHooks() {
   };
 }
 
-function currentParams(point = position) {
+function params(point = position) {
   return {
-    version: 'v1',
+    version: 'v2',
     variant: 'default',
     position: { ...point },
     direction: Number(directionInput?.value ?? 18),
     intensity: Number(intensityInput?.value ?? 1),
-    hooks: createHooks()
+    hooks: hooks()
   };
 }
 
@@ -196,22 +197,33 @@ function pathLabel() {
   return 'per-play-emitter';
 }
 
-function updateApi() {
-  if (!apiPreview || !isSelected()) return;
-  apiPreview.textContent = `FXDeck.play("magicBurst", {\n  version: "v1",\n  variant: "default",\n  position: { x: ${Math.round(position.x)}, y: ${Math.round(position.y)} },\n  direction: ${Number(directionInput?.value ?? 18)},\n  intensity: ${Number(intensityInput?.value ?? 1).toFixed(1)}\n});`;
+function explosionResolved(intensity) {
+  const countScale = Math.max(.62, Math.min(1.65, intensity));
+  const smokeScale = Math.max(.72, Math.min(1.45, intensity));
+  return {
+    fireball: Math.max(8, Math.round(24 * countScale)),
+    sparks: Math.max(4, Math.round(12 * Math.max(.7, Math.min(1.55, intensity)))),
+    smoke: [7, 8, 7].map((count) => Math.max(3, Math.round(count * smokeScale)))
+  };
 }
 
-function setTimeline() {
+function magicResolved(intensity, direction) {
+  const countScale = Math.max(.72, Math.min(1.55, intensity));
+  const perpendicular = { x: -direction.vector.y, y: direction.vector.x };
+  return {
+    heroRibbons: Math.max(2, Math.round(3 * Math.min(1.35, .8 + intensity * .2))),
+    echoRibbons: Math.max(1, Math.round(2 * Math.min(1.35, .82 + intensity * .18))),
+    motes: Math.max(7, Math.round(14 * countScale)),
+    echoPosition: {
+      x: position.x + direction.vector.x * 42 + perpendicular.x * 24,
+      y: position.y + direction.vector.y * 42 + perpendicular.y * 24
+    }
+  };
+}
+
+function setTimeline(rows) {
   const timeline = document.querySelector('#effect-timeline');
   if (!timeline) return;
-  const rows = [
-    ['0 ms', 'Asymmetric core wedge + three curved ribbons'],
-    ['18 ms', 'Primary colored mote fan'],
-    ['42 ms', 'Restrained screen response'],
-    ['72 ms', 'Offset secondary lobe + particles'],
-    ['118 ms', 'Irregular color pulse at echo lobe'],
-    ['640 ms', 'Hard lifecycle cleanup']
-  ];
   timeline.replaceChildren(...rows.map(([time, label]) => {
     const row = document.createElement('div');
     const dt = document.createElement('dt');
@@ -223,147 +235,171 @@ function setTimeline() {
   }));
 }
 
-function resolvedValues() {
+function updateUi() {
+  if (!ready || !isV2Selected()) return;
+  const id = selectedId();
   const intensity = Math.max(.25, Number(intensityInput?.value ?? 1));
   const direction = normalizeDirection(Number(directionInput?.value ?? 18));
-  const countScale = Math.max(.68, Math.min(1.65, intensity));
-  const motes = Math.max(8, Math.round(18 * countScale));
-  const echo = Math.max(4, Math.round(10 * Math.max(.72, Math.min(1.5, intensity))));
-  const perpendicular = { x: -direction.vector.y, y: direction.vector.x };
-  const echoPosition = {
-    x: position.x + direction.vector.x * 30 + perpendicular.x * 22,
-    y: position.y + direction.vector.y * 30 + perpendicular.y * 22
-  };
-  return { intensity, direction, motes, echo, echoPosition };
-}
+  const versionLabel = id === 'explosion' ? 'v2 — Explosion / Particlr harvest' : 'v2 — Magic Burst / real ribbons';
 
-function updateInspector() {
-  if (!isSelected()) return;
-  const resolved = resolvedValues();
-  setText('#resolved-effect', 'magicBurst / v1 / default');
+  setText('#authored-version-label', versionLabel);
+  setText('#resolved-effect', `${id} / v2 / default`);
   setText('#resolved-path', pathLabel());
-  setText('#resolved-intensity', `${resolved.intensity.toFixed(1)}×`);
-  setText('#resolved-direction', `${resolved.direction.degrees.toFixed(0)}°  { ${resolved.direction.vector.x.toFixed(3)}, ${resolved.direction.vector.y.toFixed(3)} }`);
-  setText('#resolved-layer-a-label', 'Curved ribbons');
-  setText('#resolved-layer-a', '3 DOM paths / asymmetric trajectories');
-  setText('#resolved-layer-b-label', 'Primary motes');
-  setText('#resolved-layer-b', `${resolved.motes} colored particles / 64° fan`);
-  setText('#resolved-layer-c-label', 'Echo lobe');
-  setText('#resolved-layer-c', `${resolved.echo} particles @ ${Math.round(resolved.echoPosition.x)}, ${Math.round(resolved.echoPosition.y)}`);
-  setText('#resolved-layer-d-label', 'Color pulse');
-  setText('#resolved-layer-d', '118 ms / irregular rotating accent');
-  setText('#resolved-layer-e-label', 'Composition');
-  setText('#resolved-layer-e', 'directional + offset; no radial ring');
-  setText('#resolved-screen-kick', `${(2.6 * Math.min(1.55, resolved.intensity)).toFixed(1)} px`);
+  setText('#resolved-intensity', `${intensity.toFixed(1)}×`);
+  setText('#resolved-direction', `${direction.degrees.toFixed(0)}°  { ${direction.vector.x.toFixed(3)}, ${direction.vector.y.toFixed(3)} }`);
   setText('#resolved-position', `${Math.round(position.x)}, ${Math.round(position.y)} CSS px`);
+
+  if (id === 'explosion') {
+    const r = explosionResolved(intensity);
+    setText('#preview-title', 'Explosion V2 — Particlr reference pass');
+    setText('#preview-note', 'Click to move target + fire texture-driven layered explosion');
+    setText('#caption-title', 'explosion / v2 / default');
+    setText('#caption-note', 'circle-soft flash → fireball mass → staged smoke texture');
+    setText('#effect-summary', 'Reference-driven rebuild from the harvested Particlr Explosion model. The hero read now comes from source-derived soft textures and staged smoke rather than circle/square primitives.');
+    setText('#resolved-layer-a-label', 'Flash texture');
+    setText('#resolved-layer-a', 'Particlr circle-soft / 0.15 s');
+    setText('#resolved-layer-b-label', 'Fireball mass');
+    setText('#resolved-layer-b', `${r.fireball} textured particles / 0.4–0.7 s`);
+    setText('#resolved-layer-c-label', 'Smoke texture');
+    setText('#resolved-layer-c', `${r.smoke.reduce((a, b) => a + b, 0)} particles in 3 delayed waves`);
+    setText('#resolved-layer-d-label', 'Sparks');
+    setText('#resolved-layer-d', `${r.sparks} supporting image streaks`);
+    setText('#resolved-layer-e-label', 'Source model');
+    setText('#resolved-layer-e', 'Particlr flash + fireball + smoke layering');
+    setText('#resolved-screen-kick', `${(5.8 * Math.min(1.55, intensity)).toFixed(1)} px`);
+    setTimeline([
+      ['0 ms', 'Particlr-derived soft flash + fireball mass'],
+      ['18 ms', 'Sparse gameplay sparks'],
+      ['54 ms', 'Smoke texture wave A'],
+      ['138 ms', 'Smoke texture wave B'],
+      ['238 ms', 'Smoke texture wave C'],
+      ['1480 ms', 'Hard lifecycle cleanup']
+    ]);
+  } else {
+    const r = magicResolved(intensity, direction);
+    setText('#preview-title', 'Magic Burst V2 — real tsParticles ribbons');
+    setText('#preview-note', 'Click to move origin; direction rotates real oscillating ribbon particles');
+    setText('#caption-title', 'magicBurst / v2 / default');
+    setText('#caption-note', 'shape-ribbon hero → image motes → displaced ribbon echo');
+    setText('#effect-summary', 'Reference-driven Magic Burst using the actual tsParticles ribbon shape. CSS ribbons are gone from the hero layer; oscillation, drag and trail structure come from the harvested Ribbons recipe.');
+    setText('#resolved-layer-a-label', 'Hero ribbons');
+    setText('#resolved-layer-a', `${r.heroRibbons} real shape-ribbon particles / 60 points each`);
+    setText('#resolved-layer-b-label', 'Ribbon recipe');
+    setText('#resolved-layer-b', 'drag .02 / oscillation 72–112 / speed 3–5 / dist 8');
+    setText('#resolved-layer-c-label', 'Image motes');
+    setText('#resolved-layer-c', `${r.motes} spark-image particles`);
+    setText('#resolved-layer-d-label', 'Echo ribbons');
+    setText('#resolved-layer-d', `${r.echoRibbons} @ ${Math.round(r.echoPosition.x)}, ${Math.round(r.echoPosition.y)}`);
+    setText('#resolved-layer-e-label', 'Hero tech');
+    setText('#resolved-layer-e', 'tsParticles shape-ribbon + motion plugin');
+    setText('#resolved-screen-kick', `${(2.4 * Math.min(1.5, intensity)).toFixed(1)} px`);
+    setTimeline([
+      ['0 ms', 'Core accent + real hero ribbons'],
+      ['22 ms', 'Sparse image motes'],
+      ['44 ms', 'Restrained screen response'],
+      ['86 ms', 'Displaced secondary ribbons'],
+      ['112 ms', 'Echo motes'],
+      ['146 ms', 'Secondary color pulse'],
+      ['860 ms', 'Hard lifecycle cleanup']
+    ]);
+  }
+
+  if (playButton) playButton.textContent = `FXDeck.play("${id}")`;
+  if (apiPreview) {
+    apiPreview.textContent = `FXDeck.play("${id}", {\n  version: "v2",\n  variant: "default",\n  position: { x: ${Math.round(position.x)}, y: ${Math.round(position.y)} },\n  direction: ${Number(directionInput?.value ?? 18)},\n  intensity: ${Number(intensityInput?.value ?? 1).toFixed(1)}\n});`;
+  }
 }
 
-function updateUi() {
-  if (!isSelected()) return;
-  active = true;
-  setText('#authored-version-label', 'v1 — Magic Burst');
-  setText('#preview-title', 'Magic Burst stylized-motion probe');
-  setText('#preview-note', 'Click to move origin; direction rotates the asymmetric composition');
-  setText('#caption-title', 'magicBurst / v1 / default');
-  setText('#caption-note', 'curved ribbons → colored motes → offset echo lobe');
-  setText('#effect-summary', 'Stylized asymmetric magic cue built to test richer motion and color without falling back to a centered ring/explosion. DOM ribbons carry the curved hero motion; particle lobes stay sparse and directional.');
-  if (playButton) playButton.textContent = 'FXDeck.play("magicBurst")';
-  setTimeline();
-  updateInspector();
-  updateApi();
-}
-
-function playMagicBurst(point = position) {
-  if (!fx || !isSelected()) return null;
+function play(point = position) {
+  if (!ready || !fx || !isV2Selected()) return null;
   position = { ...point };
   moveTarget(position);
-  const params = currentParams(position);
-  const instance = fx.play('magicBurst', params);
-  const direction = normalizeDirection(params.direction);
-  appendLog(`PLAY ${instance.id} magicBurst/v1/default [${pathLabel()}] @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${params.intensity.toFixed(1)} direction ${direction.degrees.toFixed(0)}°`);
+  const id = selectedId();
+  const p = params(position);
+  const instance = fx.play(id, p);
+  appendLog(`PLAY ${instance.id} ${id}/v2/default [${pathLabel()}] @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${p.intensity.toFixed(1)} direction ${normalizeDirection(p.direction).degrees.toFixed(0)}°`);
   instance.ready
-    .then(() => appendLog(`READY ${instance.id}: ribbons 3, motes ${instance.resolved?.motes?.count ?? 0}, echo ${instance.resolved?.echo?.count ?? 0}, ${instance.resolved?.duration ?? 640}ms`))
+    .then(() => {
+      if (id === 'explosion') {
+        appendLog(`READY ${instance.id}: Particlr-derived flash + ${instance.resolved?.fireball?.count ?? 0} fireballs + ${(instance.resolved?.smoke?.waveCounts ?? []).reduce((a, b) => a + b, 0)} smoke particles`);
+      } else {
+        appendLog(`READY ${instance.id}: real ribbons ${instance.resolved?.heroRibbons?.count ?? 0}+${instance.resolved?.echoRibbons?.count ?? 0}; motes ${instance.resolved?.motes?.count ?? 0}`);
+      }
+    })
     .catch((error) => appendLog(`ERROR ${instance.id}: ${error.message}`));
-  updateInspector();
-  updateApi();
+  updateUi();
   return instance;
 }
 
 function installInterceptors() {
   playButton?.addEventListener('click', (event) => {
-    if (!isSelected()) return;
+    if (!isV2Selected()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    playMagicBurst(position);
+    play(position);
   }, true);
 
   stage?.addEventListener('pointerdown', (event) => {
-    if (!isSelected()) return;
+    if (!isV2Selected()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const rect = stage.getBoundingClientRect();
-    playMagicBurst({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    play({ x: event.clientX - rect.left, y: event.clientY - rect.top });
   }, true);
 
-  for (const button of [overlapButton, abButton]) {
-    button?.addEventListener('click', (event) => {
-      if (!isSelected()) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      appendLog(`${BUILD} Magic Burst: use Effect Grid for scale/overlap testing; historical fixed A/B fixtures remain scoped to the original base effects.`);
-    }, true);
-  }
+  overlapButton?.addEventListener('click', (event) => {
+    if (!isV2Selected()) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const base = Number(directionInput?.value ?? 18);
+    const id = selectedId();
+    const offsets = [-22, -10, 0, 12, 24, 36];
+    offsets.forEach((offset, index) => {
+      window.setTimeout(() => {
+        if (!ready || selectedId() !== id) return;
+        const p = params(position);
+        p.direction = (base + offset + 360) % 360;
+        const instance = fx.play(id, p);
+        instance.ready.catch((error) => appendLog(`ERROR ${instance.id}: ${error.message}`));
+      }, index * 42);
+    });
+    appendLog(`OVERLAP ×6 ${id}/v2 — reference-driven visual stress`);
+  }, true);
 
-  effectInput?.addEventListener('change', () => {
-    if (isSelected()) {
-      window.setTimeout(updateUi, 0);
-      return;
-    }
-    if (active && playButton) playButton.textContent = 'FXDeck.play()';
-    active = false;
-  });
+  abButton?.addEventListener('click', (event) => {
+    if (!isV2Selected()) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    appendLog(`${BUILD}: visual pass gate — backend A/B paused for V2 effects until look is accepted`);
+  }, true);
 
+  effectInput?.addEventListener('change', () => window.setTimeout(updateUi, 0));
   for (const input of [intensityInput, directionInput, particlePathInput]) {
-    input?.addEventListener('input', () => window.setTimeout(() => {
-      updateInspector();
-      updateApi();
-    }, 0));
-    input?.addEventListener('change', () => window.setTimeout(() => {
-      updateInspector();
-      updateApi();
-    }, 0));
+    input?.addEventListener('input', () => window.setTimeout(updateUi, 0));
+    input?.addEventListener('change', () => window.setTimeout(updateUi, 0));
   }
 }
 
-function normalizeVisibleBuild() {
-  const eyebrow = document.querySelector('.eyebrow');
-  const hudBuild = document.querySelector('.runtime-hud__build');
-  const intro = document.querySelector('.intro');
-  if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
-  if (hudBuild) hudBuild.textContent = BUILD;
-  if (intro) intro.textContent = 'P3.12.0 adds Magic Burst: an asymmetric stylized cue with curved DOM ribbons, directional color motes and an offset echo lobe. This completes the planned representative effect archetypes before P3 exit review.';
+function updateBuildUi() {
+  setText('.eyebrow', `FXDeck / Runtime / Build ${BUILD}`);
+  setText('.runtime-hud__build', BUILD);
+  setText('.intro', 'P3.13.1 is the first reference-driven visual pass: Explosion V2 uses source-derived Particlr soft/smoke textures and Magic Burst V2 uses the real tsParticles ribbon shape instead of CSS ribbon approximations.');
 }
+
+installInterceptors();
 
 waitForRuntime()
-  .then((runtime) => {
+  .then(async (runtime) => {
     fx = runtime;
-    registerMagicBurst(fx);
-    ensureStylesheet();
-    ensureOption();
-    installInterceptors();
-    normalizeVisibleBuild();
-    appendLog(`${BUILD} Magic Burst registered: curved hero ribbons + sparse directional motes + offset echo lobe; no generic Core changes`);
-    if (isSelected()) updateUi();
-
-    window.setInterval(() => {
-      ensureGridOption();
-      if (isSelected()) {
-        updateInspector();
-        updateApi();
-      }
-    }, 250);
+    await ensureRibbonRuntime();
+    registerExplosionV2(fx);
+    registerMagicBurstV2(fx);
+    ready = true;
+    updateBuildUi();
+    appendLog(`${BUILD}: Explosion V2 + Magic Burst V2 registered as reference-driven defaults; V1 remains available in registry`);
+    updateUi();
   })
   .catch((error) => {
-    appendLog(`${BUILD} Magic Burst bridge FAIL: ${error.message}`);
+    appendLog(`${BUILD} V2 bridge FAIL: ${error.message}`);
     console.error(error);
   });
