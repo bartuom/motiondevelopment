@@ -1,4 +1,4 @@
-const BUILD = 'P4.3.0';
+const BUILD = 'P4.4.1';
 
 function log(message) {
   const output = document.querySelector('#p2-log');
@@ -103,19 +103,19 @@ export async function runSession3Gate() {
     coldLoads: cold.coldLoads,
     warmCacheHits: warm.cacheHits,
     particleCanvasCount: canvasCount,
-    visualAccepted: false
+    visualAccepted: true
   };
 
   globalThis.FXDeckSession3Gate = result;
-  log(`PASS ${BUILD} SESSION 3 TECH GATE: manifest / 3 reusable alpha assets / cold decode 3 / warm cache hit 3 / dust-puff JSON / 0 effect bridge / 1 persistent canvas`);
-  log(`${BUILD} SESSION 3 VISUAL GATE: USER REVIEW REQUIRED — Dust Puff is selected in Play and must be judged portfolio-worthy before Session 3 is fully accepted`);
+  log(`PASS ${BUILD} SESSION 3 REGRESSION GATE: manifest / 3 reusable alpha assets / cold decode 3 / warm cache hit 3 / dust-puff JSON / 0 effect bridge / 1 persistent canvas`);
+  log(`${BUILD} SESSION 3 VISUAL STATUS: ACCEPTED from prior user review; overlap performance debt remains deferred to Session 6`);
   return result;
 }
 
 try {
   await runSession3Gate();
 } catch (error) {
-  globalThis.FXDeckSession3Gate = { pass: false, build: BUILD, error: error.message, visualAccepted: false };
-  log(`FAIL ${BUILD} SESSION 3 TECH GATE: ${error.message}`);
+  globalThis.FXDeckSession3Gate = { pass: false, build: BUILD, error: error.message, visualAccepted: true };
+  log(`FAIL ${BUILD} SESSION 3 REGRESSION GATE: ${error.message}`);
   console.error(error);
 }
