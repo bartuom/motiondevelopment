@@ -6,14 +6,14 @@
   <meta name="description" content="FXDeck gameplay VFX runtime lab with clean play and debug workspaces.">
   <title>FXDeck Runtime Lab</title>
   <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.13.4">
-  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.13.4">
-  <link rel="stylesheet" href="./environment-source.css?v=p3.13.4" data-environment-source>
-  <link rel="stylesheet" href="./rare-reward.css?v=p3.13.4">
-  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.13.4" data-football-card-reveal>
-  <link rel="stylesheet" href="./critical-hit.css?v=p3.13.4" data-critical-hit>
-  <link rel="stylesheet" href="./magic-burst.css?v=p3.13.4" data-magic-burst>
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.13.4">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.14.0">
+  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.14.0">
+  <link rel="stylesheet" href="./environment-source.css?v=p3.14.0" data-environment-source>
+  <link rel="stylesheet" href="./rare-reward.css?v=p3.14.0">
+  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.14.0" data-football-card-reveal>
+  <link rel="stylesheet" href="./critical-hit.css?v=p3.14.0" data-critical-hit>
+  <link rel="stylesheet" href="./magic-burst.css?v=p3.14.0" data-magic-burst>
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.14.0">
 </head>
 <body data-workspace-mode="play" data-hud-mode="basic">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
@@ -31,10 +31,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.13.4</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.14.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.13.4 initializes tsParticles motion and ribbon support before the canonical particle container is created, so Magic Burst V2 can use the real ribbon drawer inside the same Runtime Lab.</p>
+      <p class="intro">P3.14 Reference Fidelity Pass: the canonical Runtime Lab now exposes exact source references before any FXDeck reinterpretation — Particlr Explosion through the actual Particlr runtime, plus official tsParticles Ribbons and Fireworks bundle recipes.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -107,7 +107,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Reference-driven V2 effects now live in the same canonical Runtime Lab as the earlier runtime archetypes. Visual quality work stays here; the separate Visual Pass page is only a sandbox.</p>
+            <p>P3.14 first calibrates against exact third-party source effects. Custom FXDeck V2 experiments remain available, but visual decisions should be made only after the source references are verified in this same lab.</p>
           </div>
         </div>
 
@@ -198,7 +198,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.13.4</span>
+              <span class="runtime-hud__build">P3.14.0</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -279,7 +279,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P3.13.4.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P3.14.0.</pre>
           </section>
 
           <section class="debug-section">
@@ -302,13 +302,13 @@
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js"></script>
-  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p3.13.4"></script>
-  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.13.4"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.13.4"></script>
-  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.13.4"></script>
-  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.13.4"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.13.4"></script>
-  <script type="module" src="./js/runtime-lab-ui.js?v=p3.13.4"></script>
-  <script type="module" src="./js/runtime-main-authority.js?v=p3.13.4"></script>
+  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p3.14.0"></script>
+  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.14.0"></script>
+  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.14.0"></script>
+  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.14.0"></script>
+  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.14.0"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.14.0"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p3.14.0"></script>
+  <script type="module" src="./js/runtime-main-authority.js?v=p3.14.0"></script>
 </body>
 </html>
