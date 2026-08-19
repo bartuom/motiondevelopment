@@ -1,4 +1,4 @@
-const BUILD = 'P3.14.0';
+const BUILD = 'P3.14.1';
 
 async function bootstrapEnginePlugins() {
   if (!globalThis.tsParticles) throw new Error('tsParticles global is missing before engine bootstrap.');
@@ -14,7 +14,7 @@ async function bootstrapEnginePlugins() {
 
 try {
   await bootstrapEnginePlugins();
-  await import('./heavy-impact-lab.js?v=p3.14.0');
+  await import('./heavy-impact-lab.js?v=p3.14.1');
 } catch (error) {
   globalThis.FXDeckRibbonRuntimeReady = false;
   globalThis.FXDeckRibbonRuntimeError = error?.message ?? String(error);
