@@ -1,5 +1,5 @@
-const BUILD = 'P3.13.2';
-const INTRO = 'P3.13.2 unifies the reference-driven visual pass back into the canonical Runtime Lab. Explosion V2 uses the Particlr-derived layered texture model; Magic Burst V2 uses the real tsParticles ribbon shape. Component bridges no longer define the visible global build.';
+const BUILD = 'P3.13.3';
+const INTRO = 'P3.13.3 fixes the reference-driven V2 boot path: Explosion V2 initializes independently, while Magic Burst V2 explicitly loads the tsParticles motion and ribbon plugins before use.';
 const BOOT_SETTLE_MS = 1500;
 
 const effectInput = document.querySelector('#effect-select');
@@ -27,26 +27,27 @@ function enforceBuildUi() {
   globalThis.FXDeckRuntimeBuild = BUILD;
 }
 
-function v2Ready() {
+function explosionV2Ready() {
   const fx = globalThis.FXDeck;
   if (!fx?.resolve) return false;
   try {
-    const explosion = fx.resolve('explosion');
-    const magic = fx.resolve('magicBurst');
-    return explosion.version === 'v2' && magic.version === 'v2';
+    const explosion = fx.resolve('explosion', { version: 'v2', variant: 'default' });
+    const bridge = globalThis.FXDeckReferenceV2;
+    return explosion.version === 'v2' && (!bridge || bridge.readiness?.explosion === true);
   } catch {
     return false;
   }
 }
 
 function applyCanonicalBootSelection() {
-  if (bootSelectionApplied || !effectInput || !v2Ready()) return false;
+  if (bootSelectionApplied || !effectInput || !explosionV2Ready()) return false;
   if (performance.now() - startedAt < BOOT_SETTLE_MS) return false;
 
   bootSelectionApplied = true;
   effectInput.value = 'explosion';
   effectInput.dispatchEvent(new Event('change', { bubbles: true }));
-  appendLog(`${BUILD} CANONICAL LAB: settled on Explosion V2 after extension boot; Magic Burst V2 is available in the same selector`);
+  const magicReady = globalThis.FXDeckReferenceV2?.readiness?.magicBurst === true;
+  appendLog(`${BUILD} CANONICAL LAB: settled on Explosion V2; Magic Burst V2 ${magicReady ? 'READY' : 'not yet ready'}`);
   return true;
 }
 
@@ -63,7 +64,7 @@ const bootTimer = window.setInterval(() => {
   enforceBuildUi();
   if (applyCanonicalBootSelection() || attempts >= 160) {
     window.clearInterval(bootTimer);
-    if (!bootSelectionApplied) appendLog(`${BUILD} CANONICAL LAB WARNING: V2 defaults were not confirmed in time`);
+    if (!bootSelectionApplied) appendLog(`${BUILD} CANONICAL LAB WARNING: Explosion V2 boot readiness was not confirmed in time`);
   }
 }, 50);
 
