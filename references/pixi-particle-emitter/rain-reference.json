@@ -1,0 +1,72 @@
+{
+  "source": "pixijs-userland/particle-emitter docs/examples/rain.html",
+  "role": "Supporting technique reference while exact Particlr Rain export is pending.",
+  "texture": "images/HardRain.png",
+  "config": {
+    "lifetime": {
+      "min": 0.81,
+      "max": 0.81
+    },
+    "frequency": 0.004,
+    "emitterLifetime": 0,
+    "maxParticles": 1000,
+    "addAtBack": false,
+    "pos": {
+      "x": 0,
+      "y": 0
+    },
+    "behaviors": [
+      {
+        "type": "alphaStatic",
+        "config": {
+          "alpha": 0.5
+        }
+      },
+      {
+        "type": "moveSpeedStatic",
+        "config": {
+          "min": 3000,
+          "max": 3000
+        }
+      },
+      {
+        "type": "scaleStatic",
+        "config": {
+          "min": 1,
+          "max": 1
+        }
+      },
+      {
+        "type": "rotationStatic",
+        "config": {
+          "min": 65,
+          "max": 65
+        }
+      },
+      {
+        "type": "textureRandom",
+        "config": {
+          "textures": ["images/HardRain.png"]
+        }
+      },
+      {
+        "type": "spawnShape",
+        "config": {
+          "type": "rect",
+          "data": {
+            "x": -600,
+            "y": -460,
+            "w": 900,
+            "h": 20
+          }
+        }
+      }
+    ]
+  },
+  "fxdeckLessons": [
+    "The drop is an authored HardRain texture, not a circle/line primitive.",
+    "Long thin rectangular spawn volume plus very high speed creates the rain field.",
+    "Fixed rotation aligns the textured streak with motion.",
+    "Texture + motion tuning carry most of the visual quality."
+  ]
+}
