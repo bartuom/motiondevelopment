@@ -13,6 +13,7 @@ const apiPreview = document.querySelector('#api-preview');
 const REF_RIBBONS = 'refRibbonsNative';
 const REF_FIREWORKS = 'refFireworksNative';
 const REFERENCE_VALUES = new Set([REF_RIBBONS, REF_FIREWORKS]);
+const DIRECT_EMITTERS = ['fxdeck-ref-ribbons', 'fxdeck-ref-fireworks'];
 
 let activeReference = null;
 let runtimeReady = false;
@@ -66,7 +67,11 @@ function addReferenceOptions() {
 
 function clearNativeReference() {
   const lab = globalThis.FXDeckLab;
+  const container = lab?.particleAdapter?.container;
   lab?.fx?.stopAll?.('native-reference-reset');
+  for (const name of DIRECT_EMITTERS) {
+    try { container?.removeEmitter?.(name); } catch {}
+  }
   lab?.particleAdapter?.clear?.();
 }
 
@@ -206,7 +211,6 @@ async function playNativeReference(reference = activeReference) {
   if (reference === REF_FIREWORKS) {
     await container.addEmitter(fireworksEmitter());
     appendLog(`${BUILD} NATIVE REF PLAY: Fireworks recipe → existing FXDeck tsParticles container / transparent stage`);
-    return;
   }
 }
 
