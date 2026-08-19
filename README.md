@@ -1,69 +1,69 @@
-# Motion FX Portfolio
+# Motion FX Portfolio / FXDeck
 
-> **Active development:** FXDeck — Gameplay VFX Runtime for Web Games. See [`FXDECK_STATE.md`](./FXDECK_STATE.md) for the canonical roadmap, milestone checklists, architectural decisions, current status, and changelog.
+> **Active development:** FXDeck — lightweight, AI-friendly gameplay VFX for 2D web games.
+>
+> - Canonical implementation plan: [`FXDECK_PLAN.md`](./FXDECK_PLAN.md)
+> - Current execution status: [`FXDECK_STATE.md`](./FXDECK_STATE.md)
 
-The original portfolio remains in the repository as a reference while FXDeck is developed as a reusable gameplay VFX runtime.
+The repository is currently entering the **P4.0 Web2D V1 controlled reset**. The P3.x prototype remains useful as a technical baseline, but new development follows the schema-first Web2D plan rather than extending effect-specific bridge code.
 
-A neutral, lightweight browser portfolio focused on six motion / game FX categories:
+## FXDeck direction
 
-1. Explosions
-2. Flash
-3. Impact
-4. Spell Effects
-5. Draw Animations
-6. Trails & Particles
+Target runtime architecture:
 
-The project is intentionally small, buildless and easy to integrate into existing browser game code.
+```text
+Game
+  ↓
+FXDeck API
+  ↓
+FXDeck Core + Effect Schema
+  ↓
+Web2D compiler
+  ↓
+TsParticlesAdapter
+  ↓
+custom modular tsParticles build
+  ↓
+one persistent transparent canvas/container
+```
 
-## Stack
+Core goals:
 
-- HTML
-- CSS animations / keyframes / transitions
-- Vanilla JavaScript
-- SVG
-- Sprite sheets
-- Small reusable DOM particle pools
+- lightweight mobile-web integration,
+- AI/vibe-coding-friendly effect data,
+- reusable high-quality alpha/sprite assets,
+- one production particle backend for Web2D V1,
+- measurable bundle/performance budgets,
+- new effects authored primarily as data + assets rather than custom runtime JavaScript.
 
-No framework, no runtime dependencies and no build step.
+Particlr is used as an authoring/reference source, not as a default production runtime dependency. 3D is intentionally out of scope for Web2D V1.
 
-## Included studies
+## Planned V1 showcase
 
-### 01 Explosions
-- Small and Big as separate sprite sheets
-- hand-tuned frame pacing instead of uniform playback
-- sparks, embers, debris, flash and pressure rings
+1. Dust Puff
+2. Critical Hit
+3. Goal Celebration
+4. Explosion
+5. Magic Burst
+6. Rain / Environment
 
-### 02 Flash
-- Small and Big
-- pure CSS white core, bloom, radial rays and ring
+Visual quality is the gate; the target is a small set of portfolio-grade gameplay VFX rather than a large preset catalog.
 
-### 03 Impact
-- Light and Heavy
-- directional projectile, contact flash, recoil, asymmetric burst and debris
+## Legacy portfolio
 
-### 04 Spell Effects
-- Arcane and Fire
-- charge, release, projectile, trail and hit sequencing
+The original browser motion/VFX studies remain in the repository as references while FXDeck is developed into a reusable client-facing runtime.
 
-### 05 Draw Animations
-- Common and Rare
-- anticipation, CSS 3D flip, reveal flash, rays and rarity particles
+Legacy studies include:
 
-### 06 Trails & Particles
-- Energy Trail
-- SVG Slash Trail
-- Sparks / Dust / Magic particle study
+- explosions,
+- flashes,
+- impacts,
+- spell effects,
+- draw/reveal animations,
+- trails and particles,
+- CSS/SVG/sprite-sheet experiments.
 
-## Performance approach
-
-- `transform` and `opacity` are preferred for runtime motion
-- no framework or animation library
-- small bounded particle counts
-- DOM elements are reused within demos
-- only one stage/layout read is used where travel distance must adapt to viewport width
-- app FPS is measured live with `requestAnimationFrame`
-
-## Run locally
+## Run current site locally
 
 ```bash
 python -m http.server 8080 --directory site
@@ -71,6 +71,6 @@ python -m http.server 8080 --directory site
 
 Then open `http://localhost:8080`.
 
-## Live portfolio
+## Live site
 
-GitHub Pages publishes the `site/` directory directly. No npm install or build command is required.
+GitHub Pages publishes the `site/` directory directly. During the P4.0 reset, the live Runtime Lab may still reflect legacy P3.15 behavior until the corresponding migration session is completed.
