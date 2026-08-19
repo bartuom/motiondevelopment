@@ -1,5 +1,5 @@
-import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.4.1';
-import { compileWeb2D } from './compiler.js?v=p4.4.1';
+import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.4.2';
+import { compileWeb2D } from './compiler.js?v=p4.4.2';
 
 function toRuntimeAssets(effect) {
   return (effect.assets ?? []).map((asset) => ({
@@ -25,7 +25,11 @@ function directionDegrees(params) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function resolveLayerPosition(basePosition, origin = {}, params = {}) {
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function resolveLayerPosition(basePosition, origin = {}, params = {}, stage = null) {
   const base = basePosition ?? { x: 0, y: 0 };
   let x = Number(origin.x ?? 0);
   let y = Number(origin.y ?? 0);
@@ -40,16 +44,28 @@ function resolveLayerPosition(basePosition, origin = {}, params = {}) {
     y = ry;
   }
 
-  return {
+  const resolved = {
     x: Number(base.x ?? 0) + x,
     y: Number(base.y ?? 0) + y
   };
+
+  // Authored local offsets must never throw a layer outside the gameplay surface.
+  // This keeps spatial compositions stable when the event is fired near an edge.
+  if (stage) {
+    const margin = 4;
+    const width = Math.max(margin * 2, Number(stage.clientWidth ?? 0));
+    const height = Math.max(margin * 2, Number(stage.clientHeight ?? 0));
+    resolved.x = clamp(resolved.x, margin, width - margin);
+    resolved.y = clamp(resolved.y, margin, height - margin);
+  }
+
+  return resolved;
 }
 
 function scheduleLayer(instance, particles, layer, params) {
   const launch = async () => {
     if (instance.state !== 'playing') return null;
-    const position = resolveLayerPosition(params.position, layer.origin, params);
+    const position = resolveLayerPosition(params.position, layer.origin, params, particles.stage);
     const handle = layer.spawnMode === 'burst'
       ? await particles.burst(layer.emitter, position, { priority: layer.priority })
       : await particles.spawn(layer.emitter, position);
