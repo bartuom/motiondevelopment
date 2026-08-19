@@ -12,6 +12,7 @@ const COLOR_BINDING_PROPERTIES = new Set(['color']);
 const BINDING_PROPERTIES = new Set([...NUMERIC_BINDING_PROPERTIES, ...COLOR_BINDING_PROPERTIES]);
 const BINDING_OPERATIONS = new Set(['multiply', 'add', 'replace']);
 const COLOR_PARAMS = new Set(['tint', 'teamColor']);
+const ORIENTATION_MODES = new Set(['direction', 'motion']);
 
 export const DEFAULT_WEB2D_BUDGET = Object.freeze({
   maxLayers: 8,
@@ -27,7 +28,7 @@ export const DEFAULT_WEB2D_BUDGET = Object.freeze({
 export const DEFAULT_WEB2D_CAPABILITIES = Object.freeze({
   layerTypes: new Set(['particles']),
   spawnModes: new Set(['burst', 'rate']),
-  shapes: new Set(['circle', 'square', 'image']),
+  shapes: new Set(['circle', 'square', 'image', 'ribbon']),
   blends: new Set(['normal', 'lighter'])
 });
 
@@ -104,6 +105,51 @@ function getBindingTarget(layer, property) {
   return undefined;
 }
 
+function validateOrigin(origin, path, issues) {
+  if (!isObject(origin)) {
+    issue(issues, 'FXD_ORIGIN_00', path, 'must be an object');
+    return;
+  }
+  unknownKeys(origin, new Set(['x', 'y', 'rotateWithDirection']), path, issues);
+  for (const axis of ['x', 'y']) {
+    if (origin[axis] != null && (!finite(origin[axis]) || origin[axis] < -2048 || origin[axis] > 2048)) {
+      issue(issues, 'FXD_ORIGIN_01', `${path}.${axis}`, 'must be a finite pixel offset in [-2048, 2048]');
+    }
+  }
+  if (origin.rotateWithDirection != null && typeof origin.rotateWithDirection !== 'boolean') {
+    issue(issues, 'FXD_ORIGIN_02', `${path}.rotateWithDirection`, 'must be boolean');
+  }
+}
+
+function validateRibbon(ribbon, path, issues) {
+  if (!isObject(ribbon)) {
+    issue(issues, 'FXD_RIBBON_00', path, 'ribbon shape requires a ribbon object');
+    return;
+  }
+  unknownKeys(ribbon, new Set(['points', 'spacingPx', 'drag', 'darkenPct', 'oscillationPx', 'oscillationSpeed']), path, issues);
+  if (!Number.isInteger(ribbon.points) || ribbon.points < 8 || ribbon.points > 80) issue(issues, 'FXD_RIBBON_01', `${path}.points`, 'must be an integer in [8, 80]');
+  if (!finite(ribbon.spacingPx) || ribbon.spacingPx < 1 || ribbon.spacingPx > 32) issue(issues, 'FXD_RIBBON_02', `${path}.spacingPx`, 'must be in [1, 32]');
+  if (ribbon.drag != null && (!finite(ribbon.drag) || ribbon.drag < 0 || ribbon.drag > 1)) issue(issues, 'FXD_RIBBON_03', `${path}.drag`, 'must be in [0, 1]');
+  if (ribbon.darkenPct != null && (!finite(ribbon.darkenPct) || ribbon.darkenPct < 0 || ribbon.darkenPct > 100)) issue(issues, 'FXD_RIBBON_04', `${path}.darkenPct`, 'must be in [0, 100]');
+  validateRange(ribbon.oscillationPx, `${path}.oscillationPx`, issues, { min: 0, max: 1000 });
+  validateRange(ribbon.oscillationSpeed, `${path}.oscillationSpeed`, issues, { min: 0, max: 100 });
+}
+
+function validateOrientation(orientation, path, issues) {
+  if (!isObject(orientation)) {
+    issue(issues, 'FXD_ORIENTATION_00', path, 'must be an object');
+    return;
+  }
+  unknownKeys(orientation, new Set(['mode', 'offsetDeg', 'jitterDeg']), path, issues);
+  if (!ORIENTATION_MODES.has(orientation.mode)) issue(issues, 'FXD_ORIENTATION_01', `${path}.mode`, 'must be direction or motion');
+  if (orientation.offsetDeg != null && (!finite(orientation.offsetDeg) || orientation.offsetDeg < -360 || orientation.offsetDeg > 360)) {
+    issue(issues, 'FXD_ORIENTATION_02', `${path}.offsetDeg`, 'must be in [-360, 360]');
+  }
+  if (orientation.jitterDeg != null && (!finite(orientation.jitterDeg) || orientation.jitterDeg < 0 || orientation.jitterDeg > 180)) {
+    issue(issues, 'FXD_ORIENTATION_03', `${path}.jitterDeg`, 'must be in [0, 180]');
+  }
+}
+
 export function validateEffectDefinition(effect, {
   budget = DEFAULT_WEB2D_BUDGET,
   capabilities = DEFAULT_WEB2D_CAPABILITIES
@@ -156,7 +202,7 @@ export function validateEffectDefinition(effect, {
   effect.layers.forEach((layer, index) => {
     const path = `$.layers[${index}]`;
     if (!isObject(layer)) return issue(issues, 'FXD_LAYER_01', path, 'layer must be an object');
-    unknownKeys(layer, new Set(['id', 'type', 'delayMs', 'priority', 'z', 'blend', 'spawn', 'shape', 'color', 'lifetimeMs', 'motion', 'size', 'opacity', 'rotationDeg']), path, issues);
+    unknownKeys(layer, new Set(['id', 'type', 'delayMs', 'priority', 'z', 'blend', 'origin', 'spawn', 'shape', 'color', 'lifetimeMs', 'motion', 'size', 'opacity', 'rotationDeg', 'orientation']), path, issues);
 
     if (typeof layer.id !== 'string' || !ID_RE.test(layer.id)) issue(issues, 'FXD_LAYER_02', `${path}.id`, 'invalid layer id');
     if (layerIds.has(layer.id)) issue(issues, 'FXD_LAYER_03', `${path}.id`, 'duplicate layer id');
@@ -166,6 +212,7 @@ export function validateEffectDefinition(effect, {
     if (layer.delayMs != null && (!Number.isInteger(layer.delayMs) || layer.delayMs < 0)) issue(issues, 'FXD_DELAY_01', `${path}.delayMs`, 'must be a non-negative integer');
     if (layer.priority != null && !PRIORITIES.has(layer.priority)) issue(issues, 'FXD_PRIORITY_01', `${path}.priority`, 'unsupported priority');
     if (layer.blend != null && !capabilities.blends.has(layer.blend)) issue(issues, 'FXD_CAPABILITY_02', `${path}.blend`, `unsupported blend "${layer.blend}"`);
+    if (layer.origin != null) validateOrigin(layer.origin, `${path}.origin`, issues);
 
     if (!isObject(layer.spawn)) {
       issue(issues, 'FXD_SPAWN_00', `${path}.spawn`, 'spawn must be an object');
@@ -190,12 +237,17 @@ export function validateEffectDefinition(effect, {
     if (!isObject(layer.shape)) {
       issue(issues, 'FXD_SHAPE_00', `${path}.shape`, 'shape must be an object');
     } else {
-      unknownKeys(layer.shape, new Set(['type', 'asset']), `${path}.shape`, issues);
+      unknownKeys(layer.shape, new Set(['type', 'asset', 'ribbon']), `${path}.shape`, issues);
       if (!capabilities.shapes.has(layer.shape.type)) issue(issues, 'FXD_CAPABILITY_04', `${path}.shape.type`, `unsupported shape "${layer.shape.type}"`);
       if (layer.shape.type === 'image') {
         if (typeof layer.shape.asset !== 'string' || !assetIds.has(layer.shape.asset)) issue(issues, 'FXD_ASSET_06', `${path}.shape.asset`, 'image shape must reference a declared asset');
-      } else if (layer.shape.asset != null) {
-        issue(issues, 'FXD_SHAPE_01', `${path}.shape.asset`, 'asset is only valid for image shape');
+        if (layer.shape.ribbon != null) issue(issues, 'FXD_SHAPE_02', `${path}.shape.ribbon`, 'ribbon options are only valid for ribbon shape');
+      } else if (layer.shape.type === 'ribbon') {
+        if (layer.shape.asset != null) issue(issues, 'FXD_SHAPE_01', `${path}.shape.asset`, 'ribbon shape does not accept an image asset');
+        validateRibbon(layer.shape.ribbon, `${path}.shape.ribbon`, issues);
+      } else {
+        if (layer.shape.asset != null) issue(issues, 'FXD_SHAPE_01', `${path}.shape.asset`, 'asset is only valid for image shape');
+        if (layer.shape.ribbon != null) issue(issues, 'FXD_SHAPE_02', `${path}.shape.ribbon`, 'ribbon options are only valid for ribbon shape');
       }
     }
 
@@ -217,6 +269,8 @@ export function validateEffectDefinition(effect, {
     validateCurve2(layer.size, `${path}.size`, issues, { min: 0, max: 2048 });
     validateCurve2(layer.opacity, `${path}.opacity`, issues, { min: 0, max: 1 });
     if (layer.rotationDeg != null) validateRange(layer.rotationDeg, `${path}.rotationDeg`, issues, { min: -3600, max: 3600 });
+    if (layer.orientation != null) validateOrientation(layer.orientation, `${path}.orientation`, issues);
+    if (layer.rotationDeg != null && layer.orientation != null) issue(issues, 'FXD_ORIENTATION_04', path, 'use rotationDeg or orientation, not both');
 
     const maxLife = finite(layer.lifetimeMs?.max) ? layer.lifetimeMs.max : 0;
     const delay = Number.isInteger(layer.delayMs) ? layer.delayMs : 0;
