@@ -24,6 +24,30 @@
       "height": 128,
       "license": "FXDeck original",
       "provenance": "site/assets/vfx/dust-soft-03.svg"
+    },
+    "critical-slash": {
+      "type": "image",
+      "src": "../../assets/vfx/critical-slash.svg",
+      "width": 256,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/critical-slash.svg"
+    },
+    "hero-streak": {
+      "type": "image",
+      "src": "../../assets/vfx/hero-streak.svg",
+      "width": 160,
+      "height": 32,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/hero-streak.svg"
+    },
+    "hero-flare": {
+      "type": "image",
+      "src": "../../assets/vfx/hero-flare.svg",
+      "width": 128,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/hero-flare.svg"
     }
   }
 }
