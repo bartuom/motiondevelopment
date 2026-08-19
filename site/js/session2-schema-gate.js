@@ -1,13 +1,13 @@
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.3.0';
-import { validateEffectDefinition } from '../fxdeck/schema/validator.js?v=p4.3.0';
-import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.3.0';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.3.0';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.1';
+import { validateEffectDefinition } from '../fxdeck/schema/validator.js?v=p4.4.1';
+import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.1';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.1';
 
-const BUILD = 'P4.3.0';
+const BUILD = 'P4.4.1';
 const EFFECT_URLS = [
-  './fxdeck/schema/examples/schema-test-burst.json?v=p4.3.0',
-  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.3.0',
-  './fxdeck/schema/examples/schema-test-rain.json?v=p4.3.0'
+  './fxdeck/schema/examples/schema-test-burst.json?v=p4.4.1',
+  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.4.1',
+  './fxdeck/schema/examples/schema-test-rain.json?v=p4.4.1'
 ];
 
 function log(message) {
@@ -154,12 +154,12 @@ export async function runSession2Gate() {
     compile: compileWeb2D,
     runGate: runSession2Gate
   };
-  log(`PASS ${BUILD} SESSION 2 GATE: 3 JSON effects / structural + semantic validation / compiler / 0 effect-specific runtime JS / 1 persistent canvas`);
+  log(`PASS ${BUILD} SESSION 2 GATE: 3 JSON effects / structural + semantic validation / current compiler / 0 effect-specific runtime JS / 1 persistent canvas`);
   return result;
 }
 
 try {
-  log(`${BUILD}: validating FXDeck Schema V1 regression under the preserved Runtime Lab UI`);
+  log(`${BUILD}: validating FXDeck Schema V1 regression fixtures in Debug-only runtime scope`);
   await runSession2Gate();
 } catch (error) {
   globalThis.FXDeckSession2Gate = { pass: false, build: BUILD, error: error.message };
