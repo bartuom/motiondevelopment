@@ -1,6 +1,7 @@
-import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.0';
+import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.1';
 
-const BUILD = 'P4.4.0';
+const BUILD = 'P4.4.1';
+const REGRESSION_EFFECT_IDS = new Set(['schema-test-burst', 'schema-test-smoke', 'schema-test-rain']);
 
 function log(message) {
   const output = document.querySelector('#p2-log');
@@ -18,7 +19,7 @@ function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-async function waitForReady(timeoutMs = 8000) {
+async function waitForReady(timeoutMs = 10000) {
   const started = performance.now();
   while (!globalThis.FXDeckWeb2D?.fx || !globalThis.FXDeckHeroEffects || !globalThis.FXDeckAssets) {
     if (performance.now() - started > timeoutMs) throw new Error('FXD_P4_4_GATE: hero integration did not become ready');
@@ -64,8 +65,15 @@ async function playStop(runtime, id, params, holdMs) {
   runtime.fx.stop(instance, 'session4-gate');
   await nextFrame();
   await nextFrame();
-  await wait(60);
+  await wait(80);
   assertClean(runtime, id);
+}
+
+function assertRegressionFixturesHidden() {
+  const select = document.querySelector('#effect-select');
+  if (!select) return;
+  const leaked = [...select.options].map((option) => option.value).filter((value) => REGRESSION_EFFECT_IDS.has(value));
+  if (leaked.length) throw new Error(`regression fixtures leaked into Play selector: ${leaked.join(', ')}`);
 }
 
 export async function runSession4Gate() {
@@ -75,33 +83,45 @@ export async function runSession4Gate() {
   const critical = runtime.fx.resolve('critical-hit').definition;
   const goal = runtime.fx.resolve('goal-celebration').definition;
   if (!critical.schemaDriven || !goal.schemaDriven) throw new Error('hero effects must both be schema-driven');
-  if (critical.source.layers.length !== 5 || goal.source.layers.length !== 5) throw new Error('hero effects expected 5 authored data layers each');
+  if (critical.source.layers.length !== 5) throw new Error(`Critical Hit expected 5 authored layers, got ${critical.source.layers.length}`);
+  if (goal.source.layers.length !== 7) throw new Error(`Goal Celebration expected 7 authored layers, got ${goal.source.layers.length}`);
 
   const criticalCompiled = compileWeb2D(critical.source, {
     direction: 123,
     intensity: 1.25,
     tint: '#ff4d8d'
   });
+  const primarySlash = compiledLayer(criticalCompiled, 'primary-slash');
   const criticalStreaks = compiledLayer(criticalCompiled, 'streaks').emitter.particles;
   if (criticalStreaks.move.angle.offset !== 123) throw new Error(`semantic direction did not compile: ${criticalStreaks.move.angle.offset}`);
+  if (criticalStreaks.rotate?.path !== true) throw new Error('Critical Hit streaks are not oriented to motion');
+  if (primarySlash.emitter.particles.rotate?.path !== false) throw new Error('Critical Hit primary slash must use fixed direction orientation');
+  const slashValue = primarySlash.emitter.particles.rotate?.value;
+  if (Number(slashValue) !== 105) throw new Error(`Critical Hit slash orientation expected 105deg, got ${JSON.stringify(slashValue)}`);
   if (criticalStreaks.color.value !== '#ff4d8d') throw new Error(`critical tint did not compile: ${criticalStreaks.color.value}`);
+  if (primarySlash.origin.x !== 8 || primarySlash.origin.rotateWithDirection !== true) throw new Error('Critical Hit directional origin was not preserved');
 
   const goalCompiled = compileWeb2D(goal.source, {
     intensity: 1.15,
     teamColor: '#e31837'
   });
-  const teamConfetti = compiledLayer(goalCompiled, 'team-confetti').emitter.particles;
-  const goalFlash = compiledLayer(goalCompiled, 'flash').emitter.particles;
-  if (teamConfetti.color.value !== '#e31837' || goalFlash.color.value !== '#e31837') {
-    throw new Error('teamColor binding did not compile into Goal Celebration layers');
+  const leftRibbon = compiledLayer(goalCompiled, 'ribbon-left');
+  const rightRibbon = compiledLayer(goalCompiled, 'ribbon-right');
+  const leftConfetti = compiledLayer(goalCompiled, 'team-confetti-left');
+  const rightConfetti = compiledLayer(goalCompiled, 'team-confetti-right');
+  if (leftRibbon.emitter.particles.shape.type !== 'ribbon' || rightRibbon.emitter.particles.shape.type !== 'ribbon') {
+    throw new Error('Goal Celebration must compile two real ribbon layers');
   }
+  if (leftRibbon.origin.x >= 0 || rightRibbon.origin.x <= 0) throw new Error('Goal Celebration launch origins are not spatially separated');
+  if (leftConfetti.emitter.particles.color.value !== '#e31837' || rightConfetti.emitter.particles.color.value !== '#e31837') {
+    throw new Error('teamColor binding did not compile into spatial confetti layers');
+  }
+  if (!heroState.ribbonCapabilityAdded || runtime.capabilities?.ribbon !== true) throw new Error('ribbon capability was not registered during Web2D boot');
 
-  const ribbonLayers = [...criticalCompiled.layers, ...goalCompiled.layers]
-    .filter((layer) => layer.emitter?.particles?.shape?.type === 'ribbon');
-  if (ribbonLayers.length !== 0 || heroState.ribbonCapabilityAdded) throw new Error('ribbon capability was added without a proven visual need');
+  assertRegressionFixturesHidden();
 
   const assetStats = globalThis.FXDeckAssets.getStats();
-  if (assetStats.manifestAssets < 6) throw new Error(`expected at least 6 manifest assets, got ${assetStats.manifestAssets}`);
+  if (assetStats.manifestAssets < 7) throw new Error(`expected at least 7 manifest assets, got ${assetStats.manifestAssets}`);
 
   runtime.fx.stopAll('session4-gate-reset');
   await nextFrame();
@@ -112,7 +132,7 @@ export async function runSession4Gate() {
   await playStop(runtime, 'critical-hit', { direction: 123, intensity: 1.25, tint: '#ff4d8d' }, 90);
   if (runtime.adapters.particles.container !== container) throw new Error('container changed after Critical Hit');
 
-  await playStop(runtime, 'goal-celebration', { intensity: 1.15, teamColor: '#e31837' }, 260);
+  await playStop(runtime, 'goal-celebration', { intensity: 1.15, teamColor: '#e31837' }, 300);
   if (runtime.adapters.particles.container !== container) throw new Error('container changed after Goal Celebration');
 
   runtime.assertTopology();
@@ -124,10 +144,11 @@ export async function runSession4Gate() {
     build: BUILD,
     effects: ['critical-hit', 'goal-celebration'],
     schemaDriven: 2,
-    semanticDirection: true,
-    tintBinding: true,
-    teamColorBinding: true,
-    ribbonAdded: false,
+    criticalShapeLanguage: 'dominant-directional-slash',
+    spatialOrigins: true,
+    motionOrientation: true,
+    ribbonAdded: true,
+    regressionFixturesHiddenFromPlay: true,
     particleCanvasCount: canvasCount,
     visualAccepted: false
   };
@@ -135,8 +156,8 @@ export async function runSession4Gate() {
   globalThis.FXDeckSession4Gate = result;
   if (globalThis.FXDeckLab) globalThis.FXDeckLab.runSession4Gate = runSession4Gate;
 
-  log(`PASS ${BUILD} SESSION 4 TECH GATE: Critical Hit + Goal Celebration / JSON-driven / direction + intensity + tint/teamColor / 0 effect bridges / ribbon not required / 1 persistent canvas`);
-  log(`${BUILD} SESSION 4 VISUAL GATE: USER REVIEW REQUIRED — review Critical Hit and Goal Celebration in Play before Session 4 is fully accepted`);
+  log(`PASS ${BUILD} SESSION 4 CORRECTION TECH GATE: directional Critical Hit / spatial Goal Celebration / ribbons / origin offsets / motion orientation / regression fixtures hidden from Play / 0 effect bridges / 1 persistent canvas`);
+  log(`${BUILD} SESSION 4 VISUAL GATE: USER REVIEW REQUIRED — Critical Hit and Goal Celebration must now be judged as compositions, not generic point bursts`);
   return result;
 }
 
@@ -144,6 +165,6 @@ try {
   await runSession4Gate();
 } catch (error) {
   globalThis.FXDeckSession4Gate = { pass: false, build: BUILD, error: error.message, visualAccepted: false };
-  log(`FAIL ${BUILD} SESSION 4 TECH GATE: ${error.message}`);
+  log(`FAIL ${BUILD} SESSION 4 CORRECTION TECH GATE: ${error.message}`);
   console.error(error);
 }
