@@ -1,6 +1,6 @@
 const ID_RE = /^[a-z][a-z0-9-]{1,63}$/;
 const PRIORITIES = new Set(['hero', 'high', 'medium', 'low']);
-const BINDING_PROPERTIES = new Set([
+const NUMERIC_BINDING_PROPERTIES = new Set([
   'spawn.count',
   'spawn.ratePerSecond',
   'motion.speed.min',
@@ -8,7 +8,10 @@ const BINDING_PROPERTIES = new Set([
   'size.start',
   'size.end'
 ]);
+const COLOR_BINDING_PROPERTIES = new Set(['color']);
+const BINDING_PROPERTIES = new Set([...NUMERIC_BINDING_PROPERTIES, ...COLOR_BINDING_PROPERTIES]);
 const BINDING_OPERATIONS = new Set(['multiply', 'add', 'replace']);
+const COLOR_PARAMS = new Set(['tint', 'teamColor']);
 
 export const DEFAULT_WEB2D_BUDGET = Object.freeze({
   maxLayers: 8,
@@ -58,6 +61,10 @@ function finite(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function validColor(value) {
+  return typeof value === 'string' || (Array.isArray(value) && value.length > 0 && value.every((entry) => typeof entry === 'string'));
+}
+
 function validateRange(value, path, issues, { min = -Infinity, max = Infinity } = {}) {
   if (!isObject(value)) {
     issue(issues, 'FXD_SCHEMA_02', path, 'must be { min, max }');
@@ -90,6 +97,7 @@ function validateCurve2(value, path, issues, { min = -Infinity, max = Infinity }
 function getBindingTarget(layer, property) {
   if (property === 'motion.speed.min') return layer.motion?.speed?.min;
   if (property === 'motion.speed.max') return layer.motion?.speed?.max;
+  if (property === 'color') return layer.color;
   const [group, key] = property.split('.');
   if (group === 'spawn') return layer.spawn?.[key];
   if (group === 'size') return layer.size?.[key];
@@ -191,10 +199,7 @@ export function validateEffectDefinition(effect, {
       }
     }
 
-    if (layer.color != null) {
-      const validColor = typeof layer.color === 'string' || (Array.isArray(layer.color) && layer.color.length > 0 && layer.color.every((value) => typeof value === 'string'));
-      if (!validColor) issue(issues, 'FXD_COLOR_01', `${path}.color`, 'must be a color string or non-empty string array');
-    }
+    if (layer.color != null && !validColor(layer.color)) issue(issues, 'FXD_COLOR_01', `${path}.color`, 'must be a color string or non-empty string array');
 
     validateRange(layer.lifetimeMs, `${path}.lifetimeMs`, issues, { min: 1, max: 10000 });
 
@@ -230,16 +235,26 @@ export function validateEffectDefinition(effect, {
     const path = `$.bindings[${index}]`;
     if (!isObject(binding)) return issue(issues, 'FXD_BINDING_01', path, 'binding must be an object');
     unknownKeys(binding, new Set(['param', 'layer', 'property', 'operation', 'min', 'max']), path, issues);
-    if (binding.param !== 'intensity') issue(issues, 'FXD_BINDING_02', `${path}.param`, 'only intensity is supported in V1');
     if (!layerIds.has(binding.layer)) issue(issues, 'FXD_BINDING_03', `${path}.layer`, 'binding references an unknown layer');
     if (!BINDING_PROPERTIES.has(binding.property)) issue(issues, 'FXD_BINDING_04', `${path}.property`, 'unsupported binding target');
     if (!BINDING_OPERATIONS.has(binding.operation)) issue(issues, 'FXD_BINDING_05', `${path}.operation`, 'unsupported binding operation');
+
+    const layer = effect.layers.find((candidate) => candidate?.id === binding.layer);
+    const isColorBinding = COLOR_BINDING_PROPERTIES.has(binding.property);
+
+    if (isColorBinding) {
+      if (!COLOR_PARAMS.has(binding.param)) issue(issues, 'FXD_BINDING_02', `${path}.param`, 'color binding requires tint or teamColor');
+      if (binding.operation !== 'replace') issue(issues, 'FXD_BINDING_09', `${path}.operation`, 'color binding only supports replace');
+      if (binding.min != null || binding.max != null) issue(issues, 'FXD_BINDING_10', path, 'color binding does not support min/max');
+      if (layer && layer.color != null && !validColor(layer.color)) issue(issues, 'FXD_BINDING_11', `${path}.property`, 'color binding target must be a valid color property');
+      return;
+    }
+
+    if (binding.param !== 'intensity') issue(issues, 'FXD_BINDING_02', `${path}.param`, 'numeric binding requires intensity');
     if (binding.min != null && !finite(binding.min)) issue(issues, 'FXD_BINDING_06', `${path}.min`, 'must be finite');
     if (binding.max != null && !finite(binding.max)) issue(issues, 'FXD_BINDING_06', `${path}.max`, 'must be finite');
     if (finite(binding.min) && finite(binding.max) && binding.min > binding.max) issue(issues, 'FXD_BINDING_07', path, 'min must be <= max');
-
-    const layer = effect.layers.find((candidate) => candidate?.id === binding.layer);
-    if (layer && BINDING_PROPERTIES.has(binding.property) && !finite(getBindingTarget(layer, binding.property))) {
+    if (layer && NUMERIC_BINDING_PROPERTIES.has(binding.property) && !finite(getBindingTarget(layer, binding.property))) {
       issue(issues, 'FXD_BINDING_08', `${path}.property`, 'binding target must resolve to a numeric property');
     }
   });
