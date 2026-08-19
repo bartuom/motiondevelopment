@@ -4,20 +4,49 @@
 
 ## Current state — 2026-08-19
 
-- **Milestone:** **P4.2 — FXDeck Effect Schema V1**.
-- **Execution status:** **Session 1 browser gate accepted; Session 2 implemented and awaiting deployed browser acceptance.**
+- **Milestone:** **P4.2.1 — Schema V1 + Runtime Lab UI restoration**.
+- **Execution status:** **Session 1 browser gate accepted; Session 2 implemented and awaiting deployed browser acceptance on the restored canonical UI.**
 - **Canonical plan:** [`FXDECK_PLAN.md`](./FXDECK_PLAN.md).
-- **Canonical Runtime Lab:** `site/web2d-runtime-lab.html`.
-- **Legacy Runtime Lab:** `site/heavy-impact-lab.html`.
+- **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
+- **Temporary P4.1 harness:** `site/web2d-runtime-lab.html` now redirects to the canonical Runtime Lab.
 - **Production Web2D backend:** tsParticles only.
 - **Particlr:** authoring/reference only; not a production runtime dependency.
 - **3D:** architectural boundary only; zero implementation in Web2D V1.
 
-## UI preservation rule
+## Hard UI preservation rule
 
-Runtime/architecture/schema work must preserve the existing Runtime Lab UI/UX by default. A backend refactor is not permission to replace the interface or remove working controls. Temporary harnesses may exist only as developer tools and must not silently become the canonical UI.
+Runtime, architecture, schema, optimization, backend or refactor work must **preserve the established Runtime Lab UI/UX and working controls by default**.
 
-Session 2 follows this rule: the existing P4.1 Runtime Lab markup/layout is preserved. Only an additional schema gate module is loaded behind the existing UI.
+A technical refactor is not permission to:
+
+- replace the canonical interface,
+- remove working controls,
+- reduce debug/authoring functionality,
+- silently promote a temporary test harness to the product/canonical UI.
+
+If an isolated harness is useful for architecture testing, it may exist only as an internal developer page. It must not replace the established UI unless the user explicitly requests a UI redesign.
+
+### P4.2.1 correction
+
+P4.1 incorrectly introduced `web2d-runtime-lab.html` as a new minimal canonical UI. The architecture test was valid, but changing the interface was outside the task scope.
+
+P4.2.1 corrects that mistake:
+
+```text
+established Runtime Lab UI
+        ↓
+P4.2 Web2D runtime underneath
+        ↓
+FXDeck Core
+        ↓
+Schema / legacy baseline definitions
+        ↓
+TsParticlesAdapter
+        ↓
+1 persistent tsParticles container
+```
+
+The established Play / Debug workspace, HUD modes, inspector, effect controls, overlap test, A/B test, cancellation gate, stress compare, runtime log and API preview remain available.
 
 ---
 
@@ -62,13 +91,15 @@ TsParticlesAdapter
 1 persistent transparent tsParticles container/canvas
 ```
 
+P4.2.1 keeps this topology but moves it back underneath the established Runtime Lab UI.
+
 ---
 
 ## Session 2 — Schema + Compiler + Validator
 
 ### Implemented
 
-Canonical authoring path now exists:
+Canonical authoring path:
 
 ```text
 FXDeck Effect JSON
@@ -86,7 +117,7 @@ TsParticlesAdapter
 existing persistent container
 ```
 
-New files:
+Core files:
 
 - `site/fxdeck/schema/effect.schema.json`
 - `site/fxdeck/schema/validator.js`
@@ -99,7 +130,7 @@ New files:
 ### Schema V1 principles
 
 - no raw tsParticles vocabulary in effect JSON,
-- `additionalProperties`-style strict structural checking,
+- strict unknown-property rejection,
 - finite duration/lifetime only,
 - burst + finite rate emitters,
 - circle/square/image shapes,
@@ -112,7 +143,7 @@ New files:
 
 ### Semantic/mobile gates
 
-The dependency-free validator catches cases such as:
+The validator catches cases such as:
 
 ```text
 unknown properties
@@ -139,17 +170,33 @@ FXD_DURATION_02
 
 ### Synthetic proof effects
 
-Three JSON fixtures are registered through the same generic schema runtime path:
+Three JSON fixtures use the same generic schema runtime path:
 
 1. `schema-test-burst.json`
 2. `schema-test-smoke.json`
 3. `schema-test-rain.json`
 
-They contain **zero effect-specific runtime JavaScript** and are deliberately not exposed as portfolio content.
+They contain **zero effect-specific runtime JavaScript** and are diagnostic proof effects, not portfolio content.
+
+### P4.2.1 canonical Runtime Lab integration
+
+`site/heavy-impact-lab.html` is again the canonical UI shell. It boots the P4 runtime through:
+
+```text
+runtime-engine-bootstrap.js
+  ↓
+runtime-lab-p4.js
+  ↓
+createWeb2DRuntime()
+  ↓
+Schema V1 definitions + baseline definitions
+```
+
+The old P3 bridge/catalog/build-authority scripts are no longer loaded by the canonical HTML. The temporary `web2d-runtime-lab.html` architecture harness redirects to the established Runtime Lab instead of presenting a competing UI.
 
 ### Session 2 browser gate
 
-`site/js/session2-schema-gate.js` runs behind the existing Runtime Lab UI and verifies:
+`site/js/session2-schema-gate.js` is UI-independent and verifies:
 
 - all three JSON definitions load and validate,
 - all three compile to Web2D emitter options,
@@ -165,7 +212,8 @@ They contain **zero effect-specific runtime JavaScript** and are deliberately no
 Expected deployed log:
 
 ```text
-PASS P4.2.0 SESSION 2 GATE: 3 JSON effects / structural + semantic validation / compiler / 0 effect-specific runtime JS / 1 persistent canvas
+PASS P4.2.1 SESSION 1 GATE: ... / 1 persistent container / 1 canvas / bootCount 1
+PASS P4.2.1 SESSION 2 GATE: 3 JSON effects / structural + semantic validation / compiler / 0 effect-specific runtime JS / 1 persistent canvas
 ```
 
 Browser API after gate:
@@ -176,7 +224,7 @@ FXDeckSchemaV1.compile(effect, params)
 FXDeckSchemaV1.runGate()
 ```
 
-Do not mark Session 2 browser-accepted until the deployed gate returns `PASS`.
+Do not mark Session 2 browser-accepted until the deployed gate returns `PASS` on the restored canonical Runtime Lab.
 
 ---
 
@@ -215,10 +263,14 @@ Galaxy S20+ 5G:
 
 ## Changelog
 
+- **P4.2.1 UI correction:** restored `site/heavy-impact-lab.html` as the canonical Runtime Lab shell.
+- **P4.2.1 UI correction:** retired the temporary minimal P4.1 harness as canonical UI; old URL now redirects.
+- **P4.2.1 UI correction:** P4 runtime/schema pipeline now runs underneath the established Play/Debug/HUD/inspector interface.
+- **P4.2.1 UI correction:** recorded UI preservation as a hard implementation constraint.
+- **P4.2.1:** Session 2 gate decoupled from temporary `fxd-*` UI selectors.
 - **P4.2 / Session 2:** added strict FXDeck Effect Schema V1 contract.
 - **P4.2 / Session 2:** added structural + semantic/mobile budget validation.
 - **P4.2 / Session 2:** added generic `compileWeb2D()` and schema effect registration path.
 - **P4.2 / Session 2:** added burst/image/rate JSON proof fixtures and automated browser gate.
-- **P4.2 / Session 2:** preserved the existing Runtime Lab UI; no replacement UI was introduced.
 - **P4.1 / Session 1:** browser topology/lifecycle gate accepted from deployed user test.
 - **P4.0 / Session 0:** recovery branches and safety checkpoint completed.
