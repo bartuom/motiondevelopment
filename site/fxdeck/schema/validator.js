@@ -1,7 +1,5 @@
 const ID_RE = /^[a-z][a-z0-9-]{1,63}$/;
 const PRIORITIES = new Set(['hero', 'high', 'medium', 'low']);
-const BLENDS = new Set(['normal', 'lighter']);
-const SHAPES = new Set(['circle', 'square', 'image']);
 const BINDING_PROPERTIES = new Set([
   'spawn.count',
   'spawn.ratePerSecond',
@@ -90,12 +88,11 @@ function validateCurve2(value, path, issues, { min = -Infinity, max = Infinity }
 }
 
 function getBindingTarget(layer, property) {
+  if (property === 'motion.speed.min') return layer.motion?.speed?.min;
+  if (property === 'motion.speed.max') return layer.motion?.speed?.max;
   const [group, key] = property.split('.');
   if (group === 'spawn') return layer.spawn?.[key];
   if (group === 'size') return layer.size?.[key];
-  if (group === 'motion' && key === 'speed') return undefined;
-  if (property === 'motion.speed.min') return layer.motion?.speed?.min;
-  if (property === 'motion.speed.max') return layer.motion?.speed?.max;
   return undefined;
 }
 
@@ -125,7 +122,7 @@ export function validateEffectDefinition(effect, {
   const assetIds = new Set();
   assets.forEach((asset, index) => {
     const path = `$.assets[${index}]`;
-    if (!isObject(asset)) return issue(issues, 'FXD_SCHEMA_04', path, 'asset must be an object');
+    if (!isObject(asset)) return issue(issues, 'FXD_SCHEMA_04', path, 'asset must be a hydrated asset object');
     unknownKeys(asset, new Set(['id', 'src', 'width', 'height']), path, issues);
     if (typeof asset.id !== 'string' || !ID_RE.test(asset.id)) issue(issues, 'FXD_ASSET_01', `${path}.id`, 'invalid asset id');
     if (assetIds.has(asset.id)) issue(issues, 'FXD_ASSET_02', `${path}.id`, 'duplicate asset id');
@@ -204,11 +201,12 @@ export function validateEffectDefinition(effect, {
     if (!isObject(layer.motion)) {
       issue(issues, 'FXD_MOTION_00', `${path}.motion`, 'motion must be an object');
     } else {
-      unknownKeys(layer.motion, new Set(['direction', 'spreadDeg', 'speed', 'gravity']), `${path}.motion`, issues);
+      unknownKeys(layer.motion, new Set(['direction', 'spreadDeg', 'speed', 'gravity', 'drag']), `${path}.motion`, issues);
       if (layer.motion.direction !== 'inherit' && !finite(layer.motion.direction)) issue(issues, 'FXD_MOTION_01', `${path}.motion.direction`, 'must be degrees or "inherit"');
       if (!finite(layer.motion.spreadDeg) || layer.motion.spreadDeg < 0 || layer.motion.spreadDeg > 360) issue(issues, 'FXD_MOTION_02', `${path}.motion.spreadDeg`, 'must be in [0, 360]');
       validateRange(layer.motion.speed, `${path}.motion.speed`, issues, { min: 0, max: 5000 });
       if (layer.motion.gravity != null && (!finite(layer.motion.gravity) || layer.motion.gravity < -100 || layer.motion.gravity > 100)) issue(issues, 'FXD_MOTION_03', `${path}.motion.gravity`, 'must be in [-100, 100]');
+      if (layer.motion.drag != null && (!finite(layer.motion.drag) || layer.motion.drag < 0 || layer.motion.drag > 1)) issue(issues, 'FXD_MOTION_04', `${path}.motion.drag`, 'must be in [0, 1]');
     }
 
     validateCurve2(layer.size, `${path}.size`, issues, { min: 0, max: 2048 });
