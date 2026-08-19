@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./rare-reward.css?v=p3.9.0">
   <link rel="stylesheet" href="./football-card-reveal.css?v=p3.10.1" data-football-card-reveal>
   <link rel="stylesheet" href="./critical-hit.css?v=p3.11.0" data-critical-hit>
+  <link rel="stylesheet" href="./magic-burst.css?v=p3.12.0" data-magic-burst>
   <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.8.2">
 </head>
 <body data-workspace-mode="play" data-hud-mode="basic">
@@ -30,10 +31,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.11.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P3.12.0</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.11.0 adds Critical Hit: an ultra-short directional gameplay cue where immediate slash/flash readability is decoupled from scheduled particle decoration. Football Card P3.10.1 remains visually pending.</p>
+      <p class="intro">P3.12.0 adds Magic Burst: an asymmetric stylized cue with curved DOM ribbons, directional color motes and an offset echo lobe. This completes the planned representative effect archetypes before P3 exit review.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -62,6 +63,8 @@
               <option value="fireball" selected>Fireball — moving-source proof</option>
               <option value="explosion">Explosion — composite one-shot</option>
               <option value="heavyImpact">Heavy Impact — production one-shot</option>
+              <option value="criticalHit">Critical Hit — ultra-short readability cue</option>
+              <option value="magicBurst">Magic Burst — asymmetric stylized cue</option>
             </select>
           </div>
 
@@ -94,7 +97,7 @@
           <div class="control">
             <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
             <input id="direction" type="range" min="0" max="359" value="18" step="1">
-            <p class="control-note">Direction remains effect-specific: travel for Fireball, blast bias for impacts, reveal-light angle for card-space effects.</p>
+            <p class="control-note">Direction remains effect-specific: travel for Fireball, blast bias for impacts, composition rotation for Magic Burst, reveal-light angle for card-space effects.</p>
           </div>
 
           <div class="actions actions--primary">
@@ -104,7 +107,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>World one-shots, ultra-short hit cues, moving projectiles, sustained sources and UI/card-space reveals now share one runtime. Critical Hit specifically probes immediate gameplay readability independent of deferred particle decoration.</p>
+            <p>World one-shots, ultra-short hit cues, stylized asymmetric bursts, moving projectiles, sustained sources and UI/card-space reveals now share one runtime. The planned representative P3 effect set is implemented.</p>
           </div>
         </div>
 
@@ -195,7 +198,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.11.0</span>
+              <span class="runtime-hud__build">P3.12.0</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -276,7 +279,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.11.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab ready. Build P3.12.0.</pre>
           </section>
 
           <section class="debug-section">
@@ -298,8 +301,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
   <script type="module" src="./js/heavy-impact-lab.js?v=p3.6.2"></script>
+  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.12.0"></script>
   <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.10.1"></script>
   <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.11.0"></script>
+  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.12.0"></script>
   <script type="module" src="./js/p3-stress-benchmark.js?v=p3.6.0"></script>
   <script type="module" src="./js/runtime-lab-ui.js?v=p3.8.2"></script>
 </body>
