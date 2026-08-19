@@ -1,10 +1,10 @@
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.1';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.1';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.2';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.2';
 
-const BUILD = 'P4.4.1';
+const BUILD = 'P4.4.2';
 const EFFECT_URLS = [
-  './fxdeck/effects/critical-hit.json?v=p4.4.1',
-  './fxdeck/effects/goal-celebration.json?v=p4.4.1'
+  './fxdeck/effects/critical-hit.json?v=p4.4.2',
+  './fxdeck/effects/goal-celebration.json?v=p4.4.2'
 ];
 const REGRESSION_EFFECT_IDS = new Set([
   'schema-test-burst',
@@ -50,8 +50,8 @@ function installSelectorOptions(effects) {
   if (!select) return;
 
   const labels = new Map([
-    ['critical-hit', 'Critical Hit — directional slash / Schema V1'],
-    ['goal-celebration', 'Goal Celebration — spatial ribbons + confetti / Schema V1']
+    ['critical-hit', 'Critical Hit — normalized directional slash'],
+    ['goal-celebration', 'Goal Celebration — compact ribbons + confetti']
   ]);
 
   for (const effect of [...effects].reverse()) {
@@ -93,12 +93,17 @@ const state = {
   effects: structuredClone(effects),
   prefetch: structuredClone(prefetch),
   ribbonCapabilityAdded: true,
-  regressionFixturesHiddenFromPlay: true
+  regressionFixturesHiddenFromPlay: true,
+  visualNormalization: {
+    criticalSlashAssetRatio: 4,
+    goalMaxLocalOffsetPx: 96,
+    edgeClamp: true
+  }
 };
 
 globalThis.FXDeckHeroEffects = state;
 if (globalThis.FXDeckLab) globalThis.FXDeckLab.heroEffects = state;
 
-log(`${BUILD} HERO CORRECTION: Critical Hit rebuilt around one dominant directional slash; Goal Celebration rebuilt around two spatial ribbon/confetti launch points`);
-log(`${BUILD} PLAY SURFACE: synthetic schema-test fixtures remain registered for automated Debug gates but are hidden from the normal Effect selector`);
-log(`${BUILD} GOAL CAPABILITY DECISION: ribbon added after visual review proved point-burst composition insufficient`);
+log(`${BUILD} HERO NORMALIZATION: oversized image radii removed; Critical Hit uses a neutral 4:1 slash rotated only by gameplay direction`);
+log(`${BUILD} GOAL NORMALIZATION: launch offsets reduced to a compact local composition and clamped to preview bounds`);
+log(`${BUILD} PLAY SURFACE: synthetic schema-test fixtures remain Debug-only`);
