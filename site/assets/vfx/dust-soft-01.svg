@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <metadata>FXDeck original reusable VFX asset. Soft dust alpha 01.</metadata>
+  <defs>
+    <radialGradient id="a" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#e5d4b8" stop-opacity="0.78"/>
+      <stop offset="0.46" stop-color="#c9b391" stop-opacity="0.48"/>
+      <stop offset="1" stop-color="#9f8b70" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4.2"/>
+    </filter>
+  </defs>
+  <g filter="url(#blur)">
+    <ellipse cx="61" cy="68" rx="36" ry="28" fill="url(#a)"/>
+    <circle cx="39" cy="64" r="22" fill="url(#a)" opacity="0.78"/>
+    <circle cx="82" cy="55" r="24" fill="url(#a)" opacity="0.72"/>
+    <circle cx="74" cy="80" r="20" fill="url(#a)" opacity="0.6"/>
+    <circle cx="49" cy="87" r="16" fill="url(#a)" opacity="0.48"/>
+    <circle cx="92" cy="76" r="14" fill="url(#a)" opacity="0.42"/>
+  </g>
+</svg>
