@@ -1,4 +1,4 @@
-const BUILD = 'P3.14.0';
+const BUILD = 'P3.14.1';
 
 const effectInput = document.querySelector('#effect-select');
 const stage = document.querySelector('#impact-stage');
@@ -16,17 +16,17 @@ const REFERENCES = {
   refParticlrExplosion: {
     frame: 'particlr-explosion',
     title: 'SOURCE — Particlr Explosion exact',
-    note: 'Exact .prt fixture rendered by @particlr/runtime + PixiJS. Click inside preview to replay at that point.',
+    note: 'Exact public .prt fixture from the 0.5.2 release, rendered by matching @particlr/runtime 0.5.2 + PixiJS. Click inside preview to replay at that point.',
     caption: 'Particlr Explosion / exact source',
-    captionNote: 'exact fixture → exact runtime → zero FXDeck reinterpretation',
-    summary: 'Calibration reference. This is the exact public Particlr Explosion .prt fixture played through the same @particlr/runtime family used by the editor, not an FXDeck recreation.',
+    captionNote: '0.5.2 fixture → matching runtime → zero FXDeck reinterpretation',
+    summary: 'Calibration reference. This is the exact public Particlr Explosion .prt fixture from the published 0.5.2 release played through @particlr/runtime 0.5.2, not an FXDeck recreation and not a claim that it is the separate editor preset.',
     playLabel: 'Replay exact Particlr Explosion',
     layers: [
       ['Flash', 'circle-soft / add / 0.15 s / size 140'],
       ['Fireball', '24 / circle-soft / add / 0.4–0.7 s'],
       ['Fireball motion', '60–160 speed / gravity 40 / drag 2.5'],
       ['Smoke', '20/sec after 0.05 s / normal / 0.8–1.4 s'],
-      ['Source', 'brac/particlr-runtime explosion.prt / seed 1337']
+      ['Source', 'brac/particlr-runtime 0.5.2 explosion.prt / seed 1337']
     ],
     timeline: [
       ['0 ms', 'Exact fixture flash + 24-particle fireball burst'],
@@ -185,7 +185,7 @@ function createFrame(key) {
   frame = document.createElement('iframe');
   frame.id = 'reference-fidelity-frame';
   frame.title = ref.title;
-  frame.src = `./reference-fidelity-frame.html?ref=${encodeURIComponent(ref.frame)}&v=p3.14.0`;
+  frame.src = `./reference-fidelity-frame.html?ref=${encodeURIComponent(ref.frame)}&v=p3.14.1`;
   frame.setAttribute('aria-label', ref.title);
   Object.assign(frame.style, {
     position: 'absolute',
@@ -299,4 +299,4 @@ globalThis.FXDeckReferenceFidelity = {
   }
 };
 
-appendLog(`${BUILD} Reference Fidelity bridge ready: exact Particlr Explosion + exact tsParticles Ribbons + exact tsParticles Fireworks`);
+appendLog(`${BUILD} Reference Fidelity bridge ready: exact Particlr 0.5.2 Explosion fixture + exact tsParticles Ribbons + exact tsParticles Fireworks`);
