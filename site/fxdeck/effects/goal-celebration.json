@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "goal-celebration",
+  "label": "Goal Celebration",
+  "durationMs": 1900,
+  "priority": "hero",
+  "assets": [
+    "hero-flare",
+    "hero-streak"
+  ],
+  "bindings": [
+    { "param": "intensity", "layer": "radial-streaks", "property": "spawn.count", "operation": "multiply", "min": 8, "max": 28 },
+    { "param": "intensity", "layer": "team-confetti", "property": "spawn.count", "operation": "multiply", "min": 14, "max": 48 },
+    { "param": "intensity", "layer": "accent-confetti", "property": "spawn.count", "operation": "multiply", "min": 10, "max": 40 },
+    { "param": "intensity", "layer": "sparkles", "property": "spawn.count", "operation": "multiply", "min": 10, "max": 42 },
+    { "param": "teamColor", "layer": "flash", "property": "color", "operation": "replace" },
+    { "param": "teamColor", "layer": "radial-streaks", "property": "color", "operation": "replace" },
+    { "param": "teamColor", "layer": "team-confetti", "property": "color", "operation": "replace" }
+  ],
+  "layers": [
+    {
+      "id": "flash",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "hero",
+      "z": 30,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 1 },
+      "shape": { "type": "image", "asset": "hero-flare" },
+      "color": "#18d77f",
+      "lifetimeMs": { "min": 150, "max": 220 },
+      "motion": { "direction": 0, "spreadDeg": 0, "speed": { "min": 0, "max": 0.01 } },
+      "size": { "start": 72, "end": 190 },
+      "opacity": { "start": 0.94, "end": 0 }
+    },
+    {
+      "id": "radial-streaks",
+      "type": "particles",
+      "delayMs": 22,
+      "priority": "high",
+      "z": 29,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 16 },
+      "shape": { "type": "image", "asset": "hero-streak" },
+      "color": "#18d77f",
+      "lifetimeMs": { "min": 260, "max": 500 },
+      "motion": { "direction": 0, "spreadDeg": 360, "speed": { "min": 8, "max": 18 }, "drag": 0.03 },
+      "size": { "start": 24, "end": 7 },
+      "opacity": { "start": 0.9, "end": 0 },
+      "rotationDeg": { "min": -12, "max": 12 }
+    },
+    {
+      "id": "team-confetti",
+      "type": "particles",
+      "delayMs": 40,
+      "priority": "high",
+      "z": 27,
+      "blend": "normal",
+      "spawn": { "mode": "burst", "count": 30 },
+      "shape": { "type": "square" },
+      "color": "#18d77f",
+      "lifetimeMs": { "min": 900, "max": 1450 },
+      "motion": { "direction": 270, "spreadDeg": 150, "speed": { "min": 5, "max": 13 }, "gravity": 6.2, "drag": 0.012 },
+      "size": { "start": 9, "end": 4 },
+      "opacity": { "start": 1, "end": 0 },
+      "rotationDeg": { "min": -240, "max": 240 }
+    },
+    {
+      "id": "accent-confetti",
+      "type": "particles",
+      "delayMs": 110,
+      "priority": "medium",
+      "z": 26,
+      "blend": "normal",
+      "spawn": { "mode": "burst", "count": 22 },
+      "shape": { "type": "square" },
+      "color": ["#ffffff", "#ffd75a", "#64ddff", "#ff6f91"],
+      "lifetimeMs": { "min": 850, "max": 1500 },
+      "motion": { "direction": 270, "spreadDeg": 180, "speed": { "min": 4, "max": 11 }, "gravity": 7.4, "drag": 0.01 },
+      "size": { "start": 7.5, "end": 3.2 },
+      "opacity": { "start": 0.96, "end": 0 },
+      "rotationDeg": { "min": -320, "max": 320 }
+    },
+    {
+      "id": "sparkles",
+      "type": "particles",
+      "delayMs": 210,
+      "priority": "medium",
+      "z": 28,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 24 },
+      "shape": { "type": "circle" },
+      "color": ["#ffffff", "#ffe58a", "#7afcff"],
+      "lifetimeMs": { "min": 500, "max": 900 },
+      "motion": { "direction": 0, "spreadDeg": 360, "speed": { "min": 1.2, "max": 6.2 }, "drag": 0.025 },
+      "size": { "start": 5.2, "end": 0.3 },
+      "opacity": { "start": 0.94, "end": 0 }
+    }
+  ]
+}
