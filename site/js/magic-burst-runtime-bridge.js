@@ -1,8 +1,8 @@
-import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.13.3';
-import { registerExplosionV2 } from '../fxdeck/effects/explosion-v2.js?v=p3.13.3';
-import { registerMagicBurstV2 } from '../fxdeck/effects/magic-burst-v2.js?v=p3.13.3';
+import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.13.4';
+import { registerExplosionV2 } from '../fxdeck/effects/explosion-v2.js?v=p3.13.4';
+import { registerMagicBurstV2 } from '../fxdeck/effects/magic-burst-v2.js?v=p3.13.4';
 
-const BUILD = 'P3.13.3';
+const BUILD = 'P3.13.4';
 const stage = document.querySelector('#impact-stage');
 const domLayer = document.querySelector('#impact-dom-layer');
 const target = document.querySelector('#impact-target');
@@ -45,7 +45,7 @@ function waitForRuntime(timeoutMs = 8000) {
         return;
       }
       if (performance.now() - startedAt > timeoutMs) {
-        reject(new Error('FXDeck runtime was not ready for P3.13.3 V2 bridge.'));
+        reject(new Error('FXDeck runtime was not ready for P3.13.4 V2 bridge.'));
         return;
       }
       window.setTimeout(poll, 20);
@@ -55,6 +55,19 @@ function waitForRuntime(timeoutMs = 8000) {
 }
 
 async function ensureRibbonRuntime() {
+  if (globalThis.FXDeckRibbonRuntimeReady === true) {
+    readiness.ribbonRuntime = true;
+    readiness.ribbonError = null;
+    appendLog(`PASS ${BUILD}: using ribbon runtime initialized before the canonical tsParticles container`);
+    return;
+  }
+
+  if (globalThis.FXDeckRibbonRuntimeError) {
+    throw new Error(globalThis.FXDeckRibbonRuntimeError);
+  }
+
+  // Fallback for standalone/sandbox use. The canonical Runtime Lab initializes
+  // these plugins before creating its tsParticles container.
   if (typeof globalThis.loadMotionPlugin !== 'function') {
     throw new Error('loadMotionPlugin() is unavailable. Check @tsparticles/plugin-motion script.');
   }
@@ -64,9 +77,10 @@ async function ensureRibbonRuntime() {
 
   await globalThis.loadMotionPlugin(globalThis.tsParticles);
   await globalThis.loadRibbonShape(globalThis.tsParticles);
+  globalThis.FXDeckRibbonRuntimeReady = true;
   readiness.ribbonRuntime = true;
   readiness.ribbonError = null;
-  appendLog(`PASS ${BUILD}: tsParticles motion + ribbon shape registered on the canonical engine`);
+  appendLog(`PASS ${BUILD}: ribbon runtime initialized by fallback path`);
 }
 
 function isReferenceV2Selected() {
@@ -271,7 +285,7 @@ function updateUi() {
     setText('#resolved-layer-a-label', 'Hero ribbons');
     setText('#resolved-layer-a', `${heroCount} real shape-ribbon particles / 60 points each`);
     setText('#resolved-layer-b-label', 'Ribbon runtime');
-    setText('#resolved-layer-b', readiness.ribbonRuntime ? 'tsParticles shape-ribbon + motion loaded' : 'NOT READY');
+    setText('#resolved-layer-b', readiness.ribbonRuntime ? 'tsParticles shape-ribbon + motion loaded before container creation' : 'NOT READY');
     setText('#resolved-layer-c-label', 'Image motes');
     setText('#resolved-layer-c', `${motes} spark-image particles`);
     setText('#resolved-layer-d-label', 'Echo ribbons');
@@ -387,7 +401,6 @@ waitForRuntime()
   .then(async (runtime) => {
     fx = runtime;
 
-    // Explosion V2 is deliberately independent from the optional ribbon runtime.
     registerExplosionV2(fx);
     readiness.explosion = true;
     appendLog(`PASS ${BUILD}: Explosion V2 registered independently of ribbon initialization`);
@@ -397,7 +410,7 @@ waitForRuntime()
       await ensureRibbonRuntime();
       registerMagicBurstV2(fx);
       readiness.magicBurst = true;
-      appendLog(`PASS ${BUILD}: Magic Burst V2 registered after ribbon runtime initialization`);
+      appendLog(`PASS ${BUILD}: Magic Burst V2 registered with pre-container ribbon runtime`);
     } catch (error) {
       readiness.ribbonRuntime = false;
       readiness.magicBurst = false;
