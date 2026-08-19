@@ -1,4 +1,4 @@
-import { assertValidEffectDefinition } from './validator.js?v=p4.3.0';
+import { assertValidEffectDefinition } from './validator.js?v=p4.4.0';
 
 function splitOptions(options = {}) {
   const { assetManager = null, validationOptions = null, ...legacyValidationOptions } = options ?? {};
