@@ -14,8 +14,10 @@ This file records third-party material used for FXDeck visual research and the P
   - `references/particlr/dust-puff.pending.md` — no copied preset data.
   - `references/particlr/rain.pending.md` — no copied preset data.
 - P3.14 promoted calibration copy:
-  - `site/reference-data/particlr-explosion.prt` — byte-for-text equivalent of the harvested public Explosion fixture, deployed only so the browser calibration frame can fetch it.
-  - rendered by `@particlr/runtime@0.8.0` + PixiJS 8.19.0 in `site/reference-fidelity-frame.html`.
+  - `site/reference-data/particlr-explosion.prt` — text-equivalent copy of the public Explosion fixture from the **0.5.2 release commit** (`112a750a30ff61dae60058e3c600d2c8bf0ff726`).
+  - rendered by the matching published `@particlr/runtime@0.5.2` + PixiJS 8.19.0 in `site/reference-fidelity-frame.html`.
+  - the 0.5.2 release README explicitly documents the `parseParticle` + `Effect` + `PixiParticleRenderer` API used by the calibration frame.
+- Important distinction: this is the exact **public runtime Explosion fixture**, not a claim that it is byte-identical to the separate CC0 editor preset named Explosion.
 - Production rule: if an editor preset is exported later, record the exact exported filename and preserve the CC0 provenance note.
 
 ## tsParticles
