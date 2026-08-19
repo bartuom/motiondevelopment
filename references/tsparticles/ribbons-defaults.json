@@ -1,0 +1,100 @@
+{
+  "source": "tsparticles/tsparticles bundles/ribbons",
+  "purpose": "Exact current RibbonsOptions defaults plus the emitted tsParticles recipe needed for FXDeck Magic Burst V2.",
+  "options": {
+    "count": 5,
+    "emitterSize": {
+      "width": 100,
+      "height": 0
+    },
+    "positionX": 50,
+    "colors": [
+      "#FF0055",
+      "#00D1FF",
+      "#FFD23F",
+      "#61FF7E",
+      "#B284FF"
+    ],
+    "ribbonOptions": {
+      "angle": 45,
+      "darken": {
+        "enable": true,
+        "value": 30
+      },
+      "count": 60,
+      "drag": 0.02,
+      "mass": 1,
+      "oscillationDistance": {
+        "min": 100,
+        "max": 140
+      },
+      "oscillationSpeed": {
+        "min": 3,
+        "max": 5
+      },
+      "particleDist": 8,
+      "velocityInherit": {
+        "min": 4,
+        "max": 6
+      }
+    },
+    "scalar": 1,
+    "zIndex": 100,
+    "disableForReducedMotion": true
+  },
+  "runtimeRecipe": {
+    "fpsLimit": 120,
+    "sizeFactor": 8,
+    "emitter": {
+      "startCount": 5,
+      "position": {
+        "x": 50,
+        "y": 0
+      },
+      "shape": {
+        "type": "square"
+      },
+      "size": {
+        "width": 100,
+        "height": 0
+      },
+      "rate": {
+        "delay": 0,
+        "quantity": 0
+      },
+      "life": {
+        "duration": 0.1,
+        "count": 1
+      }
+    },
+    "particles": {
+      "shape": "ribbon",
+      "size": 8,
+      "move": {
+        "direction": "bottom",
+        "speed": {
+          "min": 4,
+          "max": 6
+        },
+        "outModes": {
+          "top": "none",
+          "default": "destroy"
+        }
+      },
+      "links": false,
+      "lifeCount": 1
+    },
+    "requiredPlugins": [
+      "basic",
+      "motion",
+      "emitters-simple",
+      "emitters-shape-square",
+      "shape-ribbon",
+      "updater-life"
+    ]
+  },
+  "notes": [
+    "The current Playground panel also includes a legacy/extra `spread: 0` field, but RibbonsOptions does not expose a spread property; FXDeck should use the actual bundle options above rather than assuming that field controls ribbon behavior.",
+    "Magic Burst V2 should prefer the actual ribbon shape/plugin over DOM/CSS imitation."
+  ]
+}
