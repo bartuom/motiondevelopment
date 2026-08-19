@@ -4,27 +4,19 @@
 
 ## Current state — 2026-08-19
 
-- **Milestone:** **P4.3 — Asset Pipeline + Dust Puff**.
-- **Execution status:** **Session 2 browser accepted. Session 3 implementation is complete and awaiting deployed technical + visual acceptance.**
+- **Milestone:** **P4.4 — Hero Effects: Critical Hit + Goal Celebration**.
+- **Execution status:** **Sessions 0–3 accepted. Session 4 implemented and awaiting deployed technical + visual acceptance.**
 - **Canonical plan:** [`FXDECK_PLAN.md`](./FXDECK_PLAN.md).
 - **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
-- **Temporary P4.1 harness:** `site/web2d-runtime-lab.html` redirects to the canonical Runtime Lab.
 - **Production Web2D backend:** tsParticles only.
 - **Particlr:** authoring/reference only; not a production runtime dependency.
 - **3D:** architectural boundary only; zero implementation in Web2D V1.
 
 ## Hard UI preservation rule
 
-Runtime, architecture, schema, optimization, backend or refactor work must **preserve the established Runtime Lab UI/UX and working controls by default**.
+Runtime, architecture, schema, optimization, backend or refactor work must **preserve the established Runtime Lab UI/UX and working controls by default**. Technical work is not permission to replace the interface, remove controls, reduce diagnostics, or promote a temporary harness to canonical UI.
 
-A technical refactor is not permission to:
-
-- replace the canonical interface,
-- remove working controls,
-- reduce debug/authoring functionality,
-- silently promote a temporary test harness to the product/canonical UI.
-
-If an isolated harness is useful for architecture testing, it may exist only as an internal developer page. It must not replace the established UI unless the user explicitly requests a UI redesign.
+P4.4 follows this rule. The existing Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress interface is preserved.
 
 ---
 
@@ -43,8 +35,6 @@ Recovery points:
 
 **Status: PASS / browser accepted.**
 
-Accepted topology:
-
 ```text
 GAME / Runtime Lab
   ↓
@@ -61,192 +51,183 @@ TsParticlesAdapter
 1 persistent transparent tsParticles container/canvas
 ```
 
-P4 keeps this topology underneath the established Runtime Lab UI.
-
 ---
 
 ## Session 2 — Schema + Compiler + Validator
 
 **Status: PASS / browser accepted.**
 
-User-provided deployed P4.2.1 log confirmed:
-
-```text
-PASS P4.2.1 BOOT: preserved Runtime Lab UI / 1 FXDeck runtime / 1 tsParticles engine / 1 persistent container / 1 canvas / 6 registered effects
-PASS P4.2.1 SESSION 1 GATE: 6 play/stop cycles / 1 engine / 1 persistent container / 1 canvas / bootCount 1
-PASS P4.2.1 SESSION 2 GATE: 3 JSON effects / structural + semantic validation / compiler / 0 effect-specific runtime JS / 1 persistent canvas
-```
+User-provided deployed P4.2.1 log confirmed the Schema V1 pipeline with three JSON regression effects, actionable validation failures, zero effect-specific runtime JS and one persistent canvas.
 
 Canonical authoring path:
 
 ```text
 FXDeck Effect JSON
   ↓
-structural validator
-  ↓
-semantic/mobile budget validator
+structural + semantic validation
   ↓
 compileWeb2D(effect, params)
   ↓
-generic schema effect runtime definition
+generic schema runtime
   ↓
 TsParticlesAdapter
   ↓
-existing persistent container
+1 persistent container
 ```
-
-Core files:
-
-- `site/fxdeck/schema/effect.schema.json`
-- `site/fxdeck/schema/validator.js`
-- `site/fxdeck/schema/effect-loader.js`
-- `site/fxdeck/schema/README.md`
-- `site/fxdeck/web2d/compiler.js`
-- `site/fxdeck/web2d/register-schema-effect.js`
-- `site/js/session2-schema-gate.js`
-
-Three synthetic fixtures remain regression-only:
-
-1. `schema-test-burst.json`
-2. `schema-test-smoke.json`
-3. `schema-test-rain.json`
-
-They contain zero effect-specific runtime JavaScript.
 
 ---
 
 ## Session 3 — Asset Pipeline + Dust Puff
 
-### Implemented architecture
+**Status: PASS / browser + visual accepted.**
 
-```text
-Dust Puff JSON
-  ↓
-manifest asset ids
-  ↓
-FXDeckAssetManager
-  ↓
-hydrated runtime asset records
-  ↓
-Schema V1 validator
-  ↓
-compileWeb2D()
-  ↓
-TsParticlesAdapter
-  ↓
-1 persistent canvas
-```
-
-New asset pipeline:
-
-- `site/fxdeck/assets/manifest.json`
-- `site/fxdeck/assets/README.md`
-- `site/fxdeck/core/asset-manager.js`
-
-Asset manager responsibilities:
-
-- manifest loading,
-- stable asset-id resolution,
-- URL/dimension hydration,
-- request/decode de-duplication,
-- cold prefetch,
-- warm cache hits,
-- per-effect prefetch.
-
-### First reusable original alpha assets
-
-- `site/assets/vfx/dust-soft-01.svg`
-- `site/assets/vfx/dust-soft-02.svg`
-- `site/assets/vfx/dust-soft-03.svg`
-
-These are FXDeck-original assets. The main Dust Puff mass no longer relies on geometric circles.
-
-### Dust Puff V1
-
-`site/fxdeck/effects/dust-puff.json`
-
-Properties:
-
-- fully Schema V1 driven,
-- zero effect-specific runtime bridge,
-- 4 layers:
-  - `ground-roll`,
-  - `body`,
-  - `wisps`,
-  - `grit`,
-- 3 reusable manifest alpha assets,
-- intensity-driven count/speed bindings,
-- semantic motion drag mapped by the Web2D compiler to tsParticles movement decay,
-- normal alpha blend for the main dust mass.
-
-The effect is original FXDeck work. It is **reference-informed**, not a copied Particlr config.
-
-Reference notes:
-
-- `references/particlr/dust-puff-analysis.md`
-- exact Particlr `.prt` export is still pending; no numeric Particlr settings were fabricated.
-
-### Schema change justified by the real effect
-
-Session 3 adds one real capability requested by Dust Puff:
-
-```text
-motion.drag
-```
-
-This remains semantic FXDeck vocabulary and compiles to the Web2D backend internally. The same pass also fixes validation of `motion.speed.min/max` runtime bindings exposed by Session 2.
-
-### Runtime Lab integration
-
-The existing Runtime Lab UI is unchanged structurally.
-
-P4.3 adds:
-
-- Dust Puff to the existing effect selector,
-- asset manager/prefetch behind the existing runtime,
-- existing Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress tools remain intact.
-
-Integration modules:
-
-- `site/js/session3-dust-puff.js`
-- `site/js/session3-asset-gate.js`
-
-### Session 3 technical gate
-
-Expected deployed log:
+User-provided deployed P4.3.0 log confirmed:
 
 ```text
 PASS P4.3.0 SESSION 2 GATE: ... / 1 persistent canvas
 P4.3.0 DUST PUFF: registered from JSON / 3 manifest assets / cold decode 3 / cache hits 0
 PASS P4.3.0 SESSION 3 TECH GATE: manifest / 3 reusable alpha assets / cold decode 3 / warm cache hit 3 / dust-puff JSON / 0 effect bridge / 1 persistent canvas
-P4.3.0 SESSION 3 VISUAL GATE: USER REVIEW REQUIRED ...
 ```
 
-Technical gate verifies:
+The user then reviewed Dust Puff repeatedly in Play, described the visual result as good enough to continue, and explicitly moved the project to the next step. Session 3 visual gate is therefore accepted.
 
-- manifest resolves all Dust Puff assets,
-- first prefetch is cold,
-- second prefetch is cache-only,
-- Dust Puff is schema-driven,
-- 4 data layers compile/play,
-- cleanup returns runtime resources to zero,
-- persistent container identity is unchanged,
+Retained Session 3 architecture:
+
+- `site/fxdeck/assets/manifest.json`
+- `site/fxdeck/core/asset-manager.js`
+- manifest id → hydrated runtime asset flow
+- cold/warm prefetch and decode cache
+- `site/fxdeck/effects/dust-puff.json`
+- semantic `motion.drag`
+- zero Dust Puff runtime bridge
+
+---
+
+## Session 4 — Hero Effects: Critical Hit + Goal Celebration
+
+### Implemented effects
+
+#### Critical Hit
+
+`site/fxdeck/effects/critical-hit.json`
+
+Five data layers:
+
+1. additive flare,
+2. slash alpha,
+3. directional image streaks,
+4. additive sparks,
+5. physical fragments.
+
+Runtime semantics:
+
+- `direction` drives inherited burst direction,
+- `intensity` scales particle count/speed within validation clamps,
+- optional `tint` replaces authored color on selected layers,
+- short hero lifecycle,
+- zero effect-specific runtime bridge.
+
+#### Goal Celebration
+
+`site/fxdeck/effects/goal-celebration.json`
+
+Five data layers:
+
+1. team-color flare,
+2. radial streaks,
+3. team-color confetti,
+4. accent confetti,
+5. delayed sparkles.
+
+Runtime semantics:
+
+- `intensity` scales hero density,
+- optional `teamColor` replaces authored team-color layers,
+- delayed sequencing remains pure Schema V1 data,
+- zero effect-specific runtime bridge.
+
+### Schema capability justified by hero effects
+
+P4.4 extends constrained bindings with semantic color parameters:
+
+```text
+tint      → layer.color → replace
+teamColor → layer.color → replace
+```
+
+Rules remain intentionally strict:
+
+- color bindings only support `replace`,
+- no arbitrary expressions,
+- no general scripting,
+- numeric bindings remain `intensity` only.
+
+The Web2D compiler also now accepts the public semantic `direction` parameter directly (while retaining `directionDegrees` compatibility) and enables color replacement for white alpha image assets.
+
+### Reusable P4.4 assets
+
+Added FXDeck-original assets:
+
+- `site/assets/vfx/critical-slash.svg`
+- `site/assets/vfx/hero-streak.svg`
+- `site/assets/vfx/hero-flare.svg`
+
+They are registered in the existing manifest alongside the three Dust Puff assets.
+
+### Ribbon decision
+
+**Ribbon capability was not added.**
+
+Goal Celebration currently achieves the intended hierarchy with flare + radial streak + confetti + sparkle layers. The Session 4 rule says ribbon is only allowed if the actual effect proves it is needed; this implementation does not require it.
+
+### Integration modules
+
+- `site/js/session4-hero-effects.js`
+- `site/js/session4-hero-gate.js`
+
+These modules load/register generic Schema V1 definitions and run regression gates. They contain no custom per-effect playback implementation.
+
+### Session 4 technical gate
+
+Expected deployed log:
+
+```text
+P4.4.0 HERO EFFECTS: Critical Hit + Goal Celebration registered from JSON / no effect-specific runtime bridge
+P4.4.0 GOAL CAPABILITY DECISION: ribbon NOT added ...
+PASS P4.4.0 SESSION 4 TECH GATE: Critical Hit + Goal Celebration / JSON-driven / direction + intensity + tint/teamColor / 0 effect bridges / ribbon not required / 1 persistent canvas
+P4.4.0 SESSION 4 VISUAL GATE: USER REVIEW REQUIRED ...
+```
+
+The gate verifies:
+
+- both effects resolve as schema-driven,
+- five authored data layers each,
+- semantic runtime direction compiles into the directional burst,
+- Critical Hit `tint` binding compiles,
+- Goal Celebration `teamColor` binding compiles,
+- ribbon remains absent,
+- hero assets are manifest-managed,
+- both effects play/stop through the generic runtime,
+- cleanup returns resources to zero,
+- persistent container identity stays stable,
 - canvas count remains exactly one.
 
-### Visual gate
+### Session 4 acceptance status
 
-**Not automatically accepted.**
+**Technical browser gate: pending user-deployed run.**
 
-The user must review Dust Puff in the Play tab. Session 3 is fully complete only if the effect is strong enough to remain in the public portfolio. If it is weak, improve texture art/timing/motion/scale/blend before adding framework features.
+**Visual gate: pending user review.**
+
+Review both effects in the existing Play effect selector. If either is weak, tune effect JSON/assets/timing first. Do not add framework features unless the visual requirement proves the need.
 
 ---
 
 ## Immediate next work
 
-1. Deploy/browser-check P4.3 technical gate.
-2. User judges Dust Puff visual quality.
-3. Tune `dust-puff.json` + alpha assets only if needed.
-4. Only after visual acceptance proceed to Session 4 — Critical Hit + Goal Celebration.
+1. Browser-check P4.4 technical gate.
+2. User visually reviews Critical Hit and Goal Celebration.
+3. Tune JSON/assets if required.
+4. After acceptance proceed to Session 5 — Explosion + Magic Burst + Rain.
 
 Primary architecture KPI remains:
 
@@ -254,9 +235,9 @@ Primary architecture KPI remains:
 
 ## Planned public V1 effect set
 
-1. Dust Puff
-2. Critical Hit
-3. Goal Celebration
+1. Dust Puff ✅
+2. Critical Hit — P4.4 review
+3. Goal Celebration — P4.4 review
 4. Explosion
 5. Magic Burst
 6. Rain / Environment
@@ -273,14 +254,14 @@ Galaxy S20+ 5G:
 
 ## Changelog
 
-- **P4.3 / Session 3:** Session 2 browser gate accepted from user-provided deployed log.
-- **P4.3 / Session 3:** added manifest-driven asset manager with decode/load cache and prefetch.
-- **P4.3 / Session 3:** added three original reusable soft-dust alpha assets.
-- **P4.3 / Session 3:** added `dust-puff.json` as first real asset-first Schema V1 effect.
-- **P4.3 / Session 3:** added semantic `motion.drag` and Web2D decay compilation.
-- **P4.3 / Session 3:** fixed `motion.speed.min/max` binding validation.
-- **P4.3 / Session 3:** added technical cold/warm asset + lifecycle gate while preserving the established Runtime Lab UI.
-- **P4.2.1 UI correction:** restored `site/heavy-impact-lab.html` as the canonical Runtime Lab shell and recorded UI preservation as a hard constraint.
-- **P4.2 / Session 2:** added strict Schema V1, validator, compiler and three JSON regression fixtures.
+- **P4.4 / Session 4:** Session 3 technical and visual gates accepted from user testing.
+- **P4.4 / Session 4:** added Critical Hit and Goal Celebration as pure Schema V1 hero effects.
+- **P4.4 / Session 4:** added constrained `tint` / `teamColor` → `color` replace bindings.
+- **P4.4 / Session 4:** fixed public semantic `direction` compilation for schema effects.
+- **P4.4 / Session 4:** added three original reusable hero alpha assets.
+- **P4.4 / Session 4:** deliberately did not add ribbon capability because the Goal effect did not require it.
+- **P4.4 / Session 4:** preserved the established Runtime Lab UI and existing diagnostics.
+- **P4.3 / Session 3:** added manifest asset manager, Dust Puff, reusable dust alphas and semantic drag.
+- **P4.2 / Session 2:** added strict Schema V1, validator, compiler and JSON regression fixtures.
 - **P4.1 / Session 1:** browser topology/lifecycle gate accepted.
 - **P4.0 / Session 0:** recovery branches and safety checkpoint completed.
