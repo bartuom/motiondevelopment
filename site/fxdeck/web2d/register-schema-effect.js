@@ -1,5 +1,5 @@
-import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.2.0';
-import { compileWeb2D } from './compiler.js?v=p4.2.0';
+import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.3.0';
+import { compileWeb2D } from './compiler.js?v=p4.3.0';
 
 function toRuntimeAssets(effect) {
   return (effect.assets ?? []).map((asset) => ({
