@@ -1,0 +1,120 @@
+{
+  "source": "tsparticles/tsparticles bundles/fireworks",
+  "purpose": "Exact current FireworkOptions defaults plus the launch -> split -> decay runtime recipe for FXDeck multi-stage effects.",
+  "options": {
+    "background": "none",
+    "brightness": {
+      "min": -30,
+      "max": 30
+    },
+    "gravity": 30,
+    "minHeight": {
+      "min": 10,
+      "max": 30
+    },
+    "rate": 10,
+    "saturation": {
+      "min": -30,
+      "max": 30
+    },
+    "sounds": true,
+    "speed": {
+      "min": 20,
+      "max": 40
+    },
+    "splitCount": 100
+  },
+  "playgroundOverride": {
+    "background": "#0a1026",
+    "colors": ["#ffffff", "#ffd166", "#72ddf7", "#f15bb5"],
+    "sounds": false,
+    "rate": {
+      "min": 2,
+      "max": 4
+    },
+    "speed": {
+      "min": 10,
+      "max": 25
+    }
+  },
+  "runtimeRecipe": {
+    "detectRetina": true,
+    "blend": {
+      "enable": true,
+      "mode": "lighter"
+    },
+    "fpsLimit": 60,
+    "emitter": {
+      "direction": "top",
+      "life": {
+        "count": 0,
+        "duration": 0.1,
+        "delay": 0.1
+      },
+      "rateQuantity": 1,
+      "size": {
+        "width": 100,
+        "height": 0
+      },
+      "position": {
+        "x": 50,
+        "y": 100
+      }
+    },
+    "rocket": {
+      "shape": "line",
+      "lineCap": "round",
+      "strokeWidth": 2,
+      "size": {
+        "min": 10,
+        "max": 20
+      },
+      "rotatePath": true,
+      "gravityInverse": true,
+      "gravityMaxSpeed": 150,
+      "outModes": {
+        "default": "destroy",
+        "top": "none"
+      },
+      "destroyMode": "split"
+    },
+    "split": {
+      "count": 1,
+      "factor": 0.333333,
+      "rate": "splitCount",
+      "opacity": {
+        "min": 0.1,
+        "max": 1,
+        "animationSpeed": {
+          "min": 2,
+          "max": 4
+        },
+        "start": "max",
+        "destroy": "min"
+      },
+      "size": {
+        "min": 5,
+        "max": 10
+      },
+      "life": {
+        "min": 0.5,
+        "max": 1
+      },
+      "move": {
+        "decay": 0.05,
+        "speed": {
+          "min": 10,
+          "max": 25
+        },
+        "direction": "outside",
+        "outMode": "destroy"
+      }
+    }
+  },
+  "fxdeckLessons": [
+    "Do not fire every visual layer at t=0. The launch creates anticipation before the split/detonation.",
+    "The hero rocket and secondary fragments use different movement/lifetime rules.",
+    "Additive/lighter blending is a major part of the luminous read.",
+    "This recipe is useful for Fireball V2, spell launches and staged reward/explosion cues even when the final effect is not a firework."
+  ]
+}
