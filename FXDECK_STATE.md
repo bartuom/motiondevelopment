@@ -1,213 +1,109 @@
 # FXDeck — Canonical Project State
 
 > Update after material implementation changes.
->
-> Rules:
-> - visual reference first;
-> - runtime serves the effect, not the reverse;
-> - no Core abstraction without a real repeated need;
-> - preserve P0 raw-tsParticles as the performance baseline;
-> - version visual experiments instead of silently overwriting them;
-> - record provenance/license for reference-derived material;
-> - use a fresh browser cache key for every handoff.
 
 ## Current state — 2026-08-19
 
-- **Milestone:** **P3.14 — Reference Fidelity Pass**.
-- **Current user-testable build:** **P3.14.1**.
+- **Milestone:** **P3.15 — Native Reference Integration**.
+- **Current user-testable build:** **P3.15.0**.
 - **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
 - **Core/runtime capability work:** FROZEN while visual quality catches up.
-- **Current visual decision:** custom Explosion V2 and Magic Burst V2 are **experimental / visually rejected for showcase quality**.
-- **Primary calibration targets now available in the Runtime Lab selector:**
-  - `SOURCE — Particlr Explosion exact`
-  - `SOURCE — tsParticles Ribbons exact`
-  - `SOURCE — tsParticles Fireworks exact`
+- **Particle architecture remains:** `FXDeck → TsParticlesAdapter → tsParticles`.
+- **Important correction:** P3.14's isolated iframe/source-runtime calibration was the wrong main-lab workflow and is retired from the canonical Runtime Lab.
 
-## Why P3.14 exists
+## Architecture rule
 
-P3.13 proved that merely harvesting configuration ideas was not enough. Two custom rebuilds technically worked but lost the visual quality of their references:
-
-- Explosion V2 copied the broad `flash + fireball + smoke` structure but did not preserve the actual source presentation strongly enough.
-- Magic Burst V2 used the real ribbon shape but forced it into a short local burst that no longer read like the source Ribbons effect.
-
-New hard rule:
+FXDeck is **not** a replacement particle engine.
 
 ```text
-GOOD SOURCE REFERENCE
-        ↓
-EXACT SOURCE REPRODUCTION IN OUR LAB
-        ↓
-USER VISUAL ACCEPTANCE
-        ↓
-ONE CHANGE AT A TIME
-        ↓
-FXDeck adaptation
+GAME
+  ↓
+FXDeck
+  ↓
+TsParticlesAdapter
+  ↓
+one persistent transparent tsParticles container
 ```
 
-Do not jump directly from a reference to a custom gameplay reinterpretation again.
+Reference examples should be harvested into this backend whenever technically possible. Do not spin up a second tsParticles container or standalone demo just to reproduce a tsParticles example.
 
----
+## P3.15 reference recipes
 
-# P3.14 calibration harness
+The Runtime Lab selector now adds:
 
-The canonical Runtime Lab remains:
+- `REF — tsParticles Ribbons / FXDeck canvas`
+- `REF — tsParticles Fireworks / FXDeck canvas`
 
-`site/heavy-impact-lab.html`
+Both run on the **existing `FXDeckLab.particleAdapter.container`**.
 
-P3.14 adds an isolated source-reference iframe so third-party reference runtimes cannot interfere with the production FXDeck tsParticles container.
+### Ribbons
 
-Files:
-- `site/reference-fidelity-frame.html`
-- `site/js/reference-fidelity-frame.js`
-- `site/js/reference-fidelity-runtime-bridge.js`
-- `site/reference-data/particlr-explosion.prt`
+Source: official `@tsparticles/ribbons@4.3.2` recipe.
 
-The iframe is deliberate: fidelity references must run with their source runtime/bundle, not through the FXDeck adapter first.
-
-## SOURCE — Particlr Explosion exact
-
-Source:
-- upstream release commit: `brac/particlr-runtime@112a750a30ff61dae60058e3c600d2c8bf0ff726`
-- fixture: `test/fixtures/explosion.prt` from that **0.5.2 release commit**
-- deployed calibration copy: `site/reference-data/particlr-explosion.prt`
-- renderer: published `@particlr/runtime@0.5.2` + PixiJS 8.19.0
-- deterministic seed: `1337`
-
-The 0.5.2 README explicitly documents the exact integration API used by the frame: `parseParticle` + `Effect` + `PixiParticleRenderer`.
-
-Important distinction: this is the exact public runtime **Explosion fixture**, not a claim that it is the separate CC0 editor preset named Explosion.
-
-Exact fixture layers:
-
-```text
-flash
-- circle-soft
-- additive
-- count 1
-- life 0.15 s
-- size 140
-
-fireball
-- circle-soft
-- additive
-- burst 24
-- life 0.4–0.7 s
-- speed 60–160
-- size 18–34
-- gravity y=40
-- drag 2.5
-
-smoke
-- smoke texture
-- normal blend
-- rate 20/sec
-- delay 0.05 s
-- life 0.8–1.4 s
-- speed 10–40
-- size 30–60
-- gravity y=-20
-- drag 1.5
-```
-
-This is now the baseline for judging any future FXDeck Explosion V3/custom adaptation.
-
-## SOURCE — tsParticles Ribbons exact
-
-Runtime:
-- official `@tsparticles/ribbons@4.3.2` bundle
-
-Exact harvested source options:
+Integrated via the same container's `addEmitter()`:
 
 ```text
 count: 5
-emitter width: 100%
-positionX: 50
-ribbon count: 60 points
+emitter: top / width 100%
+shape: ribbon
+ribbon points: 60
 drag: 0.02
-mass: 1
 oscillationDistance: 100–140
 oscillationSpeed: 3–5
-particleDist: 8
-velocityInherit: 4–6
-scalar: 1
+velocity: 4–6
 ```
 
-This source effect is a calibration target only. Do not call a short local adaptation “Magic Burst” until the source quality has first been preserved.
+No iframe. No second canvas. No external runtime boot.
 
-## SOURCE — tsParticles Fireworks exact
+### Fireworks
 
-Runtime:
-- official `@tsparticles/fireworks@4.3.2` bundle
+Source: official `@tsparticles/fireworks@4.3.2` recipe.
 
-Harvested Playground settings:
-
-```text
-background: #0a1026
-colors: white / gold / cyan / pink
-sounds: false
-rate: 2–4
-speed: 10–25
-```
-
-Source temporal model:
+Integrated into the existing container:
 
 ```text
-launch
-→ upward rocket
-→ minimum-height gate
+bottom emitter
+→ line rocket
+→ inverse gravity
+→ top bound 10–30%
 → destroy: split
-→ 100 secondary particles
-→ additive/lighter breakup
-→ decay + fade
+→ 100 fragments
+→ lighter blend
+→ 0.5–1.0 s decay
 ```
 
-This is the baseline for future Fireball/rocket/spell sequencing work.
+The standalone demo's blue background is intentionally **not** copied. FXDeck retains its own transparent gameplay stage.
 
----
+## Particlr
 
-# Existing FXDeck architecture — still valid
+Particlr is a different runtime, so it is now treated as **reference/config/art research only** inside the canonical FXDeck workflow.
 
-Already proven:
-- `FXDeckRuntime`
-- `EffectInstance` lifecycle/ownership
-- `CoordinateAdapter`
-- `TsParticlesAdapter`
-- version + variant catalog
-- per-play emitter path
-- shared-direct diagnostic path
-- shared-scheduled production path
-- semantic priority/backpressure
-- sustained `update()` effects
-- explicit `stop` / `stopAll`
+The public Explosion fixture remains harvested under `references/particlr/`, but the Particlr runtime is no longer booted inside the main Runtime Lab. If a Particlr preset is worth reproducing, translate its assets/config/timing into the FXDeck/tsParticles backend and label the result as an adaptation rather than claiming exact runtime fidelity.
 
-**No Core redesign is justified by P3.14.**
+The previous P3.14 Particlr iframe error (`Extension type batcher already has a handler`) is therefore no longer relevant to the canonical path.
 
-The problem is visual fidelity/content, not missing runtime abstraction.
-
----
-
-# Production/custom effects status
+## Visual status
 
 - Heavy Impact v1 — technically accepted; not showcase hero.
-- Fireball v1 — technically accepted moving-source archetype; visual upgrade pending.
-- Environment Emitter v1 — technically accepted sustained/updateable archetype.
-- Rare Reward v1 — retained, not hero target.
+- Fireball v1 — technically accepted moving-source archetype.
+- Environment Emitter v1 — technically accepted sustained archetype.
+- Critical Hit v1 — visually rejected.
 - Football Card Reveal v1 — visually rejected/frozen.
-- Critical Hit v1 — visually rejected; wait for stronger slash/impact source art.
-- Explosion v1 — legacy primitive-heavy version.
-- Explosion v2 — reference-inspired experiment; **not visually accepted**.
-- Magic Burst v1 — legacy CSS/DOM ribbon experiment.
-- Magic Burst v2 — real ribbon plugin experiment; **not visually accepted**.
+- Explosion v2 — experimental reference adaptation; visually rejected so far.
+- Magic Burst v2 — experimental ribbon adaptation; visually rejected so far.
+- Ribbons native reference — calibration/reference recipe on the real FXDeck backend.
+- Fireworks native reference — calibration/reference recipe on the real FXDeck backend.
 
-Do not polish rejected custom effects before source fidelity is accepted.
+## Immediate next gate
 
----
+1. Verify P3.15 native Ribbons in the canonical Runtime Lab.
+2. Verify P3.15 native Fireworks in the same stage/background as every other FXDeck effect.
+3. If these look correct, derive gameplay effects from them **one change at a time**.
+4. For Particlr Explosion/Dust Puff/Rain, obtain exact editor exports/assets where possible, then translate them to tsParticles rather than adding Particlr as a second production runtime.
 
-# P0 mobile baseline
+## P0 performance baseline
 
-Technology spike passed.
-
-Galaxy S20+ 5G reference:
+Galaxy S20+ 5G:
 
 ```text
 ~150 simple particles   60.0 avg / 59.5 1% low
@@ -217,56 +113,11 @@ Galaxy S20+ 5G reference:
 
 Keep for later raw-tsParticles vs FXDeck overhead comparison.
 
----
+## Changelog
 
-# Reference harvest status
-
-- Particlr Explosion — exact public 0.5.2 runtime fixture harvested and directly rendered with matching published runtime in P3.14.1.
-- Particlr Dust Puff — exact editor export still pending; do not fabricate.
-- Particlr Rain — exact editor export still pending; do not fabricate.
-- tsParticles Ribbons — exact source defaults harvested and direct bundle playback added.
-- tsParticles Fireworks — exact source/Playground recipe harvested and direct bundle playback added.
-- Pixi Particle Emitter Rain — exact numeric supporting reference recorded; `HardRain.png` not promoted yet.
-
-See `references/PROVENANCE.md` for license/provenance.
-
----
-
-# Immediate gate
-
-User must now judge the **SOURCE** entries first:
-
-1. Particlr Explosion exact public fixture — does it match the quality/reference the user had in mind?
-2. tsParticles Ribbons exact — does it look like the good Playground Ribbons example?
-3. tsParticles Fireworks exact — does it look like the good Playground Fireworks example?
-
-If Particlr public fixture does not match the editor preset the user meant, acquire/export the actual CC0 editor Explosion preset before adapting it.
-
-Only after source references are confirmed:
-
-```text
-Particlr Explosion source
-→ Explosion V3 adaptation
-
-Ribbons exact
-→ Magic/energy adaptation
-
-Fireworks exact
-→ Fireball / staged spell adaptation
-```
-
-Change one visual/behavioral dimension at a time and compare against the exact source after every step.
-
----
-
-# Changelog — 2026-08-19
-
-- **P3.14.1:** corrected Particlr calibration from an unreleased `0.8.0` assumption to the matching published **0.5.2** runtime.
-- **P3.14.1:** verified in upstream release commit that schemaVersion 12 `explosion.prt` and `parseParticle` / `Effect` / `PixiParticleRenderer` all exist in 0.5.2.
-- **P3.14.1:** fresh cache keys across canonical Runtime Lab/reference frame.
-- **P3.14.0:** source-fidelity calibration added to canonical Runtime Lab.
-- **P3.14.0:** exact public Particlr Explosion fixture promoted to browser calibration data.
-- **P3.14.0:** official tsParticles Ribbons bundle playback added with harvested exact defaults.
-- **P3.14.0:** official tsParticles Fireworks bundle playback added with harvested Playground settings.
-- **P3.14.0:** source references run in an isolated iframe so they do not mutate the production FXDeck engine.
-- **P3.13.x:** custom Explosion V2 / Magic Burst V2 experiments implemented; both later rejected as insufficiently faithful visually.
+- **P3.15.0:** retired isolated source iframe from canonical workflow.
+- **P3.15.0:** Ribbons recipe moved onto the existing FXDeck tsParticles container.
+- **P3.15.0:** Fireworks launch/split recipe moved onto the existing FXDeck tsParticles container.
+- **P3.15.0:** standalone Fireworks background removed; Runtime Lab background remains canonical.
+- **P3.15.0:** Particlr returned to reference-only status for the main FXDeck runtime.
+- **P3.14.x:** source-fidelity iframe experiment; useful diagnosis, wrong production/main-lab integration model.
