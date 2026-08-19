@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FXDeck P3.13 reference-driven visual quality lab.">
+  <title>FXDeck — P3.13 Visual Pass</title>
+  <link rel="stylesheet" href="./visual-pass-lab.css?v=p3.13.1">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">FXDeck / Reference-Driven Visual Pass</p>
+        <h1>P3.13.1</h1>
+      </div>
+      <div id="status" class="status">BOOTING</div>
+    </header>
+
+    <section class="controls" aria-label="VFX controls">
+      <label>
+        <span>Effect</span>
+        <select id="effect">
+          <option value="explosion">Explosion V2 — Particlr harvest</option>
+          <option value="magicBurst">Magic Burst V2 — real tsParticles ribbons</option>
+        </select>
+      </label>
+      <label>
+        <span>Intensity <strong id="intensity-value">1.0</strong></span>
+        <input id="intensity" type="range" min="0.5" max="2" value="1" step="0.1">
+      </label>
+      <label>
+        <span>Direction <strong id="direction-value">18°</strong></span>
+        <input id="direction" type="range" min="0" max="359" value="18" step="1">
+      </label>
+      <div class="actions">
+        <button id="play" type="button">Play</button>
+        <button id="clear" class="secondary" type="button">Clear</button>
+      </div>
+    </section>
+
+    <section class="stage-wrap">
+      <div id="stage" class="stage">
+        <div id="kick" class="kick">
+          <div class="backdrop"></div>
+          <div id="visual-pass-particles" class="particles"></div>
+          <div id="dom-layer" class="dom-layer"></div>
+          <div id="target" class="target" aria-hidden="true"><i></i></div>
+        </div>
+        <div class="stage-hud">
+          <strong id="hud-effect">Explosion V2</strong>
+          <span id="hud-tech">Particlr-derived circle-soft + smoke textures</span>
+        </div>
+      </div>
+      <p class="hint">Click anywhere in the preview to fire the selected effect.</p>
+    </section>
+
+    <section class="readout">
+      <div><span>Version</span><strong id="read-version">v2</strong></div>
+      <div><span>Particles</span><strong id="read-particles">0</strong></div>
+      <div><span>Instances</span><strong id="read-instances">0</strong></div>
+      <div><span>Canvas scale</span><strong id="read-scale">--</strong></div>
+    </section>
+
+    <pre id="log" class="log">P3.13.1 visual pass booting…</pre>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js"></script>
+  <script type="module" src="./js/visual-pass-lab.js?v=p3.13.1"></script>
+</body>
+</html>
