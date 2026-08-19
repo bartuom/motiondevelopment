@@ -27,7 +27,7 @@
     },
     "critical-slash": {
       "type": "image",
-      "src": "../../assets/vfx/critical-slash.svg",
+      "src": "../../assets/vfx/critical-slash.svg?v=p4.4.2",
       "width": 256,
       "height": 64,
       "license": "FXDeck original",
