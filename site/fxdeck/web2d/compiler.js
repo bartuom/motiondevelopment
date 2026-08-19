@@ -2,7 +2,7 @@ import {
   assertValidEffectDefinition,
   DEFAULT_WEB2D_CAPABILITIES,
   DEFAULT_WEB2D_BUDGET
-} from '../schema/validator.js?v=p4.3.0';
+} from '../schema/validator.js?v=p4.4.0';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -24,7 +24,7 @@ function getNumericTarget(layer, property) {
     case 'motion.speed.max': return layer.motion.speed.max;
     case 'size.start': return layer.size.start;
     case 'size.end': return layer.size.end;
-    default: throw new Error(`FXD_BINDING_TARGET: unsupported property ${property}`);
+    default: throw new Error(`FXD_BINDING_TARGET: unsupported numeric property ${property}`);
   }
 }
 
@@ -36,14 +36,23 @@ function setNumericTarget(layer, property, value) {
     case 'motion.speed.max': layer.motion.speed.max = value; return;
     case 'size.start': layer.size.start = value; return;
     case 'size.end': layer.size.end = value; return;
-    default: throw new Error(`FXD_BINDING_TARGET: unsupported property ${property}`);
+    default: throw new Error(`FXD_BINDING_TARGET: unsupported numeric property ${property}`);
   }
 }
 
 function applyBindings(effect, params) {
   const resolved = clone(effect);
+
   for (const binding of resolved.bindings ?? []) {
     const layer = findLayer(resolved, binding.layer);
+    if (!layer) continue;
+
+    if (binding.property === 'color') {
+      const color = params?.[binding.param];
+      if (typeof color === 'string' && color.trim()) layer.color = color.trim();
+      continue;
+    }
+
     const source = Number(params?.[binding.param]);
     if (!Number.isFinite(source)) continue;
 
@@ -56,6 +65,7 @@ function applyBindings(effect, params) {
     if (Number.isFinite(binding.max)) next = Math.min(binding.max, next);
     setNumericTarget(layer, binding.property, next);
   }
+
   return resolved;
 }
 
@@ -67,6 +77,7 @@ function tsShape(layer, assets) {
   if (layer.shape.type !== 'image') return { type: layer.shape.type };
   const asset = assets.get(layer.shape.asset);
   if (!asset) throw new Error(`FXD_ASSET_06: image layer ${layer.id} references missing asset ${layer.shape.asset}`);
+
   return {
     type: 'image',
     options: {
@@ -74,7 +85,7 @@ function tsShape(layer, assets) {
         src: asset.src,
         width: asset.width,
         height: asset.height,
-        replaceColor: false
+        replaceColor: true
       }
     }
   };
@@ -99,9 +110,14 @@ function animationFromCurve(curve, lifetimeMs, kind) {
   };
 }
 
+function runtimeDirectionDegrees(params) {
+  const value = Number(params?.directionDegrees ?? params?.direction ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
 function compileParticles(effect, layer, params, assets) {
   const directionDegrees = layer.motion.direction === 'inherit'
-    ? Number(params?.directionDegrees ?? 0)
+    ? runtimeDirectionDegrees(params)
     : Number(layer.motion.direction);
   const gravity = Number(layer.motion.gravity ?? 0);
   const drag = Number(layer.motion.drag ?? 0);
