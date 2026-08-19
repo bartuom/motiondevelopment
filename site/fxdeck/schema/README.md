@@ -1,15 +1,15 @@
 # FXDeck Effect Schema V1
 
-Build: **P4.3.0 / Session 3**
+Build: **P4.4.0 / Sessions 2–4**
 
-This directory defines the AI-facing authoring contract for Web2D effects. Normal effects should be data + reusable assets, not effect-specific JavaScript.
+This directory defines the AI-facing authoring contract for Web2D effects. Normal effects are data + reusable assets, not effect-specific JavaScript.
 
 Pipeline:
 
 ```text
 Effect JSON
   ↓
-manifest asset-id hydration when needed
+manifest hydration when assets are referenced by id
   ↓
 validateEffectDefinition()
   ↓
@@ -30,17 +30,18 @@ Supported now:
 - burst and finite rate spawn,
 - inherited or explicit 2D direction,
 - spread and speed ranges,
-- optional gravity,
-- optional semantic `motion.drag`,
+- optional gravity + drag,
 - finite particle lifetime,
 - two-point size/opacity over-life curves,
 - circle / square / image shapes,
 - normal / lighter blend,
-- manifest asset IDs for production authoring,
-- hydrated inline asset records for internal/regression compatibility,
-- constrained `intensity` numeric bindings.
+- manifest-backed image assets,
+- constrained numeric `intensity` bindings,
+- constrained color replacement bindings:
+  - `tint -> color`,
+  - `teamColor -> color`.
 
-`motion.drag` was added only when the real Dust Puff effect proved the need. The Web2D compiler maps it internally to tsParticles movement decay; raw backend vocabulary remains excluded from authoring JSON.
+Color bindings are deliberately restricted to `replace`. There is no color expression language or arbitrary runtime scripting.
 
 Explicitly not supported in V1:
 
@@ -54,16 +55,6 @@ Explicitly not supported in V1:
 
 `effect.schema.json` is the machine-readable structural contract. `validator.js` is the dependency-free browser validator and adds semantic/mobile-budget checks that JSON Schema alone cannot express conveniently.
 
-## Asset IDs
-
-Production effect JSON can declare:
-
-```json
-"assets": ["dust-soft-01", "dust-soft-02"]
-```
-
-`FXDeckAssetManager` resolves these through `../assets/manifest.json` before semantic validation/compiler use. Effects do not need to duplicate URLs or texture dimensions.
-
 ## Regression fixtures
 
 `examples/` contains three synthetic JSON effects used only to prove the pipeline:
@@ -72,9 +63,17 @@ Production effect JSON can declare:
 2. `schema-test-smoke.json`
 3. `schema-test-rain.json`
 
-They are not portfolio effects. `../effects/dust-puff.json` is the first real asset-first Schema V1 effect.
+They are not portfolio effects.
 
-The deployed lab exposes the Session 2 regression API:
+## Real Schema V1 effects
+
+- `../effects/dust-puff.json`
+- `../effects/critical-hit.json`
+- `../effects/goal-celebration.json`
+
+These effects use the same generic schema runtime and do not have effect-specific runtime bridge scripts.
+
+The deployed lab exposes:
 
 ```js
 FXDeckSchemaV1.validate(effect)
