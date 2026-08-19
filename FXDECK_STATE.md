@@ -4,8 +4,8 @@
 
 ## Current state — 2026-08-19
 
-- **Milestone:** **P4.4 — Hero Effects: Critical Hit + Goal Celebration**.
-- **Execution status:** **Sessions 0–3 accepted. Session 4 implemented and awaiting deployed technical + visual acceptance.**
+- **Milestone:** **P4.4.1 — Session 4 Hero Visual Correction**.
+- **Execution status:** **Sessions 0–3 accepted. Initial Session 4 art pass rejected in user visual review. P4.4.1 correction implemented and awaiting deployed technical + visual acceptance.**
 - **Canonical plan:** [`FXDECK_PLAN.md`](./FXDECK_PLAN.md).
 - **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
 - **Production Web2D backend:** tsParticles only.
@@ -16,7 +16,7 @@
 
 Runtime, architecture, schema, optimization, backend or refactor work must **preserve the established Runtime Lab UI/UX and working controls by default**. Technical work is not permission to replace the interface, remove controls, reduce diagnostics, or promote a temporary harness to canonical UI.
 
-P4.4 follows this rule. The existing Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress interface is preserved.
+P4.4.1 preserves the existing Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress interface. No new replacement UI was introduced.
 
 ---
 
@@ -57,8 +57,6 @@ TsParticlesAdapter
 
 **Status: PASS / browser accepted.**
 
-User-provided deployed P4.2.1 log confirmed the Schema V1 pipeline with three JSON regression effects, actionable validation failures, zero effect-specific runtime JS and one persistent canvas.
-
 Canonical authoring path:
 
 ```text
@@ -75,159 +73,182 @@ TsParticlesAdapter
 1 persistent container
 ```
 
+The three synthetic fixtures remain registered for automated regression only:
+
+- `schema-test-burst`
+- `schema-test-smoke`
+- `schema-test-rain`
+
+As of P4.4.1 they are **hidden from the normal Play effect selector**. They are not product effects. In particular, `schema-test-rain` is only a point-origin finite-rate proof and must not be judged as the planned Rain / Environment effect.
+
 ---
 
 ## Session 3 — Asset Pipeline + Dust Puff
 
 **Status: PASS / browser + visual accepted.**
 
-User-provided deployed P4.3.0 log confirmed:
+User-provided deployed P4.3.0 log confirmed the technical gate, including manifest loading, cold decode, warm cache hits, JSON-only effect authoring, cleanup and one persistent canvas.
 
-```text
-PASS P4.3.0 SESSION 2 GATE: ... / 1 persistent canvas
-P4.3.0 DUST PUFF: registered from JSON / 3 manifest assets / cold decode 3 / cache hits 0
-PASS P4.3.0 SESSION 3 TECH GATE: manifest / 3 reusable alpha assets / cold decode 3 / warm cache hit 3 / dust-puff JSON / 0 effect bridge / 1 persistent canvas
-```
+The user then repeatedly reviewed Dust Puff and judged the visual result good enough to continue.
 
-The user then reviewed Dust Puff repeatedly in Play, described the visual result as good enough to continue, and explicitly moved the project to the next step. Session 3 visual gate is therefore accepted.
+Retained architecture:
 
-Retained Session 3 architecture:
+- manifest-backed reusable assets,
+- `FXDeckAssetManager`,
+- cold/warm prefetch and decode cache,
+- `dust-puff.json`,
+- semantic `motion.drag`,
+- zero Dust Puff bridge.
 
-- `site/fxdeck/assets/manifest.json`
-- `site/fxdeck/core/asset-manager.js`
-- manifest id → hydrated runtime asset flow
-- cold/warm prefetch and decode cache
-- `site/fxdeck/effects/dust-puff.json`
-- semantic `motion.drag`
-- zero Dust Puff runtime bridge
+### Known Dust Puff performance debt
+
+The user observed that Dust Puff looks good but becomes expensive when many instances overlap. Current soft dust art uses relatively large translucent SVG alpha sprites, including blur, so overdraw/asset rasterization quality must be measured and optimized in Session 6.
+
+Do **not** treat this as a reason to rewrite the runtime now. Planned Session 6 work includes raster WebP/PNG comparison, particle-count/quality scaling, DPR/overdraw measurements and overlap stress tests.
 
 ---
 
-## Session 4 — Hero Effects: Critical Hit + Goal Celebration
+## Session 4 — Hero Effects
 
-### Implemented effects
+### Initial P4.4 visual result — REJECTED
 
-#### Critical Hit
+The first P4.4 implementation was technically data-driven but failed the visual direction review:
+
+- **Critical Hit** read as another generic particle explosion with a slash mixed in.
+- **Goal Celebration** read as a strange point-origin particle explosion rather than a celebration composition.
+- too much of the design was still `point → burst particles`, repeating the exact technology-first failure the reset was meant to avoid.
+
+This visual pass is not accepted and must not be represented as portfolio-ready.
+
+### P4.4.1 corrective rule
+
+Framework capabilities may be added only because the rejected real effects prove a concrete visual need.
+
+P4.4.1 adds three small reusable semantic capabilities:
+
+```text
+origin
+→ per-layer spatial offset from gameplay position
+→ optional rotateWithDirection
+
+orientation
+→ direction-aware image orientation
+→ motion-path orientation
+
+ribbon
+→ constrained sustained ribbon shape
+→ registered before container creation
+```
+
+These stay in FXDeck vocabulary. Authored JSON does not expose raw tsParticles configuration.
+
+### Critical Hit P4.4.1
 
 `site/fxdeck/effects/critical-hit.json`
 
-Five data layers:
+Rebuilt around a dominant readable shape instead of particle quantity:
 
-1. additive flare,
-2. slash alpha,
-3. directional image streaks,
-4. additive sparks,
-5. physical fragments.
+1. micro flare,
+2. **one dominant primary slash**,
+3. one delayed echo slash,
+4. six supporting directional streaks,
+5. small spark support.
 
-Runtime semantics:
+Key behavior:
 
-- `direction` drives inherited burst direction,
-- `intensity` scales particle count/speed within validation clamps,
-- optional `tint` replaces authored color on selected layers,
-- short hero lifecycle,
-- zero effect-specific runtime bridge.
+- primary slash orientation follows gameplay `direction`,
+- slash origin offsets may rotate with gameplay direction,
+- streak sprites orient to their movement path,
+- support particle counts are materially lower than the rejected pass,
+- `intensity` controls support density/speed,
+- optional `tint` remains constrained to color replacement,
+- zero Critical Hit bridge.
 
-#### Goal Celebration
+### Goal Celebration P4.4.1
 
 `site/fxdeck/effects/goal-celebration.json`
 
-Five data layers:
+Rebuilt as a spatial celebration rather than one clicked-point explosion:
 
-1. team-color flare,
-2. radial streaks,
-3. team-color confetti,
-4. accent confetti,
-5. delayed sparkles.
+1. center flare,
+2. left ribbon launcher,
+3. right ribbon launcher,
+4. left team-color confetti cannon,
+5. right team-color confetti cannon,
+6. delayed accent confetti from above center,
+7. delayed sparkles.
 
-Runtime semantics:
+Spatial composition is explicit in data. Left/right launch points are separated around the gameplay position instead of sharing the click origin.
 
-- `intensity` scales hero density,
-- optional `teamColor` replaces authored team-color layers,
-- delayed sequencing remains pure Schema V1 data,
-- zero effect-specific runtime bridge.
+`teamColor` controls the flare, ribbons and team confetti. A new reusable `confetti-strip` image asset is manifest-managed.
 
-### Schema capability justified by hero effects
+### Ribbon capability decision
 
-P4.4 extends constrained bindings with semantic color parameters:
+The previous “ribbon not required” decision is superseded.
 
-```text
-tint      → layer.color → replace
-teamColor → layer.color → replace
-```
+User visual review proved that more short point-burst particles did not create a convincing Goal Celebration. P4.4.1 therefore adds the already-researched tsParticles motion + ribbon capability during Web2D boot **before** the persistent particle container is created. `play()` does not register plugins.
 
-Rules remain intentionally strict:
+The existing one-container architecture remains unchanged.
 
-- color bindings only support `replace`,
-- no arbitrary expressions,
-- no general scripting,
-- numeric bindings remain `intensity` only.
+### P4.4.1 technical gate
 
-The Web2D compiler also now accepts the public semantic `direction` parameter directly (while retaining `directionDegrees` compatibility) and enables color replacement for white alpha image assets.
-
-### Reusable P4.4 assets
-
-Added FXDeck-original assets:
-
-- `site/assets/vfx/critical-slash.svg`
-- `site/assets/vfx/hero-streak.svg`
-- `site/assets/vfx/hero-flare.svg`
-
-They are registered in the existing manifest alongside the three Dust Puff assets.
-
-### Ribbon decision
-
-**Ribbon capability was not added.**
-
-Goal Celebration currently achieves the intended hierarchy with flare + radial streak + confetti + sparkle layers. The Session 4 rule says ribbon is only allowed if the actual effect proves it is needed; this implementation does not require it.
-
-### Integration modules
-
-- `site/js/session4-hero-effects.js`
-- `site/js/session4-hero-gate.js`
-
-These modules load/register generic Schema V1 definitions and run regression gates. They contain no custom per-effect playback implementation.
-
-### Session 4 technical gate
-
-Expected deployed log:
+Expected deployed success line:
 
 ```text
-P4.4.0 HERO EFFECTS: Critical Hit + Goal Celebration registered from JSON / no effect-specific runtime bridge
-P4.4.0 GOAL CAPABILITY DECISION: ribbon NOT added ...
-PASS P4.4.0 SESSION 4 TECH GATE: Critical Hit + Goal Celebration / JSON-driven / direction + intensity + tint/teamColor / 0 effect bridges / ribbon not required / 1 persistent canvas
-P4.4.0 SESSION 4 VISUAL GATE: USER REVIEW REQUIRED ...
+PASS P4.4.1 SESSION 4 CORRECTION TECH GATE: directional Critical Hit / spatial Goal Celebration / ribbons / origin offsets / motion orientation / regression fixtures hidden from Play / 0 effect bridges / 1 persistent canvas
 ```
 
 The gate verifies:
 
-- both effects resolve as schema-driven,
-- five authored data layers each,
-- semantic runtime direction compiles into the directional burst,
-- Critical Hit `tint` binding compiles,
-- Goal Celebration `teamColor` binding compiles,
-- ribbon remains absent,
-- hero assets are manifest-managed,
-- both effects play/stop through the generic runtime,
-- cleanup returns resources to zero,
-- persistent container identity stays stable,
-- canvas count remains exactly one.
+- both hero effects remain Schema V1/data-driven,
+- Critical Hit direction/orientation compiles,
+- streaks orient to motion,
+- spatial origin data survives compilation,
+- Goal compiles two actual ribbon layers,
+- Goal left/right launch origins are separated,
+- `teamColor` and `tint` bindings still work,
+- ribbon capability registered at boot,
+- synthetic schema fixtures are not visible in Play,
+- cleanup returns runtime resources to zero,
+- persistent container identity is unchanged,
+- canvas count remains one.
 
-### Session 4 acceptance status
+### Acceptance status
 
-**Technical browser gate: pending user-deployed run.**
+**P4.4.1 technical browser gate: pending deployed user run.**
 
-**Visual gate: pending user review.**
+**P4.4.1 visual gate: pending user review.**
 
-Review both effects in the existing Play effect selector. If either is weak, tune effect JSON/assets/timing first. Do not add framework features unless the visual requirement proves the need.
+Do not proceed to Session 5 until the corrected Critical Hit and Goal Celebration are actually reviewed.
+
+---
+
+## Deferred, not lost
+
+### Debug grid
+
+The user mentioned that a grid/technical overlay would be useful for testing. Do not redesign the Runtime Lab for this now. If reintroduced later, it should be an optional Debug overlay such as:
+
+```text
+[ ] Grid
+[ ] Spawn points
+[ ] Bounds
+[ ] Origins
+```
+
+### Session 6 performance debt
+
+Dust Puff overlap cost and hero-effect overlap cost must be measured on mobile before final packaging. Do not guess bundle or performance numbers.
 
 ---
 
 ## Immediate next work
 
-1. Browser-check P4.4 technical gate.
-2. User visually reviews Critical Hit and Goal Celebration.
-3. Tune JSON/assets if required.
-4. After acceptance proceed to Session 5 — Explosion + Magic Burst + Rain.
+1. Browser-check P4.4.1 correction gate.
+2. Visually review Critical Hit with several direction values and intensities.
+3. Visually review Goal Celebration at several intensities.
+4. Tune JSON/assets/timing if either still reads as generic particle noise.
+5. Only after acceptance proceed to Session 5 — Explosion + Magic Burst + real Rain / Environment.
 
 Primary architecture KPI remains:
 
@@ -236,8 +257,8 @@ Primary architecture KPI remains:
 ## Planned public V1 effect set
 
 1. Dust Puff ✅
-2. Critical Hit — P4.4 review
-3. Goal Celebration — P4.4 review
+2. Critical Hit — P4.4.1 review
+3. Goal Celebration — P4.4.1 review
 4. Explosion
 5. Magic Burst
 6. Rain / Environment
@@ -254,14 +275,17 @@ Galaxy S20+ 5G:
 
 ## Changelog
 
-- **P4.4 / Session 4:** Session 3 technical and visual gates accepted from user testing.
-- **P4.4 / Session 4:** added Critical Hit and Goal Celebration as pure Schema V1 hero effects.
-- **P4.4 / Session 4:** added constrained `tint` / `teamColor` → `color` replace bindings.
-- **P4.4 / Session 4:** fixed public semantic `direction` compilation for schema effects.
-- **P4.4 / Session 4:** added three original reusable hero alpha assets.
-- **P4.4 / Session 4:** deliberately did not add ribbon capability because the Goal effect did not require it.
-- **P4.4 / Session 4:** preserved the established Runtime Lab UI and existing diagnostics.
-- **P4.3 / Session 3:** added manifest asset manager, Dust Puff, reusable dust alphas and semantic drag.
-- **P4.2 / Session 2:** added strict Schema V1, validator, compiler and JSON regression fixtures.
+- **P4.4.1:** recorded initial Session 4 hero art pass as visually rejected rather than accepted.
+- **P4.4.1:** added semantic per-layer `origin` offsets with optional direction rotation.
+- **P4.4.1:** added semantic sprite `orientation` for gameplay direction or motion path.
+- **P4.4.1:** added constrained ribbon capability because Goal Celebration proved the visual need.
+- **P4.4.1:** rebuilt Critical Hit around one dominant directional slash with reduced particle support.
+- **P4.4.1:** rebuilt Goal Celebration around spatial left/right ribbons and confetti launchers.
+- **P4.4.1:** added reusable `confetti-strip` asset.
+- **P4.4.1:** moved synthetic schema fixtures out of the normal Play selector while retaining regression coverage.
+- **P4.4.1:** aligned canonical runtime/build/cache labels and retained the existing Runtime Lab UI.
+- **P4.4.1:** recorded Dust Puff overlap cost as Session 6 performance debt.
+- **P4.3 / Session 3:** asset pipeline + Dust Puff accepted.
+- **P4.2 / Session 2:** Schema V1 + compiler + validator accepted.
 - **P4.1 / Session 1:** browser topology/lifecycle gate accepted.
 - **P4.0 / Session 0:** recovery branches and safety checkpoint completed.
