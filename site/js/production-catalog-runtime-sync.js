@@ -1,6 +1,6 @@
-import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.13.4';
+import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.14.0';
 
-const BUILD = 'P3.13.4';
+const BUILD = 'P3.14.0';
 const EXPECTED_EFFECTS = [
   'heavyImpact',
   'explosion',
@@ -69,7 +69,7 @@ function runSmokeGate(fx) {
   globalThis.FXDeckCatalogSmoke = result;
 
   if (result.pass) {
-    appendLog(`PASS ${BUILD} CATALOG GATE: ${EXPECTED_EFFECTS.length}/${EXPECTED_EFFECTS.length} effects resolve; Explosion + Magic Burst default to v2; legacy v1 retained`);
+    appendLog(`PASS ${BUILD} CATALOG GATE: ${EXPECTED_EFFECTS.length}/${EXPECTED_EFFECTS.length} production effects still resolve under the source-fidelity calibration pass; legacy v1 retained`);
     return result;
   }
 
