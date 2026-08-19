@@ -48,6 +48,14 @@
       "height": 128,
       "license": "FXDeck original",
       "provenance": "site/assets/vfx/hero-flare.svg"
+    },
+    "confetti-strip": {
+      "type": "image",
+      "src": "../../assets/vfx/confetti-strip.svg",
+      "width": 48,
+      "height": 14,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/confetti-strip.svg"
     }
   }
 }
