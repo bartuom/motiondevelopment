@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "id": "dust-puff",
+  "label": "Dust Puff",
+  "durationMs": 1280,
+  "priority": "medium",
+  "assets": [
+    "dust-soft-01",
+    "dust-soft-02",
+    "dust-soft-03"
+  ],
+  "bindings": [
+    {
+      "param": "intensity",
+      "layer": "ground-roll",
+      "property": "spawn.count",
+      "operation": "multiply",
+      "min": 4,
+      "max": 22
+    },
+    {
+      "param": "intensity",
+      "layer": "body",
+      "property": "spawn.count",
+      "operation": "multiply",
+      "min": 3,
+      "max": 18
+    },
+    {
+      "param": "intensity",
+      "layer": "grit",
+      "property": "spawn.count",
+      "operation": "multiply",
+      "min": 3,
+      "max": 18
+    },
+    {
+      "param": "intensity",
+      "layer": "grit",
+      "property": "motion.speed.max",
+      "operation": "multiply",
+      "min": 5,
+      "max": 16
+    }
+  ],
+  "layers": [
+    {
+      "id": "ground-roll",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "high",
+      "z": 16,
+      "blend": "normal",
+      "spawn": {
+        "mode": "burst",
+        "count": 11
+      },
+      "shape": {
+        "type": "image",
+        "asset": "dust-soft-01"
+      },
+      "color": "#ffffff",
+      "lifetimeMs": {
+        "min": 520,
+        "max": 820
+      },
+      "motion": {
+        "direction": "inherit",
+        "spreadDeg": 220,
+        "speed": {
+          "min": 1.6,
+          "max": 4.8
+        },
+        "drag": 0.032,
+        "gravity": -0.12
+      },
+      "size": {
+        "start": 22,
+        "end": 74
+      },
+      "opacity": {
+        "start": 0.72,
+        "end": 0
+      },
+      "rotationDeg": {
+        "min": -24,
+        "max": 24
+      }
+    },
+    {
+      "id": "body",
+      "type": "particles",
+      "delayMs": 28,
+      "priority": "medium",
+      "z": 15,
+      "blend": "normal",
+      "spawn": {
+        "mode": "burst",
+        "count": 8
+      },
+      "shape": {
+        "type": "image",
+        "asset": "dust-soft-02"
+      },
+      "color": "#ffffff",
+      "lifetimeMs": {
+        "min": 650,
+        "max": 940
+      },
+      "motion": {
+        "direction": "inherit",
+        "spreadDeg": 170,
+        "speed": {
+          "min": 0.9,
+          "max": 2.7
+        },
+        "drag": 0.042,
+        "gravity": -0.18
+      },
+      "size": {
+        "start": 30,
+        "end": 98
+      },
+      "opacity": {
+        "start": 0.56,
+        "end": 0
+      },
+      "rotationDeg": {
+        "min": -32,
+        "max": 32
+      }
+    },
+    {
+      "id": "wisps",
+      "type": "particles",
+      "delayMs": 74,
+      "priority": "low",
+      "z": 14,
+      "blend": "normal",
+      "spawn": {
+        "mode": "burst",
+        "count": 5
+      },
+      "shape": {
+        "type": "image",
+        "asset": "dust-soft-03"
+      },
+      "color": "#ffffff",
+      "lifetimeMs": {
+        "min": 720,
+        "max": 1100
+      },
+      "motion": {
+        "direction": 270,
+        "spreadDeg": 96,
+        "speed": {
+          "min": 0.5,
+          "max": 1.55
+        },
+        "drag": 0.028,
+        "gravity": -0.24
+      },
+      "size": {
+        "start": 24,
+        "end": 90
+      },
+      "opacity": {
+        "start": 0.38,
+        "end": 0
+      },
+      "rotationDeg": {
+        "min": -38,
+        "max": 38
+      }
+    },
+    {
+      "id": "grit",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "medium",
+      "z": 17,
+      "blend": "normal",
+      "spawn": {
+        "mode": "burst",
+        "count": 7
+      },
+      "shape": {
+        "type": "circle"
+      },
+      "color": [
+        "#8e7557",
+        "#b79a72",
+        "#655342"
+      ],
+      "lifetimeMs": {
+        "min": 220,
+        "max": 420
+      },
+      "motion": {
+        "direction": "inherit",
+        "spreadDeg": 150,
+        "speed": {
+          "min": 4.2,
+          "max": 8.8
+        },
+        "drag": 0.018,
+        "gravity": 2.8
+      },
+      "size": {
+        "start": 2.8,
+        "end": 0.4
+      },
+      "opacity": {
+        "start": 0.58,
+        "end": 0
+      }
+    }
+  ]
+}
