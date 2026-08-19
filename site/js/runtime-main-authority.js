@@ -1,5 +1,5 @@
-const BUILD = 'P3.14.0';
-const INTRO = 'P3.14 Reference Fidelity Pass: the canonical Runtime Lab now exposes exact source references before any FXDeck reinterpretation — Particlr Explosion through the actual Particlr runtime, plus official tsParticles Ribbons and Fireworks bundle recipes.';
+const BUILD = 'P3.14.1';
+const INTRO = 'P3.14.1 Reference Fidelity Pass: exact source references come before FXDeck reinterpretation. Particlr Explosion is pinned to its matching published 0.5.2 runtime/fixture; official tsParticles Ribbons and Fireworks bundle recipes remain direct calibration targets.';
 const BOOT_SETTLE_MS = 1800;
 
 const effectInput = document.querySelector('#effect-select');
@@ -29,7 +29,7 @@ function enforceBuildUi() {
 
 async function loadReferenceFidelityBridge() {
   try {
-    await import('./reference-fidelity-runtime-bridge.js?v=p3.14.0');
+    await import('./reference-fidelity-runtime-bridge.js?v=p3.14.1');
     appendLog(`${BUILD} SOURCE FIDELITY bridge loaded`);
   } catch (error) {
     appendLog(`${BUILD} SOURCE FIDELITY bridge FAIL: ${error.message}`);
@@ -43,7 +43,7 @@ function applyCanonicalBootSelection() {
 
   bootSelectionApplied = globalThis.FXDeckReferenceFidelity.select('refParticlrExplosion');
   if (bootSelectionApplied) {
-    appendLog(`${BUILD} CANONICAL LAB: source-fidelity calibration opened on exact Particlr Explosion; exact Ribbons and Fireworks are in the same selector`);
+    appendLog(`${BUILD} CANONICAL LAB: exact Particlr 0.5.2 Explosion fixture opened first; exact Ribbons and Fireworks are in the same selector`);
   }
   return bootSelectionApplied;
 }
