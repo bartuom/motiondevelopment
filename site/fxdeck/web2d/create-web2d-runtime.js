@@ -1,12 +1,12 @@
-import { FXDeckRuntime } from '../core/fxdeck.js?v=p4.1.0';
-import { DomSpriteAdapter } from '../adapters/dom-sprite-adapter.js?v=p4.1.0';
-import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.1.0';
-import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.1.0';
-import { registerExplosion } from '../effects/explosion.js?v=p4.1.0';
-import { registerFireball } from '../effects/fireball.js?v=p4.1.0';
-import { registerSchemaEffects } from './register-schema-effect.js?v=p4.2.0';
+import { FXDeckRuntime } from '../core/fxdeck.js?v=p4.3.0';
+import { DomSpriteAdapter } from '../adapters/dom-sprite-adapter.js?v=p4.3.0';
+import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.3.0';
+import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.3.0';
+import { registerExplosion } from '../effects/explosion.js?v=p4.3.0';
+import { registerFireball } from '../effects/fireball.js?v=p4.3.0';
+import { registerSchemaEffects } from './register-schema-effect.js?v=p4.3.0';
 
-export const WEB2D_BUILD = 'P4.2.0';
+export const WEB2D_BUILD = 'P4.3.0';
 
 function requireElement(value, label) {
   if (!(value instanceof Element)) throw new TypeError(`${label} must be a DOM Element.`);
@@ -24,7 +24,7 @@ async function registerTsParticlesCapabilities(engine) {
     throw new Error('FXDeck Web2D requires loadFull() during the prototype phase.');
   }
 
-  // P4.2 still keeps the full development bundle. Capability slimming happens
+  // P4.3 still keeps the full development bundle. Capability slimming happens
   // only after schema-driven hero effects prove the actual production set.
   await globalThis.loadFull(engine);
 }
@@ -41,7 +41,8 @@ export async function createWeb2DRuntime({
   particleHost,
   visualHost,
   burstMode = 'scheduled',
-  schemaEffects = []
+  schemaEffects = [],
+  assetManager = null
 } = {}) {
   requireElement(stage, 'stage');
   requireElement(particleHost, 'particleHost');
@@ -50,8 +51,15 @@ export async function createWeb2DRuntime({
   const engine = globalThis.tsParticles;
   await registerTsParticlesCapabilities(engine);
 
+  if (assetManager) await assetManager.loadManifest();
+  const resolvedSchemaEffects = schemaEffects.map((effect) => assetManager ? assetManager.hydrateEffect(effect) : structuredClone(effect));
+
   const fx = registerLegacyBaselineEffects(new FXDeckRuntime());
-  registerSchemaEffects(fx, schemaEffects);
+  registerSchemaEffects(fx, resolvedSchemaEffects);
+
+  const assetWarmup = assetManager
+    ? await Promise.all(resolvedSchemaEffects.map((effect) => assetManager.prefetchEffect(effect)))
+    : [];
 
   const particlePreload = fx
     .getAssets({ target: 'particles' })
@@ -88,7 +96,15 @@ export async function createWeb2DRuntime({
     adapters: { particles, visuals },
     persistentContainer,
     particlePreload,
-    schemaEffects: structuredClone(schemaEffects),
+    schemaEffects: structuredClone(resolvedSchemaEffects),
+    assetManager,
+    assetWarmup,
+
+    async prefetchEffect(id) {
+      if (!assetManager) return { effectId: id, requested: 0, coldLoads: 0, cacheHits: 0, durationMs: 0 };
+      const { definition } = fx.resolve(id);
+      return assetManager.prefetchEffect(definition.source ?? definition);
+    },
 
     topology() {
       return {
@@ -97,9 +113,10 @@ export async function createWeb2DRuntime({
         container: particles.container,
         persistentContainer,
         registeredEffects: fx.getStats().registeredEffects,
-        schemaEffectCount: schemaEffects.length,
+        schemaEffectCount: resolvedSchemaEffects.length,
         activeInstances: fx.getStats().activeInstances,
-        particleCanvasCount: particleHost.querySelectorAll('canvas').length
+        particleCanvasCount: particleHost.querySelectorAll('canvas').length,
+        cachedAssets: assetManager?.getStats?.().cachedAssets ?? 0
       };
     },
 
