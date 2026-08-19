@@ -1,6 +1,6 @@
-const BUILD = 'P3.13.4';
-const INTRO = 'P3.13.4 initializes tsParticles motion and ribbon support before the canonical particle container is created, so Magic Burst V2 can use the real ribbon drawer inside the same Runtime Lab.';
-const BOOT_SETTLE_MS = 1500;
+const BUILD = 'P3.14.0';
+const INTRO = 'P3.14 Reference Fidelity Pass: the canonical Runtime Lab now exposes exact source references before any FXDeck reinterpretation — Particlr Explosion through the actual Particlr runtime, plus official tsParticles Ribbons and Fireworks bundle recipes.';
+const BOOT_SETTLE_MS = 1800;
 
 const effectInput = document.querySelector('#effect-select');
 const eyebrow = document.querySelector('.eyebrow');
@@ -27,31 +27,29 @@ function enforceBuildUi() {
   globalThis.FXDeckRuntimeBuild = BUILD;
 }
 
-function explosionV2Ready() {
-  const fx = globalThis.FXDeck;
-  if (!fx?.resolve) return false;
+async function loadReferenceFidelityBridge() {
   try {
-    const explosion = fx.resolve('explosion', { version: 'v2', variant: 'default' });
-    const bridge = globalThis.FXDeckReferenceV2;
-    return explosion.version === 'v2' && (!bridge || bridge.readiness?.explosion === true);
-  } catch {
-    return false;
+    await import('./reference-fidelity-runtime-bridge.js?v=p3.14.0');
+    appendLog(`${BUILD} SOURCE FIDELITY bridge loaded`);
+  } catch (error) {
+    appendLog(`${BUILD} SOURCE FIDELITY bridge FAIL: ${error.message}`);
+    console.error(error);
   }
 }
 
 function applyCanonicalBootSelection() {
-  if (bootSelectionApplied || !effectInput || !explosionV2Ready()) return false;
+  if (bootSelectionApplied || !effectInput || !globalThis.FXDeckReferenceFidelity?.select) return false;
   if (performance.now() - startedAt < BOOT_SETTLE_MS) return false;
 
-  bootSelectionApplied = true;
-  effectInput.value = 'explosion';
-  effectInput.dispatchEvent(new Event('change', { bubbles: true }));
-  const magicReady = globalThis.FXDeckReferenceV2?.readiness?.magicBurst === true;
-  appendLog(`${BUILD} CANONICAL LAB: settled on Explosion V2; Magic Burst V2 ${magicReady ? 'READY' : 'not yet ready'}`);
-  return true;
+  bootSelectionApplied = globalThis.FXDeckReferenceFidelity.select('refParticlrExplosion');
+  if (bootSelectionApplied) {
+    appendLog(`${BUILD} CANONICAL LAB: source-fidelity calibration opened on exact Particlr Explosion; exact Ribbons and Fireworks are in the same selector`);
+  }
+  return bootSelectionApplied;
 }
 
 enforceBuildUi();
+await loadReferenceFidelityBridge();
 
 const observer = new MutationObserver(enforceBuildUi);
 for (const node of [eyebrow, hudBuild, intro]) {
@@ -62,9 +60,9 @@ let attempts = 0;
 const bootTimer = window.setInterval(() => {
   attempts += 1;
   enforceBuildUi();
-  if (applyCanonicalBootSelection() || attempts >= 160) {
+  if (applyCanonicalBootSelection() || attempts >= 200) {
     window.clearInterval(bootTimer);
-    if (!bootSelectionApplied) appendLog(`${BUILD} CANONICAL LAB WARNING: Explosion V2 boot readiness was not confirmed in time`);
+    if (!bootSelectionApplied) appendLog(`${BUILD} CANONICAL LAB WARNING: source fidelity bridge was not ready in time`);
   }
 }, 50);
 
