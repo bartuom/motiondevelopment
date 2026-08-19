@@ -73,6 +73,15 @@
           "priority": { "enum": ["hero", "high", "medium", "low"] },
           "z": { "type": "number", "minimum": 0, "maximum": 1000 },
           "blend": { "enum": ["normal", "lighter"] },
+          "origin": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "x": { "type": "number", "minimum": -2048, "maximum": 2048 },
+              "y": { "type": "number", "minimum": -2048, "maximum": 2048 },
+              "rotateWithDirection": { "type": "boolean" }
+            }
+          },
           "spawn": {
             "oneOf": [
               {
@@ -101,8 +110,21 @@
             "additionalProperties": false,
             "required": ["type"],
             "properties": {
-              "type": { "enum": ["circle", "square", "image"] },
-              "asset": { "type": "string" }
+              "type": { "enum": ["circle", "square", "image", "ribbon"] },
+              "asset": { "type": "string" },
+              "ribbon": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["points", "spacingPx", "oscillationPx", "oscillationSpeed"],
+                "properties": {
+                  "points": { "type": "integer", "minimum": 8, "maximum": 80 },
+                  "spacingPx": { "type": "number", "minimum": 1, "maximum": 32 },
+                  "drag": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "darkenPct": { "type": "number", "minimum": 0, "maximum": 100 },
+                  "oscillationPx": { "$ref": "#/$defs/range" },
+                  "oscillationSpeed": { "$ref": "#/$defs/range" }
+                }
+              }
             }
           },
           "color": {
@@ -131,7 +153,17 @@
           },
           "size": { "$ref": "#/$defs/curve2" },
           "opacity": { "$ref": "#/$defs/curve2" },
-          "rotationDeg": { "$ref": "#/$defs/range" }
+          "rotationDeg": { "$ref": "#/$defs/range" },
+          "orientation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode"],
+            "properties": {
+              "mode": { "enum": ["direction", "motion"] },
+              "offsetDeg": { "type": "number", "minimum": -360, "maximum": 360 },
+              "jitterDeg": { "type": "number", "minimum": 0, "maximum": 180 }
+            }
+          }
         }
       }
     }
