@@ -1,15 +1,10 @@
-const BUILD = 'P3.14.1';
-const INTRO = 'P3.14.1 Reference Fidelity Pass: exact source references come before FXDeck reinterpretation. Particlr Explosion is pinned to its matching published 0.5.2 runtime/fixture; official tsParticles Ribbons and Fireworks bundle recipes remain direct calibration targets.';
-const BOOT_SETTLE_MS = 1800;
+const BUILD = 'P3.15.0';
+const INTRO = 'P3.15 Native Reference Integration: Ribbons and Fireworks reference recipes now run directly inside the existing FXDeck TsParticlesAdapter container. No iframe, no second canvas, no standalone demo background.';
 
-const effectInput = document.querySelector('#effect-select');
 const eyebrow = document.querySelector('.eyebrow');
 const hudBuild = document.querySelector('.runtime-hud__build');
 const intro = document.querySelector('.intro');
 const logOutput = document.querySelector('#p2-log');
-const startedAt = performance.now();
-
-let bootSelectionApplied = false;
 
 function appendLog(message) {
   if (!logOutput) return;
@@ -27,44 +22,23 @@ function enforceBuildUi() {
   globalThis.FXDeckRuntimeBuild = BUILD;
 }
 
-async function loadReferenceFidelityBridge() {
+async function loadNativeReferenceBridge() {
   try {
-    await import('./reference-fidelity-runtime-bridge.js?v=p3.14.1');
-    appendLog(`${BUILD} SOURCE FIDELITY bridge loaded`);
+    await import('./reference-fidelity-runtime-bridge.js?v=p3.15.0');
+    appendLog(`${BUILD} NATIVE REFERENCE bridge loaded — same FXDeck tsParticles canvas`);
   } catch (error) {
-    appendLog(`${BUILD} SOURCE FIDELITY bridge FAIL: ${error.message}`);
+    appendLog(`${BUILD} NATIVE REFERENCE bridge FAIL: ${error.message}`);
     console.error(error);
   }
 }
 
-function applyCanonicalBootSelection() {
-  if (bootSelectionApplied || !effectInput || !globalThis.FXDeckReferenceFidelity?.select) return false;
-  if (performance.now() - startedAt < BOOT_SETTLE_MS) return false;
-
-  bootSelectionApplied = globalThis.FXDeckReferenceFidelity.select('refParticlrExplosion');
-  if (bootSelectionApplied) {
-    appendLog(`${BUILD} CANONICAL LAB: exact Particlr 0.5.2 Explosion fixture opened first; exact Ribbons and Fireworks are in the same selector`);
-  }
-  return bootSelectionApplied;
-}
-
 enforceBuildUi();
-await loadReferenceFidelityBridge();
+await loadNativeReferenceBridge();
 
 const observer = new MutationObserver(enforceBuildUi);
 for (const node of [eyebrow, hudBuild, intro]) {
   if (node) observer.observe(node, { childList: true, characterData: true, subtree: true });
 }
-
-let attempts = 0;
-const bootTimer = window.setInterval(() => {
-  attempts += 1;
-  enforceBuildUi();
-  if (applyCanonicalBootSelection() || attempts >= 200) {
-    window.clearInterval(bootTimer);
-    if (!bootSelectionApplied) appendLog(`${BUILD} CANONICAL LAB WARNING: source fidelity bridge was not ready in time`);
-  }
-}, 50);
 
 window.addEventListener('pageshow', enforceBuildUi);
 window.addEventListener('focus', enforceBuildUi);
