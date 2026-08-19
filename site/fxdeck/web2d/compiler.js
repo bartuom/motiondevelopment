@@ -2,7 +2,7 @@ import {
   assertValidEffectDefinition,
   DEFAULT_WEB2D_CAPABILITIES,
   DEFAULT_WEB2D_BUDGET
-} from '../schema/validator.js?v=p4.2.0';
+} from '../schema/validator.js?v=p4.3.0';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -104,6 +104,7 @@ function compileParticles(effect, layer, params, assets) {
     ? Number(params?.directionDegrees ?? 0)
     : Number(layer.motion.direction);
   const gravity = Number(layer.motion.gravity ?? 0);
+  const drag = Number(layer.motion.drag ?? 0);
 
   const particles = {
     color: { value: layer.color ?? '#ffffff' },
@@ -130,6 +131,8 @@ function compileParticles(effect, layer, params, assets) {
       }
     }
   };
+
+  if (drag > 0) particles.move.decay = drag;
 
   if (gravity !== 0) {
     particles.move.gravity = {
