@@ -1,8 +1,8 @@
-import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.6.0';
-import { registerExplosionV2 } from '../fxdeck/effects/explosion-v2.js?v=p3.13.1';
-import { registerMagicBurstV2 } from '../fxdeck/effects/magic-burst-v2.js?v=p3.13.1';
+import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p3.13.3';
+import { registerExplosionV2 } from '../fxdeck/effects/explosion-v2.js?v=p3.13.3';
+import { registerMagicBurstV2 } from '../fxdeck/effects/magic-burst-v2.js?v=p3.13.3';
 
-const BUILD = 'P3.13.1';
+const BUILD = 'P3.13.3';
 const stage = document.querySelector('#impact-stage');
 const domLayer = document.querySelector('#impact-dom-layer');
 const target = document.querySelector('#impact-target');
@@ -17,10 +17,16 @@ const logOutput = document.querySelector('#p2-log');
 const apiPreview = document.querySelector('#api-preview');
 
 let fx = null;
-let ready = false;
 let position = {
   x: Math.max(1, stage?.clientWidth ?? 1) * .5,
   y: Math.max(1, stage?.clientHeight ?? 1) * .5
+};
+
+const readiness = {
+  explosion: false,
+  magicBurst: false,
+  ribbonRuntime: false,
+  ribbonError: null
 };
 
 function appendLog(message) {
@@ -39,7 +45,7 @@ function waitForRuntime(timeoutMs = 8000) {
         return;
       }
       if (performance.now() - startedAt > timeoutMs) {
-        reject(new Error('FXDeck runtime was not ready for P3.13 V2 bridge.'));
+        reject(new Error('FXDeck runtime was not ready for P3.13.3 V2 bridge.'));
         return;
       }
       window.setTimeout(poll, 20);
@@ -48,48 +54,31 @@ function waitForRuntime(timeoutMs = 8000) {
   });
 }
 
-function loadScript(src, marker) {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[data-fxdeck-plugin="${marker}"]`);
-    if (existing?.dataset.loaded === 'true') return resolve();
-    if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.dataset.fxdeckPlugin = marker;
-    script.addEventListener('load', () => {
-      script.dataset.loaded = 'true';
-      resolve();
-    }, { once: true });
-    script.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
-    document.head.appendChild(script);
-  });
-}
-
 async function ensureRibbonRuntime() {
-  await Promise.all([
-    loadScript('https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js', 'motion-4.3.2'),
-    loadScript('https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js', 'ribbon-4.3.2')
-  ]);
-
-  if (typeof globalThis.loadMotionPlugin !== 'function') throw new Error('loadMotionPlugin() unavailable after CDN load.');
-  if (typeof globalThis.loadRibbonShape !== 'function') throw new Error('loadRibbonShape() unavailable after CDN load.');
+  if (typeof globalThis.loadMotionPlugin !== 'function') {
+    throw new Error('loadMotionPlugin() is unavailable. Check @tsparticles/plugin-motion script.');
+  }
+  if (typeof globalThis.loadRibbonShape !== 'function') {
+    throw new Error('loadRibbonShape() is unavailable. Check @tsparticles/shape-ribbon script.');
+  }
 
   await globalThis.loadMotionPlugin(globalThis.tsParticles);
   await globalThis.loadRibbonShape(globalThis.tsParticles);
-  appendLog(`PASS ${BUILD}: tsParticles motion + real ribbon shape registered on existing FXDeck engine`);
+  readiness.ribbonRuntime = true;
+  readiness.ribbonError = null;
+  appendLog(`PASS ${BUILD}: tsParticles motion + ribbon shape registered on the canonical engine`);
 }
 
-function isV2Selected() {
+function isReferenceV2Selected() {
   return effectInput?.value === 'explosion' || effectInput?.value === 'magicBurst';
 }
 
 function selectedId() {
   return effectInput?.value === 'magicBurst' ? 'magicBurst' : 'explosion';
+}
+
+function selectedReady() {
+  return readiness[selectedId()] === true;
 }
 
 function setText(selector, value) {
@@ -197,28 +186,12 @@ function pathLabel() {
   return 'per-play-emitter';
 }
 
-function explosionResolved(intensity) {
-  const countScale = Math.max(.62, Math.min(1.65, intensity));
-  const smokeScale = Math.max(.72, Math.min(1.45, intensity));
-  return {
-    fireball: Math.max(8, Math.round(24 * countScale)),
-    sparks: Math.max(4, Math.round(12 * Math.max(.7, Math.min(1.55, intensity)))),
-    smoke: [7, 8, 7].map((count) => Math.max(3, Math.round(count * smokeScale)))
-  };
-}
-
-function magicResolved(intensity, direction) {
-  const countScale = Math.max(.72, Math.min(1.55, intensity));
-  const perpendicular = { x: -direction.vector.y, y: direction.vector.x };
-  return {
-    heroRibbons: Math.max(2, Math.round(3 * Math.min(1.35, .8 + intensity * .2))),
-    echoRibbons: Math.max(1, Math.round(2 * Math.min(1.35, .82 + intensity * .18))),
-    motes: Math.max(7, Math.round(14 * countScale)),
-    echoPosition: {
-      x: position.x + direction.vector.x * 42 + perpendicular.x * 24,
-      y: position.y + direction.vector.y * 42 + perpendicular.y * 24
-    }
-  };
+function resolvedDefinition(id) {
+  try {
+    return fx?.resolve?.(id, { version: 'v2', variant: 'default' })?.definition ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function setTimeline(rows) {
@@ -236,34 +209,42 @@ function setTimeline(rows) {
 }
 
 function updateUi() {
-  if (!ready || !isV2Selected()) return;
+  if (!fx || !isReferenceV2Selected()) return;
+
   const id = selectedId();
+  const definition = resolvedDefinition(id);
   const intensity = Math.max(.25, Number(intensityInput?.value ?? 1));
   const direction = normalizeDirection(Number(directionInput?.value ?? 18));
-  const versionLabel = id === 'explosion' ? 'v2 — Explosion / Particlr harvest' : 'v2 — Magic Burst / real ribbons';
+  const isReady = selectedReady();
 
-  setText('#authored-version-label', versionLabel);
+  setText('#authored-version-label', `v2 — ${id === 'explosion' ? 'Explosion / Particlr harvest' : 'Magic Burst / real ribbons'}`);
   setText('#resolved-effect', `${id} / v2 / default`);
-  setText('#resolved-path', pathLabel());
+  setText('#resolved-path', isReady ? pathLabel() : 'V2 INITIALIZING');
   setText('#resolved-intensity', `${intensity.toFixed(1)}×`);
   setText('#resolved-direction', `${direction.degrees.toFixed(0)}°  { ${direction.vector.x.toFixed(3)}, ${direction.vector.y.toFixed(3)} }`);
   setText('#resolved-position', `${Math.round(position.x)}, ${Math.round(position.y)} CSS px`);
 
   if (id === 'explosion') {
-    const r = explosionResolved(intensity);
+    const spec = definition?.spec;
+    const countScale = Math.max(.62, Math.min(1.65, intensity));
+    const smokeScale = Math.max(.72, Math.min(1.45, intensity));
+    const fireball = Math.max(8, Math.round((spec?.fireball?.baseCount ?? 24) * countScale));
+    const sparks = Math.max(4, Math.round((spec?.sparks?.baseCount ?? 12) * Math.max(.7, Math.min(1.55, intensity))));
+    const smoke = (spec?.smoke?.waveCounts ?? [7, 8, 7]).map((count) => Math.max(3, Math.round(count * smokeScale)));
+
     setText('#preview-title', 'Explosion V2 — Particlr reference pass');
-    setText('#preview-note', 'Click to move target + fire texture-driven layered explosion');
+    setText('#preview-note', isReady ? 'Click to move target + fire texture-driven layered explosion' : 'Explosion V2 is initializing…');
     setText('#caption-title', 'explosion / v2 / default');
     setText('#caption-note', 'circle-soft flash → fireball mass → staged smoke texture');
-    setText('#effect-summary', 'Reference-driven rebuild from the harvested Particlr Explosion model. The hero read now comes from source-derived soft textures and staged smoke rather than circle/square primitives.');
+    setText('#effect-summary', definition?.summary ?? 'Reference-driven Explosion V2.');
     setText('#resolved-layer-a-label', 'Flash texture');
     setText('#resolved-layer-a', 'Particlr circle-soft / 0.15 s');
     setText('#resolved-layer-b-label', 'Fireball mass');
-    setText('#resolved-layer-b', `${r.fireball} textured particles / 0.4–0.7 s`);
+    setText('#resolved-layer-b', `${fireball} textured particles / 0.4–0.7 s`);
     setText('#resolved-layer-c-label', 'Smoke texture');
-    setText('#resolved-layer-c', `${r.smoke.reduce((a, b) => a + b, 0)} particles in 3 delayed waves`);
+    setText('#resolved-layer-c', `${smoke.reduce((a, b) => a + b, 0)} particles in 3 delayed waves`);
     setText('#resolved-layer-d-label', 'Sparks');
-    setText('#resolved-layer-d', `${r.sparks} supporting image streaks`);
+    setText('#resolved-layer-d', `${sparks} supporting image streaks`);
     setText('#resolved-layer-e-label', 'Source model');
     setText('#resolved-layer-e', 'Particlr flash + fireball + smoke layering');
     setText('#resolved-screen-kick', `${(5.8 * Math.min(1.55, intensity)).toFixed(1)} px`);
@@ -276,22 +257,27 @@ function updateUi() {
       ['1480 ms', 'Hard lifecycle cleanup']
     ]);
   } else {
-    const r = magicResolved(intensity, direction);
+    const spec = definition?.spec;
+    const countScale = Math.max(.72, Math.min(1.55, intensity));
+    const heroCount = Math.max(2, Math.round((spec?.ribbons?.heroCount ?? 3) * Math.min(1.35, .8 + intensity * .2)));
+    const echoCount = Math.max(1, Math.round((spec?.ribbons?.echoCount ?? 2) * Math.min(1.35, .82 + intensity * .18)));
+    const motes = Math.max(7, Math.round((spec?.motes?.baseCount ?? 14) * countScale));
+
     setText('#preview-title', 'Magic Burst V2 — real tsParticles ribbons');
-    setText('#preview-note', 'Click to move origin; direction rotates real oscillating ribbon particles');
+    setText('#preview-note', isReady ? 'Click to move origin; direction rotates real oscillating ribbon particles' : `Magic Burst V2 ribbon runtime unavailable${readiness.ribbonError ? `: ${readiness.ribbonError}` : ''}`);
     setText('#caption-title', 'magicBurst / v2 / default');
     setText('#caption-note', 'shape-ribbon hero → image motes → displaced ribbon echo');
-    setText('#effect-summary', 'Reference-driven Magic Burst using the actual tsParticles ribbon shape. CSS ribbons are gone from the hero layer; oscillation, drag and trail structure come from the harvested Ribbons recipe.');
+    setText('#effect-summary', definition?.summary ?? 'Reference-driven Magic Burst V2.');
     setText('#resolved-layer-a-label', 'Hero ribbons');
-    setText('#resolved-layer-a', `${r.heroRibbons} real shape-ribbon particles / 60 points each`);
-    setText('#resolved-layer-b-label', 'Ribbon recipe');
-    setText('#resolved-layer-b', 'drag .02 / oscillation 72–112 / speed 3–5 / dist 8');
+    setText('#resolved-layer-a', `${heroCount} real shape-ribbon particles / 60 points each`);
+    setText('#resolved-layer-b-label', 'Ribbon runtime');
+    setText('#resolved-layer-b', readiness.ribbonRuntime ? 'tsParticles shape-ribbon + motion loaded' : 'NOT READY');
     setText('#resolved-layer-c-label', 'Image motes');
-    setText('#resolved-layer-c', `${r.motes} spark-image particles`);
+    setText('#resolved-layer-c', `${motes} spark-image particles`);
     setText('#resolved-layer-d-label', 'Echo ribbons');
-    setText('#resolved-layer-d', `${r.echoRibbons} @ ${Math.round(r.echoPosition.x)}, ${Math.round(r.echoPosition.y)}`);
+    setText('#resolved-layer-d', `${echoCount} displaced secondary ribbons`);
     setText('#resolved-layer-e-label', 'Hero tech');
-    setText('#resolved-layer-e', 'tsParticles shape-ribbon + motion plugin');
+    setText('#resolved-layer-e', 'tsParticles shape-ribbon + harvested oscillation recipe');
     setText('#resolved-screen-kick', `${(2.4 * Math.min(1.5, intensity)).toFixed(1)} px`);
     setTimeline([
       ['0 ms', 'Core accent + real hero ribbons'],
@@ -304,43 +290,57 @@ function updateUi() {
     ]);
   }
 
-  if (playButton) playButton.textContent = `FXDeck.play("${id}")`;
+  if (playButton) {
+    playButton.textContent = isReady ? `FXDeck.play("${id}")` : `${id === 'explosion' ? 'Explosion' : 'Magic Burst'} V2 initializing…`;
+    playButton.disabled = !isReady;
+  }
+
   if (apiPreview) {
     apiPreview.textContent = `FXDeck.play("${id}", {\n  version: "v2",\n  variant: "default",\n  position: { x: ${Math.round(position.x)}, y: ${Math.round(position.y)} },\n  direction: ${Number(directionInput?.value ?? 18)},\n  intensity: ${Number(intensityInput?.value ?? 1).toFixed(1)}\n});`;
   }
 }
 
 function play(point = position) {
-  if (!ready || !fx || !isV2Selected()) return null;
+  if (!fx || !isReferenceV2Selected()) return null;
+  const id = selectedId();
+
+  if (!readiness[id]) {
+    appendLog(`BLOCK ${BUILD}: ${id}/v2 requested before its runtime was ready`);
+    updateUi();
+    return null;
+  }
+
   position = { ...point };
   moveTarget(position);
-  const id = selectedId();
   const p = params(position);
   const instance = fx.play(id, p);
   appendLog(`PLAY ${instance.id} ${id}/v2/default [${pathLabel()}] @ ${Math.round(position.x)},${Math.round(position.y)} intensity ${p.intensity.toFixed(1)} direction ${normalizeDirection(p.direction).degrees.toFixed(0)}°`);
   instance.ready
-    .then(() => {
-      if (id === 'explosion') {
-        appendLog(`READY ${instance.id}: Particlr-derived flash + ${instance.resolved?.fireball?.count ?? 0} fireballs + ${(instance.resolved?.smoke?.waveCounts ?? []).reduce((a, b) => a + b, 0)} smoke particles`);
-      } else {
-        appendLog(`READY ${instance.id}: real ribbons ${instance.resolved?.heroRibbons?.count ?? 0}+${instance.resolved?.echoRibbons?.count ?? 0}; motes ${instance.resolved?.motes?.count ?? 0}`);
-      }
-    })
-    .catch((error) => appendLog(`ERROR ${instance.id}: ${error.message}`));
+    .then(() => appendLog(`READY ${instance.id}: ${id}/v2 completed startup successfully`))
+    .catch((error) => appendLog(`ERROR ${instance.id} ${id}/v2: ${error.message}`));
   updateUi();
   return instance;
 }
 
 function installInterceptors() {
+  effectInput?.addEventListener('change', (event) => {
+    if (!isReferenceV2Selected()) return;
+    event.stopImmediatePropagation();
+    fx?.stopAll?.('effect-switch-reference-v2');
+    globalThis.FXDeckLab?.screenKickController?.reset?.();
+    updateUi();
+    appendLog(`EFFECT → ${selectedId()}/v2/default`);
+  }, true);
+
   playButton?.addEventListener('click', (event) => {
-    if (!isV2Selected()) return;
+    if (!isReferenceV2Selected()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     play(position);
   }, true);
 
   stage?.addEventListener('pointerdown', (event) => {
-    if (!isV2Selected()) return;
+    if (!isReferenceV2Selected()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const rect = stage.getBoundingClientRect();
@@ -348,15 +348,17 @@ function installInterceptors() {
   }, true);
 
   overlapButton?.addEventListener('click', (event) => {
-    if (!isV2Selected()) return;
+    if (!isReferenceV2Selected()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (!selectedReady()) return appendLog(`BLOCK ${BUILD}: ${selectedId()}/v2 overlap requested before ready`);
+
     const base = Number(directionInput?.value ?? 18);
     const id = selectedId();
     const offsets = [-22, -10, 0, 12, 24, 36];
     offsets.forEach((offset, index) => {
       window.setTimeout(() => {
-        if (!ready || selectedId() !== id) return;
+        if (selectedId() !== id || !readiness[id]) return;
         const p = params(position);
         p.direction = (base + offset + 360) % 360;
         const instance = fx.play(id, p);
@@ -367,23 +369,16 @@ function installInterceptors() {
   }, true);
 
   abButton?.addEventListener('click', (event) => {
-    if (!isV2Selected()) return;
+    if (!isReferenceV2Selected()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     appendLog(`${BUILD}: visual pass gate — backend A/B paused for V2 effects until look is accepted`);
   }, true);
 
-  effectInput?.addEventListener('change', () => window.setTimeout(updateUi, 0));
   for (const input of [intensityInput, directionInput, particlePathInput]) {
     input?.addEventListener('input', () => window.setTimeout(updateUi, 0));
     input?.addEventListener('change', () => window.setTimeout(updateUi, 0));
   }
-}
-
-function updateBuildUi() {
-  setText('.eyebrow', `FXDeck / Runtime / Build ${BUILD}`);
-  setText('.runtime-hud__build', BUILD);
-  setText('.intro', 'P3.13.1 is the first reference-driven visual pass: Explosion V2 uses source-derived Particlr soft/smoke textures and Magic Burst V2 uses the real tsParticles ribbon shape instead of CSS ribbon approximations.');
 }
 
 installInterceptors();
@@ -391,13 +386,38 @@ installInterceptors();
 waitForRuntime()
   .then(async (runtime) => {
     fx = runtime;
-    await ensureRibbonRuntime();
+
+    // Explosion V2 is deliberately independent from the optional ribbon runtime.
     registerExplosionV2(fx);
-    registerMagicBurstV2(fx);
-    ready = true;
-    updateBuildUi();
-    appendLog(`${BUILD}: Explosion V2 + Magic Burst V2 registered as reference-driven defaults; V1 remains available in registry`);
+    readiness.explosion = true;
+    appendLog(`PASS ${BUILD}: Explosion V2 registered independently of ribbon initialization`);
     updateUi();
+
+    try {
+      await ensureRibbonRuntime();
+      registerMagicBurstV2(fx);
+      readiness.magicBurst = true;
+      appendLog(`PASS ${BUILD}: Magic Burst V2 registered after ribbon runtime initialization`);
+    } catch (error) {
+      readiness.ribbonRuntime = false;
+      readiness.magicBurst = false;
+      readiness.ribbonError = error.message;
+      appendLog(`FAIL ${BUILD} MAGIC RIBBON INIT: ${error.message}`);
+      console.error(error);
+    }
+
+    globalThis.FXDeckReferenceV2 = {
+      build: BUILD,
+      readiness,
+      play: (id, point = position) => {
+        if (id !== 'explosion' && id !== 'magicBurst') throw new Error(`Unsupported P3.13 V2 effect: ${id}`);
+        if (effectInput) effectInput.value = id;
+        updateUi();
+        return play(point);
+      }
+    };
+
+    if (isReferenceV2Selected()) updateUi();
   })
   .catch((error) => {
     appendLog(`${BUILD} V2 bridge FAIL: ${error.message}`);
