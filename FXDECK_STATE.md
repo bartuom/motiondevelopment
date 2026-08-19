@@ -5,13 +5,40 @@
 ## Current state — 2026-08-19
 
 - **Milestone:** **P4.0 — Web2D V1 Controlled Reset**.
-- **Execution status:** planning complete; implementation reset not started yet.
+- **Execution status:** **Session 0 complete; Session 1 is next**.
 - **Canonical plan:** [`FXDECK_PLAN.md`](./FXDECK_PLAN.md).
 - **Legacy prototype baseline:** **P3.15.0** at commit `26b4622e68f4a2457dda6b84bf55c0fdb9a7112c`.
+- **Legacy recovery branch:** `legacy-p3.15` → `26b4622e68f4a2457dda6b84bf55c0fdb9a7112c`.
+- **Reset-start checkpoint branch:** `checkpoint-web2d-v1-reset-start` → `9f4217d992c4cf0a6a732df28952a18557eb7439`.
 - **Canonical Runtime Lab today:** `site/heavy-impact-lab.html` — still legacy P3.15 until Session 1 rewires it.
 - **Production Web2D backend decision:** tsParticles only.
 - **Particlr decision:** authoring/reference source only; no default production runtime dependency.
 - **3D decision:** architectural boundary only; zero 3D implementation in Web2D V1.
+
+## Session 0 — Safety checkpoint
+
+**Status: PASS.**
+
+The controlled reset is now reversible before any destructive cleanup begins.
+
+Recovery points:
+
+```text
+legacy-p3.15
+→ exact final P3.15 prototype baseline
+→ 26b4622e68f4a2457dda6b84bf55c0fdb9a7112c
+
+checkpoint-web2d-v1-reset-start
+→ repository immediately before Session 1 implementation
+→ includes the canonical Web2D V1 plan/state reset
+→ 9f4217d992c4cf0a6a732df28952a18557eb7439
+```
+
+No runtime, visual, asset, or deployed-page behavior was changed during Session 0.
+
+### Recovery rule
+
+Do not copy legacy bridge/runtime code back into the Web2D V1 path merely because it is available. The recovery branches are safety snapshots, not alternate sources of truth. `main` + `FXDECK_PLAN.md` remain canonical.
 
 ## Product direction
 
@@ -53,7 +80,7 @@ Legacy/prototype material includes:
 - old iframe/source-runtime calibration work,
 - Football Card showcase direction.
 
-Keep them recoverable through Git history while the Web2D V1 path replaces them.
+These are now explicitly recoverable from `legacy-p3.15` and Git history while the Web2D V1 path replaces them.
 
 ## What survives the reset
 
@@ -68,21 +95,35 @@ Keep them recoverable through Git history while the Web2D V1 path replaces them.
 
 ## Immediate next work
 
-### Session 0 — Safety checkpoint
-
-- record/retain the P3.15 baseline,
-- optionally tag/branch the prototype before destructive cleanup.
-
 ### Session 1 — Architecture Reset
 
-- one authoritative boot path,
-- one tsParticles engine/container,
-- no iframe runtime,
-- capabilities registered before container creation,
-- begin retiring effect-specific bridge/build-label plumbing,
-- no new showcase effect.
+Goal: one clean authoritative Web2D runtime path.
+
+Required outcomes:
+
+```text
+1 FXDeck runtime
+1 tsParticles engine
+1 persistent transparent container
+0 iframe runtimes
+0 second particle containers for reference effects
+```
+
+Tasks:
+
+- remove Particlr/iframe runtime from the canonical path,
+- collapse boot to one authoritative initializer,
+- register tsParticles capabilities before container creation,
+- preserve one persistent transparent tsParticles container,
+- remove/neutralize build-label mutation hacks,
+- isolate old effect bridges pending schema migration,
+- document the Web2D backend boundary,
+- verify repeated play/stop does not grow container/listener count,
+- author **no new showcase effect** in this session.
 
 ### Session 2 — Schema + Compiler + Validator
+
+Only after Session 1 passes:
 
 - `effect.schema.json`,
 - structural + semantic validation,
@@ -116,6 +157,9 @@ This remains a reference baseline for later Web2D V1 overhead/performance compar
 
 ## Changelog
 
+- **P4.0 / Session 0:** created `legacy-p3.15` at the exact P3.15 prototype baseline.
+- **P4.0 / Session 0:** created `checkpoint-web2d-v1-reset-start` at the pre-implementation reset state.
+- **P4.0 / Session 0:** verified both recovery branches point at their intended commits; no runtime behavior changed.
 - **P4.0 plan reset:** created canonical `FXDECK_PLAN.md` for Web2D V1.
 - **P4.0 plan reset:** tsParticles retained as the sole Web2D production backend.
 - **P4.0 plan reset:** Particlr moved to authoring/reference role.
