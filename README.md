@@ -1,76 +1,52 @@
-# Motion FX Portfolio / FXDeck
+# FXDeck — Gameplay VFX Runtime for Web Games
 
-> **Active development:** FXDeck — lightweight, AI-friendly gameplay VFX for 2D web games.
->
-> - Canonical implementation plan: [`FXDECK_PLAN.md`](./FXDECK_PLAN.md)
-> - Current execution status: [`FXDECK_STATE.md`](./FXDECK_STATE.md)
+FXDeck is being rebuilt as a lightweight, AI-friendly 2D gameplay VFX framework for mobile/web games.
 
-The repository is currently entering the **P4.0 Web2D V1 controlled reset**. The P3.x prototype remains useful as a technical baseline, but new development follows the schema-first Web2D plan rather than extending effect-specific bridge code.
+## Canonical docs
 
-## FXDeck direction
+- [`FXDECK_PLAN.md`](./FXDECK_PLAN.md) — Web2D V1 implementation roadmap.
+- [`FXDECK_STATE.md`](./FXDECK_STATE.md) — current execution state and next gate.
+- [`site/fxdeck/web2d/README.md`](./site/fxdeck/web2d/README.md) — Web2D backend boundary/invariants.
 
-Target runtime architecture:
+## Canonical Runtime Lab
+
+`site/web2d-runtime-lab.html`
+
+Live on GitHub Pages after deployment:
+
+`https://bartuom.github.io/motiondevelopment/web2d-runtime-lab.html`
+
+The old `site/heavy-impact-lab.html` is now a legacy P3 prototype page and is not the canonical Web2D V1 runtime path.
+
+## Current architecture
 
 ```text
-Game
+GAME
   ↓
 FXDeck API
   ↓
-FXDeck Core + Effect Schema
+FXDeck Core
   ↓
-Web2D compiler
+Web2D backend boundary
   ↓
 TsParticlesAdapter
   ↓
-custom modular tsParticles build
-  ↓
-one persistent transparent canvas/container
+one persistent tsParticles container
 ```
 
-Core goals:
+Web2D V1 uses tsParticles as the only production particle runtime. Particlr is retained as an authoring/reference source, not a default client dependency. 3D is intentionally out of scope for this cycle.
 
-- lightweight mobile-web integration,
-- AI/vibe-coding-friendly effect data,
-- reusable high-quality alpha/sprite assets,
-- one production particle backend for Web2D V1,
-- measurable bundle/performance budgets,
-- new effects authored primarily as data + assets rather than custom runtime JavaScript.
-
-Particlr is used as an authoring/reference source, not as a default production runtime dependency. 3D is intentionally out of scope for Web2D V1.
-
-## Planned V1 showcase
-
-1. Dust Puff
-2. Critical Hit
-3. Goal Celebration
-4. Explosion
-5. Magic Burst
-6. Rain / Environment
-
-Visual quality is the gate; the target is a small set of portfolio-grade gameplay VFX rather than a large preset catalog.
-
-## Legacy portfolio
-
-The original browser motion/VFX studies remain in the repository as references while FXDeck is developed into a reusable client-facing runtime.
-
-Legacy studies include:
-
-- explosions,
-- flashes,
-- impacts,
-- spell effects,
-- draw/reveal animations,
-- trails and particles,
-- CSS/SVG/sprite-sheet experiments.
-
-## Run current site locally
+## Run locally
 
 ```bash
 python -m http.server 8080 --directory site
 ```
 
-Then open `http://localhost:8080`.
+Then open:
 
-## Live site
+`http://localhost:8080/web2d-runtime-lab.html`
 
-GitHub Pages publishes the `site/` directory directly. During the P4.0 reset, the live Runtime Lab may still reflect legacy P3.15 behavior until the corresponding migration session is completed.
+## Legacy recovery
+
+- `legacy-p3.15` — final P3.15 prototype baseline.
+- `checkpoint-web2d-v1-reset-start` — repository state immediately before Session 1 implementation.
