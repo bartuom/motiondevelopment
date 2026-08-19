@@ -1,17 +1,17 @@
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.2.0';
-import { validateEffectDefinition } from '../fxdeck/schema/validator.js?v=p4.2.0';
-import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.2.0';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.2.0';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.2.1';
+import { validateEffectDefinition } from '../fxdeck/schema/validator.js?v=p4.2.1';
+import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.2.1';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.2.1';
 
-const BUILD = 'P4.2.0';
+const BUILD = 'P4.2.1';
 const EFFECT_URLS = [
-  './fxdeck/schema/examples/schema-test-burst.json?v=p4.2.0',
-  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.2.0',
-  './fxdeck/schema/examples/schema-test-rain.json?v=p4.2.0'
+  './fxdeck/schema/examples/schema-test-burst.json?v=p4.2.1',
+  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.2.1',
+  './fxdeck/schema/examples/schema-test-rain.json?v=p4.2.1'
 ];
 
 function log(message) {
-  const output = document.querySelector('#fxd-log');
+  const output = document.querySelector('#p2-log') ?? document.querySelector('#fxd-log');
   if (!output) return;
   const stamp = new Date().toLocaleTimeString([], { hour12: false });
   output.textContent += `\n[${stamp}] ${message}`;
@@ -128,14 +128,14 @@ export async function runSession2Gate() {
   assertValidationFailure(missingAsset, 'FXD_ASSET_06', 'asset reference gate');
 
   const container = runtime.adapters.particles.container;
-  const canvasCountBefore = document.querySelector('#fxd-particles')?.querySelectorAll('canvas').length ?? 0;
+  const canvasCountBefore = runtime.topology().particleCanvasCount;
 
   for (let index = 0; index < ids.length; index += 1) {
     await playAndStop(runtime, ids[index], 25 + index * 55);
     if (runtime.adapters.particles.container !== container) throw new Error(`${ids[index]}: persistent container identity changed`);
   }
 
-  const canvasCountAfter = document.querySelector('#fxd-particles')?.querySelectorAll('canvas').length ?? 0;
+  const canvasCountAfter = runtime.topology().particleCanvasCount;
   if (canvasCountBefore !== 1 || canvasCountAfter !== 1) throw new Error(`particle canvas count changed ${canvasCountBefore} -> ${canvasCountAfter}`);
 
   const result = {
@@ -159,7 +159,7 @@ export async function runSession2Gate() {
 }
 
 try {
-  log(`${BUILD}: loading FXDeck Schema V1 synthetic definitions without changing Runtime Lab UI`);
+  log(`${BUILD}: validating FXDeck Schema V1 under the preserved Runtime Lab UI`);
   await runSession2Gate();
 } catch (error) {
   globalThis.FXDeckSession2Gate = { pass: false, build: BUILD, error: error.message };
