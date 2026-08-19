@@ -39,7 +39,7 @@
         "additionalProperties": false,
         "required": ["param", "layer", "property", "operation"],
         "properties": {
-          "param": { "enum": ["intensity"] },
+          "param": { "enum": ["intensity", "tint", "teamColor"] },
           "layer": { "type": "string" },
           "property": {
             "enum": [
@@ -48,7 +48,8 @@
               "motion.speed.min",
               "motion.speed.max",
               "size.start",
-              "size.end"
+              "size.end",
+              "color"
             ]
           },
           "operation": { "enum": ["multiply", "add", "replace"] },
