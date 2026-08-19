@@ -1,6 +1,6 @@
-import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.14.1';
+import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.15.0';
 
-const BUILD = 'P3.14.1';
+const BUILD = 'P3.15.0';
 const EXPECTED_EFFECTS = [
   'heavyImpact',
   'explosion',
@@ -69,7 +69,7 @@ function runSmokeGate(fx) {
   globalThis.FXDeckCatalogSmoke = result;
 
   if (result.pass) {
-    appendLog(`PASS ${BUILD} CATALOG GATE: ${EXPECTED_EFFECTS.length}/${EXPECTED_EFFECTS.length} production effects still resolve under the source-fidelity calibration pass; legacy v1 retained`);
+    appendLog(`PASS ${BUILD} CATALOG GATE: ${EXPECTED_EFFECTS.length}/${EXPECTED_EFFECTS.length} production effects resolve; native Ribbons/Fireworks references reuse the same TsParticlesAdapter container`);
     return result;
   }
 
