@@ -2,7 +2,7 @@ import {
   assertValidEffectDefinition,
   DEFAULT_WEB2D_CAPABILITIES,
   DEFAULT_WEB2D_BUDGET
-} from '../schema/validator.js?v=p4.4.0';
+} from '../schema/validator.js?v=p4.4.1';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -74,21 +74,47 @@ function assetMap(effect) {
 }
 
 function tsShape(layer, assets) {
-  if (layer.shape.type !== 'image') return { type: layer.shape.type };
-  const asset = assets.get(layer.shape.asset);
-  if (!asset) throw new Error(`FXD_ASSET_06: image layer ${layer.id} references missing asset ${layer.shape.asset}`);
+  if (layer.shape.type === 'image') {
+    const asset = assets.get(layer.shape.asset);
+    if (!asset) throw new Error(`FXD_ASSET_06: image layer ${layer.id} references missing asset ${layer.shape.asset}`);
 
-  return {
-    type: 'image',
-    options: {
-      image: {
-        src: asset.src,
-        width: asset.width,
-        height: asset.height,
-        replaceColor: true
+    return {
+      type: 'image',
+      options: {
+        image: {
+          src: asset.src,
+          width: asset.width,
+          height: asset.height,
+          replaceColor: true
+        }
       }
-    }
-  };
+    };
+  }
+
+  if (layer.shape.type === 'ribbon') {
+    const ribbon = layer.shape.ribbon;
+    return {
+      type: 'ribbon',
+      options: {
+        ribbon: {
+          angle: 45,
+          darken: { enable: (ribbon.darkenPct ?? 18) > 0, value: ribbon.darkenPct ?? 18 },
+          count: ribbon.points,
+          drag: ribbon.drag ?? 0.02,
+          mass: 1,
+          oscillationDistance: clone(ribbon.oscillationPx),
+          oscillationSpeed: clone(ribbon.oscillationSpeed),
+          particleDist: ribbon.spacingPx,
+          velocityInherit: {
+            min: layer.motion.speed.min,
+            max: layer.motion.speed.max
+          }
+        }
+      }
+    };
+  }
+
+  return { type: layer.shape.type };
 }
 
 function animationFromCurve(curve, lifetimeMs, kind) {
@@ -113,6 +139,38 @@ function animationFromCurve(curve, lifetimeMs, kind) {
 function runtimeDirectionDegrees(params) {
   const value = Number(params?.directionDegrees ?? params?.direction ?? 0);
   return Number.isFinite(value) ? value : 0;
+}
+
+function compileOrientation(layer, directionDegrees) {
+  if (layer.orientation?.mode === 'motion') {
+    return {
+      value: Number(layer.orientation.offsetDeg ?? 0),
+      path: true,
+      direction: 'random',
+      animation: { enable: false }
+    };
+  }
+
+  if (layer.orientation?.mode === 'direction') {
+    const center = directionDegrees + Number(layer.orientation.offsetDeg ?? 0);
+    const jitter = Number(layer.orientation.jitterDeg ?? 0);
+    return {
+      value: jitter > 0 ? { min: center - jitter, max: center + jitter } : center,
+      path: false,
+      direction: 'random',
+      animation: { enable: false }
+    };
+  }
+
+  if (layer.rotationDeg) {
+    return {
+      value: { min: layer.rotationDeg.min, max: layer.rotationDeg.max },
+      direction: 'random',
+      path: false
+    };
+  }
+
+  return null;
 }
 
 function compileParticles(effect, layer, params, assets) {
@@ -158,11 +216,21 @@ function compileParticles(effect, layer, params, assets) {
     };
   }
 
-  if (layer.rotationDeg) {
-    particles.rotate = {
-      value: { min: layer.rotationDeg.min, max: layer.rotationDeg.max },
-      direction: 'random'
+  const rotate = compileOrientation(layer, directionDegrees);
+  if (rotate) particles.rotate = rotate;
+
+  if (layer.shape.type === 'ribbon') {
+    particles.paint = {
+      fill: {
+        enable: true,
+        color: { value: layer.color ?? '#ffffff' }
+      }
     };
+    particles.links = { enable: false };
+    particles.roll = { enable: false };
+    particles.tilt = { enable: false };
+    particles.wobble = { enable: false };
+    particles.rotate = { value: 0, path: false, animation: { enable: false } };
   }
 
   if ((layer.blend ?? 'normal') === 'lighter') {
@@ -214,6 +282,7 @@ export function compileWeb2D(effect, params = {}, {
       delayMs: layer.delayMs ?? 0,
       priority: layer.priority ?? resolved.priority ?? 'medium',
       spawnMode: layer.spawn.mode,
+      origin: clone(layer.origin ?? { x: 0, y: 0, rotateWithDirection: false }),
       emitter: compileEmitter(layer, particles)
     };
   });
