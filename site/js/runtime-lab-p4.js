@@ -1,24 +1,21 @@
-import { createWeb2DRuntime } from '../fxdeck/web2d/create-web2d-runtime.js?v=p4.2.1';
-import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p4.2.1';
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.2.1';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.2.1';
+import { createWeb2DRuntime } from '../fxdeck/web2d/create-web2d-runtime.js?v=p4.4.1';
+import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p4.4.1';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.1';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.1';
 
-const BUILD = 'P4.2.1';
+const BUILD = 'P4.4.1';
 const FRAME_BUDGET_MS = 1000 / 60;
 const BOOT_KEY = '__FXDeckCanonicalRuntimeBootPromise';
 const BOOT_COUNT_KEY = '__FXDeckCanonicalRuntimeBootCount';
 const SCHEMA_URLS = [
-  './fxdeck/schema/examples/schema-test-burst.json?v=p4.2.1',
-  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.2.1',
-  './fxdeck/schema/examples/schema-test-rain.json?v=p4.2.1'
+  './fxdeck/schema/examples/schema-test-burst.json?v=p4.4.1',
+  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.4.1',
+  './fxdeck/schema/examples/schema-test-rain.json?v=p4.4.1'
 ];
 const EFFECT_ORDER = [
   ['heavyImpact', 'Heavy Impact — baseline one-shot'],
   ['explosion', 'Explosion — baseline composite'],
-  ['fireball', 'Fireball — baseline moving source'],
-  ['schema-test-burst', 'Schema Burst — JSON proof'],
-  ['schema-test-smoke', 'Schema Smoke — image JSON proof'],
-  ['schema-test-rain', 'Schema Rain — finite rate JSON proof']
+  ['fireball', 'Fireball — baseline moving source']
 ];
 
 const stage = document.querySelector('#impact-stage');
