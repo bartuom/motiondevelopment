@@ -3,22 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FXDeck gameplay VFX runtime lab with clean play and debug workspaces.">
+  <meta name="description" content="FXDeck gameplay VFX Runtime Lab with preserved authoring and debug workspaces.">
   <title>FXDeck Runtime Lab</title>
-  <link rel="stylesheet" href="./fxdeck-project-nav.css?v=2">
-  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p3.15.0">
-  <link rel="stylesheet" href="./fireball-projectile.css?v=p3.15.0">
-  <link rel="stylesheet" href="./environment-source.css?v=p3.15.0" data-environment-source>
-  <link rel="stylesheet" href="./rare-reward.css?v=p3.15.0">
-  <link rel="stylesheet" href="./football-card-reveal.css?v=p3.15.0" data-football-card-reveal>
-  <link rel="stylesheet" href="./critical-hit.css?v=p3.15.0" data-critical-hit>
-  <link rel="stylesheet" href="./magic-burst.css?v=p3.15.0" data-magic-burst>
-  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p3.15.0">
+  <link rel="stylesheet" href="./fxdeck-project-nav.css?v=3">
+  <link rel="stylesheet" href="./heavy-impact-lab.css?v=p4.2.1">
+  <link rel="stylesheet" href="./fireball-projectile.css?v=p4.2.1">
+  <link rel="stylesheet" href="./environment-source.css?v=p4.2.1" data-environment-source>
+  <link rel="stylesheet" href="./rare-reward.css?v=p4.2.1">
+  <link rel="stylesheet" href="./football-card-reveal.css?v=p4.2.1" data-football-card-reveal>
+  <link rel="stylesheet" href="./critical-hit.css?v=p4.2.1" data-critical-hit>
+  <link rel="stylesheet" href="./magic-burst.css?v=p4.2.1" data-magic-burst>
+  <link rel="stylesheet" href="./runtime-mobile-perf.css?v=p4.2.1">
 </head>
 <body data-workspace-mode="play" data-hud-mode="basic">
   <nav class="fxdeck-project-nav" aria-label="FXDeck project navigation">
     <div class="fxdeck-project-nav__inner">
-      <a class="fxdeck-project-nav__brand" href="./webfx-lab.html">FXDeck</a>
+      <a class="fxdeck-project-nav__brand" href="./heavy-impact-lab.html">FXDeck</a>
       <div class="fxdeck-project-nav__links">
         <a href="./webfx-lab.html">P0 Spike</a>
         <a href="./fxdeck-core-lab.html">P1 Core</a>
@@ -31,10 +31,10 @@
   <main class="shell">
     <header class="header">
       <div>
-        <p class="eyebrow">FXDeck / Runtime / Build P3.15.0</p>
+        <p class="eyebrow">FXDeck / Runtime / Build P4.2.1</p>
         <h1>Runtime Lab</h1>
       </div>
-      <p class="intro">P3.15 Native Reference Integration: Ribbons and Fireworks reference recipes run directly inside the existing FXDeck TsParticlesAdapter container. No iframe, no second canvas and no standalone demo background.</p>
+      <p class="intro">P4.2 Web2D V1: the established Runtime Lab UI is preserved while the runtime underneath uses one FXDeck instance, one persistent tsParticles container and the new schema-driven effect pipeline.</p>
     </header>
 
     <div class="workspace-tabs" role="tablist" aria-label="Runtime Lab workspace">
@@ -60,18 +60,14 @@
           <div class="control">
             <p class="label">Effect</p>
             <select id="effect-select">
-              <option value="fireball">Fireball — moving-source proof</option>
-              <option value="explosion" selected>Explosion V2 — experimental reference adaptation</option>
-              <option value="heavyImpact">Heavy Impact — production one-shot</option>
-              <option value="criticalHit">Critical Hit — ultra-short readability cue</option>
-              <option value="magicBurst">Magic Burst V2 — experimental ribbon adaptation</option>
+              <option value="explosion" selected>Explosion — baseline composite</option>
             </select>
           </div>
 
           <div class="control-row">
             <div class="control control--compact">
               <p class="label">Version</p>
-              <select disabled><option id="authored-version-label">v2 — experimental</option></select>
+              <select disabled><option id="authored-version-label">v1 — baseline</option></select>
             </div>
             <div class="control control--compact">
               <p class="label">Variant</p>
@@ -86,7 +82,7 @@
               <option value="emitter">Per-play emitter — reference</option>
               <option value="shared">Shared direct — diagnostic</option>
             </select>
-            <p class="control-note">One-shot particle layers use the selected topology. DOM/SVG hero visuals remain independently owned by their FXDeck instances.</p>
+            <p class="control-note">One-shot layers use the selected topology. The Runtime Lab UI is presentation/debug only; the backend remains one persistent tsParticles container.</p>
           </div>
 
           <div class="control">
@@ -97,7 +93,7 @@
           <div class="control">
             <div class="range-row"><span>Runtime direction</span><strong id="direction-value">18°</strong></div>
             <input id="direction" type="range" min="0" max="359" value="18" step="1">
-            <p class="control-note">Direction remains effect-specific: travel for Fireball, blast bias for impacts, composition rotation for Magic Burst, reveal-light angle for card-space effects.</p>
+            <p class="control-note">Direction is a semantic gameplay parameter. Individual effects decide whether it biases a burst, controls travel, or is ignored.</p>
           </div>
 
           <div class="actions actions--primary">
@@ -107,7 +103,7 @@
 
           <div class="input-note input-note--clean">
             <p class="label">Current capability</p>
-            <p>Reference recipes now reuse the same persistent tsParticles backend as FXDeck gameplay effects. Particlr remains an external visual/config reference and is not booted as a second runtime inside this lab.</p>
+            <p>Baseline effects and Session 2 JSON effects run through the same Web2D runtime. New normal effects must be data + reusable assets rather than new effect-specific bridge scripts.</p>
           </div>
         </div>
 
@@ -119,7 +115,7 @@
 
           <div class="debug-callout">
             <strong>Debug owns the current test setup</strong>
-            <span>Effect, topology, intensity and base direction can be changed here. Controls remain synchronized with Play.</span>
+            <span>Effect, topology, intensity and direction stay synchronized with Play. Architecture changes must not remove these controls.</span>
           </div>
 
           <div class="control">
@@ -154,12 +150,12 @@
             <div class="actions">
               <button id="play-stress-ab" class="secondary" type="button">Synthetic Stress Compare</button>
             </div>
-            <p class="control-note">Synthetic stress disables adaptive backpressure so backend workloads remain matched.</p>
+            <p class="control-note">Synthetic stress remains a diagnostic regression tool and does not define normal authoring.</p>
           </div>
 
           <div class="debug-callout debug-callout--muted">
             <strong>Diagnostics, not product workflow</strong>
-            <span>These controls stay available for regression work without occupying the normal authoring surface.</span>
+            <span>These controls remain available for regression work without taking over the normal authoring surface.</span>
           </div>
         </div>
       </aside>
@@ -168,7 +164,7 @@
         <div class="canvas-toolbar">
           <div>
             <p class="label">02 / Preview</p>
-            <strong id="preview-title">Explosion V2 — experimental</strong>
+            <strong id="preview-title">Explosion — legacy baseline</strong>
           </div>
           <div class="canvas-toolbar__right">
             <span id="preview-note">Click to move target + fire current FXDeck effect</span>
@@ -198,7 +194,7 @@
           <aside id="runtime-hud" class="runtime-hud" data-mode="basic" aria-label="Runtime diagnostics overlay">
             <div class="runtime-hud__header">
               <span class="runtime-hud__live"><i></i> LIVE</span>
-              <span class="runtime-hud__build">P3.15.0</span>
+              <span class="runtime-hud__build">P4.2.1</span>
             </div>
             <div class="runtime-hud__grid">
               <div class="hud-stat hud-stat--hero" data-hud-stat="fps"><span>FPS</span><strong id="metric-fps">--</strong></div>
@@ -223,8 +219,8 @@
           </aside>
 
           <div class="caption">
-            <strong id="caption-title">explosion / v2 / default</strong>
-            <span id="caption-note">experimental reference adaptation</span>
+            <strong id="caption-title">explosion / v1 / default</strong>
+            <span id="caption-note">legacy baseline</span>
           </div>
         </div>
       </section>
@@ -236,7 +232,7 @@
             <h2>Resolved cue</h2>
           </div>
 
-          <p id="effect-summary" class="summary">Current Explosion V2 remains an experimental reference adaptation. Use the native Ribbons/Fireworks reference recipes below the production effects to compare source behavior on the same FXDeck particle backend.</p>
+          <p id="effect-summary" class="summary">Baseline Explosion is retained temporarily while portfolio effects migrate to FXDeck Schema V1.</p>
 
           <section class="inspector-section">
             <p class="label">Authored timing</p>
@@ -249,16 +245,16 @@
               <span class="status-pill">LIVE INPUT</span>
             </div>
             <dl class="definition-grid">
-              <div><dt>Effect</dt><dd id="resolved-effect">explosion / v2 / default</dd></div>
+              <div><dt>Effect</dt><dd id="resolved-effect">explosion / v1 / default</dd></div>
               <div><dt>Particle path</dt><dd id="resolved-path">shared-scheduled</dd></div>
               <div><dt>Intensity</dt><dd id="resolved-intensity">1.0×</dd></div>
               <div><dt>Direction</dt><dd id="resolved-direction">18°</dd></div>
-              <div><dt id="resolved-layer-a-label">Flash texture</dt><dd id="resolved-layer-a">Particlr circle-soft / 0.15 s</dd></div>
-              <div><dt id="resolved-layer-b-label">Fireball mass</dt><dd id="resolved-layer-b">24 textured particles / 0.4–0.7 s</dd></div>
-              <div><dt id="resolved-layer-c-label">Smoke texture</dt><dd id="resolved-layer-c">22 particles in 3 delayed waves</dd></div>
-              <div><dt id="resolved-layer-d-label">Sparks</dt><dd id="resolved-layer-d">12 supporting image streaks</dd></div>
-              <div><dt id="resolved-layer-e-label">Source model</dt><dd id="resolved-layer-e">Particlr flash + fireball + smoke layering</dd></div>
-              <div><dt>Screen kick</dt><dd id="resolved-screen-kick">5.8 px</dd></div>
+              <div><dt id="resolved-layer-a-label">Core</dt><dd id="resolved-layer-a">baseline</dd></div>
+              <div><dt id="resolved-layer-b-label">Fireball</dt><dd id="resolved-layer-b">baseline</dd></div>
+              <div><dt id="resolved-layer-c-label">Sparks</dt><dd id="resolved-layer-c">baseline</dd></div>
+              <div><dt id="resolved-layer-d-label">Smoke</dt><dd id="resolved-layer-d">baseline</dd></div>
+              <div><dt id="resolved-layer-e-label">Lifecycle</dt><dd id="resolved-layer-e">baseline</dd></div>
+              <div><dt>Screen kick</dt><dd id="resolved-screen-kick">--</dd></div>
               <div><dt>Position</dt><dd id="resolved-position">--</dd></div>
             </dl>
           </section>
@@ -279,7 +275,7 @@
                 <button id="clear-p2-log" type="button">Clear</button>
               </div>
             </div>
-            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P3.15.0.</pre>
+            <pre id="p2-log" class="log">FXDeck Runtime Lab booting. Build P4.2.1.</pre>
           </section>
 
           <section class="debug-section">
@@ -300,15 +296,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/engine@4.3.2/tsparticles.engine.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/plugin-motion@4.3.2/tsparticles.plugin.motion.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/shape-ribbon@4.3.2/tsparticles.shape.ribbon.min.js"></script>
-  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p3.15.0"></script>
-  <script type="module" src="./js/production-catalog-runtime-sync.js?v=p3.15.0"></script>
-  <script type="module" src="./js/fireball-runtime-bridge.js?v=p3.15.0"></script>
-  <script type="module" src="./js/critical-hit-runtime-bridge.js?v=p3.15.0"></script>
-  <script type="module" src="./js/magic-burst-runtime-bridge.js?v=p3.15.0"></script>
-  <script type="module" src="./js/p3-stress-benchmark.js?v=p3.15.0"></script>
-  <script type="module" src="./js/runtime-lab-ui.js?v=p3.15.0"></script>
-  <script type="module" src="./js/runtime-main-authority.js?v=p3.15.0"></script>
+  <script type="module" src="./js/runtime-engine-bootstrap.js?v=p4.2.1"></script>
+  <script type="module" src="./js/p3-stress-benchmark.js?v=p4.2.1"></script>
+  <script type="module" src="./js/runtime-lab-ui.js?v=p4.2.1"></script>
 </body>
 </html>
