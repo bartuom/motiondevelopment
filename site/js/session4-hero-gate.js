@@ -1,6 +1,6 @@
-import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.1';
+import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.2';
 
-const BUILD = 'P4.4.1';
+const BUILD = 'P4.4.2';
 const REGRESSION_EFFECT_IDS = new Set(['schema-test-burst', 'schema-test-smoke', 'schema-test-rain']);
 
 function log(message) {
@@ -53,9 +53,15 @@ function compiledLayer(compiled, id) {
   return layer;
 }
 
-async function playStop(runtime, id, params, holdMs) {
+function sourceLayer(definition, id) {
+  const layer = definition.source.layers.find((entry) => entry.id === id);
+  if (!layer) throw new Error(`${definition.id}: missing source layer ${id}`);
+  return layer;
+}
+
+async function playStop(runtime, id, params, holdMs, position = { x: -360, y: -360 }) {
   const instance = runtime.fx.play(id, {
-    position: { x: -360, y: -360 },
+    position,
     intensity: 1,
     direction: 35,
     ...params
@@ -76,6 +82,39 @@ function assertRegressionFixturesHidden() {
   if (leaked.length) throw new Error(`regression fixtures leaked into Play selector: ${leaked.join(', ')}`);
 }
 
+function assertCriticalScale(definition) {
+  const asset = definition.source.assets.find((entry) => entry.id === 'critical-slash');
+  if (!asset) throw new Error('Critical Hit missing hydrated critical-slash asset');
+  const ratio = asset.width / asset.height;
+  if (Math.abs(ratio - 4) > 0.001) throw new Error(`Critical Hit slash ratio must be 4:1, got ${ratio}`);
+
+  for (const id of ['primary-slash', 'echo-slash']) {
+    const layer = sourceLayer(definition, id);
+    const maxRadius = Math.max(layer.size.start, layer.size.end);
+    const renderedWidth = maxRadius * 2;
+    const renderedHeight = renderedWidth / ratio;
+    if (renderedWidth > 160 || renderedHeight > 42) {
+      throw new Error(`${id}: unsafe rendered size ${renderedWidth.toFixed(1)}x${renderedHeight.toFixed(1)}px`);
+    }
+    if (layer.origin && (Math.abs(layer.origin.x ?? 0) > 0 || Math.abs(layer.origin.y ?? 0) > 0)) {
+      throw new Error(`${id}: dominant slash must stay centered on gameplay impact`);
+    }
+  }
+}
+
+function assertGoalTransformBudget(definition) {
+  for (const layer of definition.source.layers) {
+    if (layer.origin) {
+      const maxOffset = Math.max(Math.abs(layer.origin.x ?? 0), Math.abs(layer.origin.y ?? 0));
+      if (maxOffset > 110) throw new Error(`${layer.id}: local origin offset ${maxOffset}px exceeds compact composition budget`);
+    }
+    if (layer.shape.type === 'image') {
+      const maxRadius = Math.max(layer.size.start, layer.size.end);
+      if (maxRadius > 6) throw new Error(`${layer.id}: confetti image radius ${maxRadius}px is oversized`);
+    }
+  }
+}
+
 export async function runSession4Gate() {
   const runtime = await waitForReady();
   const heroState = globalThis.FXDeckHeroEffects;
@@ -84,7 +123,10 @@ export async function runSession4Gate() {
   const goal = runtime.fx.resolve('goal-celebration').definition;
   if (!critical.schemaDriven || !goal.schemaDriven) throw new Error('hero effects must both be schema-driven');
   if (critical.source.layers.length !== 5) throw new Error(`Critical Hit expected 5 authored layers, got ${critical.source.layers.length}`);
-  if (goal.source.layers.length !== 7) throw new Error(`Goal Celebration expected 7 authored layers, got ${goal.source.layers.length}`);
+  if (goal.source.layers.length !== 6) throw new Error(`Goal Celebration expected 6 authored layers, got ${goal.source.layers.length}`);
+
+  assertCriticalScale(critical);
+  assertGoalTransformBudget(goal);
 
   const criticalCompiled = compileWeb2D(critical.source, {
     direction: 123,
@@ -96,10 +138,8 @@ export async function runSession4Gate() {
   if (criticalStreaks.move.angle.offset !== 123) throw new Error(`semantic direction did not compile: ${criticalStreaks.move.angle.offset}`);
   if (criticalStreaks.rotate?.path !== true) throw new Error('Critical Hit streaks are not oriented to motion');
   if (primarySlash.emitter.particles.rotate?.path !== false) throw new Error('Critical Hit primary slash must use fixed direction orientation');
-  const slashValue = primarySlash.emitter.particles.rotate?.value;
-  if (Number(slashValue) !== 105) throw new Error(`Critical Hit slash orientation expected 105deg, got ${JSON.stringify(slashValue)}`);
+  if (Number(primarySlash.emitter.particles.rotate?.value) !== 123) throw new Error('Critical Hit primary slash is not aligned 1:1 with gameplay direction');
   if (criticalStreaks.color.value !== '#ff4d8d') throw new Error(`critical tint did not compile: ${criticalStreaks.color.value}`);
-  if (primarySlash.origin.x !== 8 || primarySlash.origin.rotateWithDirection !== true) throw new Error('Critical Hit directional origin was not preserved');
 
   const goalCompiled = compileWeb2D(goal.source, {
     intensity: 1.15,
@@ -110,18 +150,15 @@ export async function runSession4Gate() {
   const leftConfetti = compiledLayer(goalCompiled, 'team-confetti-left');
   const rightConfetti = compiledLayer(goalCompiled, 'team-confetti-right');
   if (leftRibbon.emitter.particles.shape.type !== 'ribbon' || rightRibbon.emitter.particles.shape.type !== 'ribbon') {
-    throw new Error('Goal Celebration must compile two real ribbon layers');
+    throw new Error('Goal Celebration must compile two ribbon layers');
   }
-  if (leftRibbon.origin.x >= 0 || rightRibbon.origin.x <= 0) throw new Error('Goal Celebration launch origins are not spatially separated');
+  if (leftRibbon.origin.x !== -54 || rightRibbon.origin.x !== 54) throw new Error('Goal ribbon origins drifted from normalized local layout');
   if (leftConfetti.emitter.particles.color.value !== '#e31837' || rightConfetti.emitter.particles.color.value !== '#e31837') {
-    throw new Error('teamColor binding did not compile into spatial confetti layers');
+    throw new Error('teamColor binding did not compile into confetti layers');
   }
   if (!heroState.ribbonCapabilityAdded || runtime.capabilities?.ribbon !== true) throw new Error('ribbon capability was not registered during Web2D boot');
 
   assertRegressionFixturesHidden();
-
-  const assetStats = globalThis.FXDeckAssets.getStats();
-  if (assetStats.manifestAssets < 7) throw new Error(`expected at least 7 manifest assets, got ${assetStats.manifestAssets}`);
 
   runtime.fx.stopAll('session4-gate-reset');
   await nextFrame();
@@ -135,6 +172,9 @@ export async function runSession4Gate() {
   await playStop(runtime, 'goal-celebration', { intensity: 1.15, teamColor: '#e31837' }, 300);
   if (runtime.adapters.particles.container !== container) throw new Error('container changed after Goal Celebration');
 
+  // Near-edge call validates generic origin clamping without adding effect-specific positioning code.
+  await playStop(runtime, 'goal-celebration', { intensity: 0.7, teamColor: '#4ea1ff' }, 120, { x: 2, y: 2 });
+
   runtime.assertTopology();
   const canvasCount = runtime.topology().particleCanvasCount;
   if (canvasCount !== 1) throw new Error(`expected 1 persistent canvas, found ${canvasCount}`);
@@ -144,10 +184,11 @@ export async function runSession4Gate() {
     build: BUILD,
     effects: ['critical-hit', 'goal-celebration'],
     schemaDriven: 2,
-    criticalShapeLanguage: 'dominant-directional-slash',
-    spatialOrigins: true,
-    motionOrientation: true,
-    ribbonAdded: true,
+    normalizedImageScale: true,
+    neutralSlashAsset: true,
+    directionAlignment: true,
+    compactGoalOrigins: true,
+    edgeClamp: true,
     regressionFixturesHiddenFromPlay: true,
     particleCanvasCount: canvasCount,
     visualAccepted: false
@@ -156,8 +197,8 @@ export async function runSession4Gate() {
   globalThis.FXDeckSession4Gate = result;
   if (globalThis.FXDeckLab) globalThis.FXDeckLab.runSession4Gate = runSession4Gate;
 
-  log(`PASS ${BUILD} SESSION 4 CORRECTION TECH GATE: directional Critical Hit / spatial Goal Celebration / ribbons / origin offsets / motion orientation / regression fixtures hidden from Play / 0 effect bridges / 1 persistent canvas`);
-  log(`${BUILD} SESSION 4 VISUAL GATE: USER REVIEW REQUIRED — Critical Hit and Goal Celebration must now be judged as compositions, not generic point bursts`);
+  log(`PASS ${BUILD} SESSION 4 TRANSFORM GATE: normalized image scale / 4:1 neutral slash / direction aligned / compact Goal layout / edge-clamped origins / Debug-only fixtures / 1 persistent canvas`);
+  log(`${BUILD} SESSION 4 VISUAL GATE: USER REVIEW REQUIRED — reject again if composition, scale or orientation still looks wrong`);
   return result;
 }
 
@@ -165,6 +206,6 @@ try {
   await runSession4Gate();
 } catch (error) {
   globalThis.FXDeckSession4Gate = { pass: false, build: BUILD, error: error.message, visualAccepted: false };
-  log(`FAIL ${BUILD} SESSION 4 CORRECTION TECH GATE: ${error.message}`);
+  log(`FAIL ${BUILD} SESSION 4 TRANSFORM GATE: ${error.message}`);
   console.error(error);
 }
