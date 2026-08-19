@@ -1,6 +1,6 @@
-import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.12.0';
+import { registerProductionEffects } from '../fxdeck/effects/catalog.js?v=p3.13.1';
 
-const BUILD = 'P3.12.1';
+const BUILD = 'P3.13.1';
 const EXPECTED_EFFECTS = [
   'heavyImpact',
   'explosion',
@@ -11,6 +11,7 @@ const EXPECTED_EFFECTS = [
   'criticalHit',
   'magicBurst'
 ];
+const EXPECTED_V2_DEFAULTS = ['explosion', 'magicBurst'];
 
 function waitForRuntime(timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
@@ -37,12 +38,23 @@ function runSmokeGate(fx) {
 
   for (const effectId of EXPECTED_EFFECTS) {
     try {
-      const resolved = fx.resolve(effectId, { version: 'v1' });
+      const resolved = fx.resolve(effectId);
       if (!resolved?.definition || resolved.definition.id !== effectId) {
-        failures.push(`${effectId}: invalid resolved definition`);
+        failures.push(`${effectId}: invalid default resolved definition`);
       }
     } catch (error) {
       failures.push(`${effectId}: ${error.message}`);
+    }
+  }
+
+  for (const effectId of EXPECTED_V2_DEFAULTS) {
+    try {
+      const current = fx.resolve(effectId);
+      if (current.version !== 'v2') failures.push(`${effectId}: expected default v2, got ${current.version}`);
+      const legacy = fx.resolve(effectId, { version: 'v1', variant: 'default' });
+      if (legacy.version !== 'v1') failures.push(`${effectId}: legacy v1 no longer resolves`);
+    } catch (error) {
+      failures.push(`${effectId} version gate: ${error.message}`);
     }
   }
 
@@ -50,13 +62,14 @@ function runSmokeGate(fx) {
     build: BUILD,
     pass: failures.length === 0,
     expectedEffects: [...EXPECTED_EFFECTS],
+    expectedV2Defaults: [...EXPECTED_V2_DEFAULTS],
     failures
   };
 
   globalThis.FXDeckCatalogSmoke = result;
 
   if (result.pass) {
-    appendLog(`PASS ${BUILD} CATALOG GATE: ${EXPECTED_EFFECTS.length}/${EXPECTED_EFFECTS.length} production effects resolve through registerProductionEffects()`);
+    appendLog(`PASS ${BUILD} CATALOG GATE: ${EXPECTED_EFFECTS.length}/${EXPECTED_EFFECTS.length} effects resolve; Explosion + Magic Burst default to v2; legacy v1 retained`);
     return result;
   }
 
