@@ -1,24 +1,25 @@
-const BUILD = 'P3.15.0';
+const BUILD = 'P4.2.1';
 
-async function bootstrapEnginePlugins() {
-  if (!globalThis.tsParticles) throw new Error('tsParticles global is missing before engine bootstrap.');
-  if (typeof globalThis.loadMotionPlugin !== 'function') throw new Error('loadMotionPlugin() is unavailable before engine bootstrap.');
-  if (typeof globalThis.loadRibbonShape !== 'function') throw new Error('loadRibbonShape() is unavailable before engine bootstrap.');
+function updateBuildUi() {
+  const eyebrow = document.querySelector('.eyebrow');
+  const hudBuild = document.querySelector('.runtime-hud__build');
+  const intro = document.querySelector('.intro');
 
-  await globalThis.loadMotionPlugin(globalThis.tsParticles);
-  await globalThis.loadRibbonShape(globalThis.tsParticles);
-
-  globalThis.FXDeckRibbonRuntimeReady = true;
-  globalThis.FXDeckRibbonRuntimeBuild = BUILD;
+  if (eyebrow) eyebrow.textContent = `FXDeck / Runtime / Build ${BUILD}`;
+  if (hudBuild) hudBuild.textContent = BUILD;
+  if (intro) {
+    intro.textContent = 'P4.2 Web2D V1: the existing Runtime Lab UI is preserved while the runtime underneath uses one FXDeck instance, one persistent tsParticles container and the new schema-driven effect pipeline.';
+  }
+  document.documentElement.dataset.fxdeckBuild = BUILD;
 }
 
 try {
-  await bootstrapEnginePlugins();
-  await import('./heavy-impact-lab.js?v=p3.15.0');
+  updateBuildUi();
+  await import('./runtime-lab-p4.js?v=p4.2.1');
+  updateBuildUi();
+  await import('./session2-schema-gate.js?v=p4.2.1');
 } catch (error) {
-  globalThis.FXDeckRibbonRuntimeReady = false;
-  globalThis.FXDeckRibbonRuntimeError = error?.message ?? String(error);
   const output = document.querySelector('#p2-log');
-  if (output) output.textContent += `\nENGINE BOOTSTRAP FAIL ${BUILD}: ${globalThis.FXDeckRibbonRuntimeError}`;
+  if (output) output.textContent += `\nBOOTSTRAP FAIL ${BUILD}: ${error?.message ?? String(error)}`;
   console.error(error);
 }
