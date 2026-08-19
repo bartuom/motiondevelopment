@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "critical-hit",
+  "label": "Critical Hit",
+  "durationMs": 620,
+  "priority": "hero",
+  "assets": [
+    "critical-slash",
+    "hero-streak",
+    "hero-flare"
+  ],
+  "bindings": [
+    { "param": "intensity", "layer": "streaks", "property": "spawn.count", "operation": "multiply", "min": 6, "max": 24 },
+    { "param": "intensity", "layer": "sparks", "property": "spawn.count", "operation": "multiply", "min": 8, "max": 32 },
+    { "param": "intensity", "layer": "streaks", "property": "motion.speed.max", "operation": "multiply", "min": 12, "max": 42 },
+    { "param": "tint", "layer": "flash", "property": "color", "operation": "replace" },
+    { "param": "tint", "layer": "slash", "property": "color", "operation": "replace" },
+    { "param": "tint", "layer": "streaks", "property": "color", "operation": "replace" },
+    { "param": "tint", "layer": "sparks", "property": "color", "operation": "replace" }
+  ],
+  "layers": [
+    {
+      "id": "flash",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "hero",
+      "z": 28,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 1 },
+      "shape": { "type": "image", "asset": "hero-flare" },
+      "color": "#ffd45a",
+      "lifetimeMs": { "min": 90, "max": 130 },
+      "motion": { "direction": "inherit", "spreadDeg": 0, "speed": { "min": 0, "max": 0.01 } },
+      "size": { "start": 44, "end": 128 },
+      "opacity": { "start": 1, "end": 0 }
+    },
+    {
+      "id": "slash",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "hero",
+      "z": 27,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 2 },
+      "shape": { "type": "image", "asset": "critical-slash" },
+      "color": "#fff1b0",
+      "lifetimeMs": { "min": 130, "max": 210 },
+      "motion": { "direction": "inherit", "spreadDeg": 14, "speed": { "min": 0.2, "max": 0.9 }, "drag": 0.08 },
+      "size": { "start": 96, "end": 170 },
+      "opacity": { "start": 0.96, "end": 0 },
+      "rotationDeg": { "min": -10, "max": 10 }
+    },
+    {
+      "id": "streaks",
+      "type": "particles",
+      "delayMs": 10,
+      "priority": "high",
+      "z": 26,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 12 },
+      "shape": { "type": "image", "asset": "hero-streak" },
+      "color": "#ffd45a",
+      "lifetimeMs": { "min": 120, "max": 250 },
+      "motion": { "direction": "inherit", "spreadDeg": 46, "speed": { "min": 12, "max": 27 }, "drag": 0.045 },
+      "size": { "start": 30, "end": 8 },
+      "opacity": { "start": 0.98, "end": 0 },
+      "rotationDeg": { "min": -8, "max": 8 }
+    },
+    {
+      "id": "sparks",
+      "type": "particles",
+      "delayMs": 8,
+      "priority": "high",
+      "z": 25,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 18 },
+      "shape": { "type": "circle" },
+      "color": "#ffd45a",
+      "lifetimeMs": { "min": 180, "max": 360 },
+      "motion": { "direction": "inherit", "spreadDeg": 118, "speed": { "min": 7, "max": 21 }, "gravity": 2.4, "drag": 0.02 },
+      "size": { "start": 4.2, "end": 0.2 },
+      "opacity": { "start": 1, "end": 0 }
+    },
+    {
+      "id": "fragments",
+      "type": "particles",
+      "delayMs": 16,
+      "priority": "medium",
+      "z": 24,
+      "blend": "normal",
+      "spawn": { "mode": "burst", "count": 8 },
+      "shape": { "type": "square" },
+      "color": ["#ffffff", "#ffc857", "#ff7a45"],
+      "lifetimeMs": { "min": 230, "max": 430 },
+      "motion": { "direction": "inherit", "spreadDeg": 150, "speed": { "min": 5, "max": 14 }, "gravity": 4.8, "drag": 0.018 },
+      "size": { "start": 5.6, "end": 0.8 },
+      "opacity": { "start": 0.82, "end": 0 },
+      "rotationDeg": { "min": -160, "max": 160 }
+    }
+  ]
+}
