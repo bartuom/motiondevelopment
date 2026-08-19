@@ -1,5 +1,5 @@
-import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.4.0';
-import { compileWeb2D } from './compiler.js?v=p4.4.0';
+import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.4.1';
+import { compileWeb2D } from './compiler.js?v=p4.4.1';
 
 function toRuntimeAssets(effect) {
   return (effect.assets ?? []).map((asset) => ({
@@ -20,10 +20,36 @@ function attachHandle(instance, handle) {
   return handle;
 }
 
+function directionDegrees(params) {
+  const value = Number(params?.directionDegrees ?? params?.direction ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function resolveLayerPosition(basePosition, origin = {}, params = {}) {
+  const base = basePosition ?? { x: 0, y: 0 };
+  let x = Number(origin.x ?? 0);
+  let y = Number(origin.y ?? 0);
+
+  if (origin.rotateWithDirection) {
+    const radians = directionDegrees(params) * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const rx = x * cos - y * sin;
+    const ry = x * sin + y * cos;
+    x = rx;
+    y = ry;
+  }
+
+  return {
+    x: Number(base.x ?? 0) + x,
+    y: Number(base.y ?? 0) + y
+  };
+}
+
 function scheduleLayer(instance, particles, layer, params) {
   const launch = async () => {
     if (instance.state !== 'playing') return null;
-    const position = params.position;
+    const position = resolveLayerPosition(params.position, layer.origin, params);
     const handle = layer.spawnMode === 'burst'
       ? await particles.burst(layer.emitter, position, { priority: layer.priority })
       : await particles.spawn(layer.emitter, position);
