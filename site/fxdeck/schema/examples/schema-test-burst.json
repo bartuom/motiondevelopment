@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "schema-test-burst",
+  "label": "Schema Test Burst",
+  "durationMs": 650,
+  "priority": "high",
+  "bindings": [
+    {
+      "param": "intensity",
+      "layer": "sparks",
+      "property": "spawn.count",
+      "operation": "multiply",
+      "min": 4,
+      "max": 48
+    }
+  ],
+  "layers": [
+    {
+      "id": "sparks",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "high",
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 18 },
+      "shape": { "type": "circle" },
+      "color": ["#ffffff", "#ffd166", "#ff9f43"],
+      "lifetimeMs": { "min": 260, "max": 480 },
+      "motion": {
+        "direction": "inherit",
+        "spreadDeg": 72,
+        "speed": { "min": 42, "max": 118 }
+      },
+      "size": { "start": 6, "end": 1 },
+      "opacity": { "start": 1, "end": 0 },
+      "rotationDeg": { "min": 0, "max": 360 }
+    }
+  ]
+}

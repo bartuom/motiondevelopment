@@ -4,8 +4,9 @@ import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.1.0'
 import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.1.0';
 import { registerExplosion } from '../effects/explosion.js?v=p4.1.0';
 import { registerFireball } from '../effects/fireball.js?v=p4.1.0';
+import { registerSchemaEffects } from './register-schema-effect.js?v=p4.2.0';
 
-export const WEB2D_BUILD = 'P4.1.0';
+export const WEB2D_BUILD = 'P4.2.0';
 
 function requireElement(value, label) {
   if (!(value instanceof Element)) throw new TypeError(`${label} must be a DOM Element.`);
@@ -23,16 +24,12 @@ async function registerTsParticlesCapabilities(engine) {
     throw new Error('FXDeck Web2D requires loadFull() during the prototype phase.');
   }
 
-  // Session 1 intentionally keeps the full bundle while the actual capability
-  // set is discovered. The important invariant is ordering: all capabilities
-  // are registered once, before the persistent container is created.
+  // P4.2 still keeps the full development bundle. Capability slimming happens
+  // only after schema-driven hero effects prove the actual production set.
   await globalThis.loadFull(engine);
 }
 
 function registerLegacyBaselineEffects(fx) {
-  // P4.1 does not migrate effect authoring yet. Only the three proven baseline
-  // effects are retained in the canonical lab so rejected P3 bridge effects do
-  // not leak back into the new runtime path.
   registerHeavyImpact(fx);
   registerExplosion(fx);
   registerFireball(fx);
@@ -43,7 +40,8 @@ export async function createWeb2DRuntime({
   stage,
   particleHost,
   visualHost,
-  burstMode = 'scheduled'
+  burstMode = 'scheduled',
+  schemaEffects = []
 } = {}) {
   requireElement(stage, 'stage');
   requireElement(particleHost, 'particleHost');
@@ -53,6 +51,8 @@ export async function createWeb2DRuntime({
   await registerTsParticlesCapabilities(engine);
 
   const fx = registerLegacyBaselineEffects(new FXDeckRuntime());
+  registerSchemaEffects(fx, schemaEffects);
+
   const particlePreload = fx
     .getAssets({ target: 'particles' })
     .map(({ target, ...asset }) => asset);
@@ -88,6 +88,7 @@ export async function createWeb2DRuntime({
     adapters: { particles, visuals },
     persistentContainer,
     particlePreload,
+    schemaEffects: structuredClone(schemaEffects),
 
     topology() {
       return {
@@ -96,6 +97,7 @@ export async function createWeb2DRuntime({
         container: particles.container,
         persistentContainer,
         registeredEffects: fx.getStats().registeredEffects,
+        schemaEffectCount: schemaEffects.length,
         activeInstances: fx.getStats().activeInstances,
         particleCanvasCount: particleHost.querySelectorAll('canvas').length
       };

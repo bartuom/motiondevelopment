@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "schema-test-smoke",
+  "label": "Schema Test Smoke Image",
+  "durationMs": 900,
+  "priority": "medium",
+  "assets": [
+    {
+      "id": "smoke-alpha",
+      "src": "./assets/fxdeck-explosion-core.svg",
+      "width": 128,
+      "height": 128
+    }
+  ],
+  "layers": [
+    {
+      "id": "smoke",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "medium",
+      "blend": "normal",
+      "spawn": { "mode": "burst", "count": 10 },
+      "shape": { "type": "image", "asset": "smoke-alpha" },
+      "color": ["#d9d3cf", "#9d9792", "#6e6966"],
+      "lifetimeMs": { "min": 480, "max": 760 },
+      "motion": {
+        "direction": 270,
+        "spreadDeg": 90,
+        "speed": { "min": 8, "max": 26 }
+      },
+      "size": { "start": 18, "end": 48 },
+      "opacity": { "start": 0.45, "end": 0 }
+    }
+  ]
+}

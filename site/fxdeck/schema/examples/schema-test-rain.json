@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "schema-test-rain",
+  "label": "Schema Test Finite Rain",
+  "durationMs": 1800,
+  "priority": "low",
+  "layers": [
+    {
+      "id": "rain",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "low",
+      "blend": "normal",
+      "spawn": { "mode": "rate", "ratePerSecond": 24, "durationMs": 900 },
+      "shape": { "type": "square" },
+      "color": ["#d7efff", "#a9d8ff"],
+      "lifetimeMs": { "min": 480, "max": 700 },
+      "motion": {
+        "direction": 90,
+        "spreadDeg": 8,
+        "speed": { "min": 160, "max": 220 },
+        "gravity": 12
+      },
+      "size": { "start": 3, "end": 1 },
+      "opacity": { "start": 0.65, "end": 0 }
+    }
+  ]
+}
