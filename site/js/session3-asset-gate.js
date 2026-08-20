@@ -1,4 +1,4 @@
-const BUILD = 'P4.4.1';
+const BUILD = 'P4.6.0';
 
 function log(message) {
   const output = document.querySelector('#p2-log');
@@ -78,7 +78,8 @@ export async function runSession3Gate() {
   const instance = runtime.fx.play('dust-puff', {
     position: { x: -320, y: -320 },
     direction: 12,
-    intensity: 1
+    intensity: 1,
+    quality: 'high'
   });
   await instance.ready;
   await wait(120);
@@ -108,7 +109,7 @@ export async function runSession3Gate() {
 
   globalThis.FXDeckSession3Gate = result;
   log(`PASS ${BUILD} SESSION 3 REGRESSION GATE: manifest / 3 reusable alpha assets / cold decode 3 / warm cache hit 3 / dust-puff JSON / 0 effect bridge / 1 persistent canvas`);
-  log(`${BUILD} SESSION 3 VISUAL STATUS: ACCEPTED from prior user review; overlap performance debt remains deferred to Session 6`);
+  log(`${BUILD} SESSION 3 VISUAL STATUS: ACCEPTED from prior user review; overlap performance debt is now handled by Session 6 quality/perf work`);
   return result;
 }
 
