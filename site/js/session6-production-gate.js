@@ -1,6 +1,6 @@
-import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.6.0';
+import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.6.1';
 
-const BUILD = 'P4.6.0';
+const BUILD = 'P4.6.1';
 const PUBLIC_EFFECTS = ['dust-puff', 'fireball', 'explosion', 'rain'];
 const REJECTED_PUBLIC = ['heavyImpact', 'critical-hit', 'goal-celebration', 'magic-burst'];
 
@@ -71,12 +71,25 @@ function resourceAudit() {
 
 function assertBackendScripts(runtime) {
   const scriptSources = [...document.scripts].map((script) => script.src).filter(Boolean);
-  if (!scriptSources.some((src) => src.includes('tsparticles.slim.bundle.min.js'))) throw new Error('slim bundle script missing');
-  if (!scriptSources.some((src) => src.includes('tsparticles.plugin.emitters.min.js'))) throw new Error('emitters plugin script missing');
-  if (scriptSources.some((src) => /\/tsparticles@4\.3\.2\/tsparticles\.bundle\.min\.js/.test(src))) throw new Error('full tsParticles bundle is still loaded');
-  if (scriptSources.some((src) => src.includes('shape-ribbon') || src.includes('plugin-motion'))) throw new Error('ribbon/motion capability still loaded in production boot');
-  if (runtime.backendBundle !== 'slim+emitters') throw new Error(`runtime backend bundle mismatch: ${runtime.backendBundle}`);
+  if (scriptSources.some((src) => src.includes('shape-ribbon') || src.includes('plugin-motion'))) {
+    throw new Error('ribbon/motion capability still loaded in canonical production boot');
+  }
   if (runtime.capabilities?.ribbon !== false) throw new Error('ribbon must be disabled in production default');
+
+  if (runtime.backendBundle === 'slim+emitters') {
+    if (!scriptSources.some((src) => src.includes('tsparticles.slim.bundle.min.js'))) throw new Error('slim bundle script missing');
+    if (!scriptSources.some((src) => src.includes('tsparticles.plugin.emitters.min.js'))) throw new Error('emitters plugin script missing');
+    return 'modular';
+  }
+
+  if (runtime.backendBundle === 'full-fallback') {
+    if (!scriptSources.some((src) => /\/tsparticles@4\.3\.2\/tsparticles\.bundle\.min\.js/.test(src))) {
+      throw new Error('full fallback bundle script missing');
+    }
+    return 'recovery';
+  }
+
+  throw new Error(`unknown runtime backend bundle: ${runtime.backendBundle}`);
 }
 
 function resourceState(runtime) {
@@ -133,32 +146,12 @@ async function playbackSmoke(runtime) {
   assertClean(runtime, 'rain low cleanup');
 }
 
-async function probeHeadBytes(url) {
-  try {
-    const response = await fetch(url, { method: 'HEAD', cache: 'no-store', mode: 'cors' });
-    if (!response.ok) return 0;
-    return Number(response.headers.get('content-length') ?? 0) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-async function bundleHeadAudit() {
-  const base = 'https://cdn.jsdelivr.net/npm/';
-  const [full, slim, emitters] = await Promise.all([
-    probeHeadBytes(`${base}tsparticles@4.3.2/tsparticles.bundle.min.js`),
-    probeHeadBytes(`${base}@tsparticles/slim@4.3.2/tsparticles.slim.bundle.min.js`),
-    probeHeadBytes(`${base}@tsparticles/plugin-emitters@4.3.2/tsparticles.plugin.emitters.min.js`)
-  ]);
-  return { full, slim, emitters, modular: slim + emitters };
-}
-
 export async function runSession6Gate() {
   const runtime = await waitForReady();
   const container = runtime.adapters.particles.container;
 
   assertPublicSelector();
-  assertBackendScripts(runtime);
+  const backendMode = assertBackendScripts(runtime);
 
   const dust = definition(runtime, 'dust-puff');
   const explosion = definition(runtime, 'explosion');
@@ -199,18 +192,17 @@ export async function runSession6Gate() {
   if (canvasCount !== 1) throw new Error(`expected 1 persistent canvas, found ${canvasCount}`);
 
   const resource = resourceAudit();
-  const head = await bundleHeadAudit();
   const result = {
     pass: true,
     build: BUILD,
     publicEffects: PUBLIC_EFFECTS,
     backendBundle: runtime.backendBundle,
-    fullBundleLoaded: false,
+    backendMode,
+    modularTrimAccepted: backendMode === 'modular',
     ribbonLoaded: false,
     dustBurstLowMediumHigh: dustCounts,
     rainRateLowMediumHigh: rainRates.map((value) => Number(value.toFixed(2))),
     resourceTiming: resource,
-    headAudit: head,
     particleCanvasCount: canvasCount
   };
 
@@ -225,18 +217,15 @@ export async function runSession6Gate() {
   };
   if (globalThis.FXDeckLab) globalThis.FXDeckLab.runSession6Gate = runSession6Gate;
 
-  log(`PASS ${BUILD} SESSION 6 PRODUCTION GATE: curated 4-effect Play / slim+emitters / full bundle absent / ribbon absent / quality scaling / 1 persistent canvas`);
+  log(`PASS ${BUILD} SESSION 6 RECOVERY GATE: curated 4-effect Play / ${runtime.backendBundle} / quality scaling / ribbon absent / 1 persistent canvas`);
+  if (backendMode === 'recovery') {
+    log(`${BUILD} MODULAR STATUS: P4.6.0 slim+emitters CDN boot failed because loadEmittersPlugin was unavailable; canonical runtime recovered on known-good full bundle. Slimming remains pending and must be browser-proven before replacing the fallback.`);
+  }
   log(`${BUILD} QUALITY: Dust burst low/medium/high ${dustCounts.join('/')} particles; Rain combined rate ${rainRates.map((value) => value.toFixed(1)).join('/')} per sec`);
   if (resource.encodedBytes > 0 || resource.transferBytes > 0) {
     log(`${BUILD} RESOURCE TIMING: tsParticles encoded ${(resource.encodedBytes / 1024).toFixed(1)} KiB / transfer ${(resource.transferBytes / 1024).toFixed(1)} KiB / ${resource.names.join(', ')}`);
   } else {
     log(`${BUILD} RESOURCE TIMING: byte sizes unavailable from browser timing (cached or TAO); loaded ${resource.names.join(', ')}`);
-  }
-  if (head.full > 0 && head.modular > 0) {
-    const saved = head.full - head.modular;
-    log(`${BUILD} CDN HEAD AUDIT: full ${(head.full / 1024).toFixed(1)} KiB vs slim+emitters ${(head.modular / 1024).toFixed(1)} KiB; delta ${(saved / 1024).toFixed(1)} KiB`);
-  } else {
-    log(`${BUILD} CDN HEAD AUDIT: content-length unavailable; do not claim exact bundle savings yet`);
   }
   return result;
 }
@@ -245,6 +234,6 @@ try {
   await runSession6Gate();
 } catch (error) {
   globalThis.FXDeckSession6Gate = { pass: false, build: BUILD, error: error.message };
-  log(`FAIL ${BUILD} SESSION 6 PRODUCTION GATE: ${error.message}`);
+  log(`FAIL ${BUILD} SESSION 6 RECOVERY GATE: ${error.message}`);
   console.error(error);
 }
