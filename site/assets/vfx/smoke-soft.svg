@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <metadata>FXDeck original reusable smoke alpha. No filter blur.</metadata>
+  <defs>
+    <radialGradient id="g" cx="48%" cy="44%" r="56%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".78"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity=".56"/>
+      <stop offset=".72" stop-color="#fff" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="48" cy="61" r="40" fill="url(#g)"/>
+  <circle cx="78" cy="48" r="35" fill="url(#g)" opacity=".78"/>
+  <circle cx="75" cy="79" r="39" fill="url(#g)" opacity=".72"/>
+</svg>
