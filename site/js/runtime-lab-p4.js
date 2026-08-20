@@ -1,21 +1,20 @@
-import { createWeb2DRuntime } from '../fxdeck/web2d/create-web2d-runtime.js?v=p4.4.1';
-import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p4.4.1';
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.1';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.1';
+import { createWeb2DRuntime } from '../fxdeck/web2d/create-web2d-runtime.js?v=p4.6.0';
+import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p4.6.0';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.6.0';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.6.0';
 
-const BUILD = 'P4.4.1';
+const BUILD = 'P4.6.0';
 const FRAME_BUDGET_MS = 1000 / 60;
 const BOOT_KEY = '__FXDeckCanonicalRuntimeBootPromise';
 const BOOT_COUNT_KEY = '__FXDeckCanonicalRuntimeBootCount';
 const SCHEMA_URLS = [
-  './fxdeck/schema/examples/schema-test-burst.json?v=p4.4.1',
-  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.4.1',
-  './fxdeck/schema/examples/schema-test-rain.json?v=p4.4.1'
+  './fxdeck/schema/examples/schema-test-burst.json?v=p4.6.0',
+  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.6.0',
+  './fxdeck/schema/examples/schema-test-rain.json?v=p4.6.0'
 ];
 const EFFECT_ORDER = [
-  ['heavyImpact', 'Heavy Impact — baseline one-shot'],
-  ['explosion', 'Explosion — baseline composite'],
-  ['fireball', 'Fireball — baseline moving source']
+  ['heavyImpact', 'Heavy Impact — internal topology baseline'],
+  ['fireball', 'Projectile / Fireball — retained visual reference']
 ];
 
 const stage = document.querySelector('#impact-stage');
@@ -272,6 +271,7 @@ function currentParams(position = state.position, effectId = selectedEffectId())
     position: { ...position },
     direction: Number(directionInput.value),
     intensity: Number(intensityInput.value),
+    quality: 'high',
     hooks: createHooks()
   };
   if (effectId === 'fireball') params.distance = clamp(stage.clientWidth * .32, 120, 340);
@@ -309,7 +309,6 @@ function populateEffects() {
     const option = document.createElement('option');
     option.value = id;
     option.textContent = label;
-    if (id === 'explosion') option.selected = true;
     effectInput.appendChild(option);
   }
 }
@@ -432,7 +431,7 @@ function updateApiPreview() {
   if (!state.position) return;
   const id = selectedEffectId();
   const extra = id === 'fireball' ? `,\n  distance: ${Math.round(clamp(stage.clientWidth * .32, 120, 340))}` : '';
-  apiPreview.textContent = `FXDeck.play("${id}", {\n  position: { x: ${Math.round(state.position.x)}, y: ${Math.round(state.position.y)} },\n  direction: ${directionInput.value},\n  intensity: ${Number(intensityInput.value).toFixed(1)}${extra}\n});`;
+  apiPreview.textContent = `FXDeck.play("${id}", {\n  position: { x: ${Math.round(state.position.x)}, y: ${Math.round(state.position.y)} },\n  direction: ${directionInput.value},\n  intensity: ${Number(intensityInput.value).toFixed(1)},\n  quality: "high"${extra}\n});`;
 }
 
 function updateEffectUi() {
@@ -525,7 +524,9 @@ async function playOverlap() {
     const capture = capturePerformance(1500);
     for (const offset of [-24, -14, -5, 6, 16, 27]) {
       const id = selectedEffectId();
-      state.runtime.fx.play(id, currentParams(state.position, id === 'fireball' ? 'fireball' : id, { direction: (base + offset + 360) % 360 }));
+      const params = currentParams(state.position, id);
+      params.direction = (base + offset + 360) % 360;
+      state.runtime.fx.play(id, params);
     }
     const result = await capture;
     logPerf(`OVERLAP ×6 ${selectedEffectId()}`, result);
@@ -804,8 +805,8 @@ async function bootstrap() {
   requestAnimationFrame(metricsLoop);
 
   const topology = state.runtime.topology();
-  log(`PASS ${BUILD} BOOT: preserved Runtime Lab UI / 1 FXDeck runtime / 1 tsParticles engine / 1 persistent container / ${topology.particleCanvasCount} canvas / ${topology.registeredEffects} registered effects`);
-  log(`${BUILD}: P3 runtime bridges, build-authority MutationObserver and Particlr/reference iframe are not loaded`);
+  log(`PASS ${BUILD} BOOT: preserved Runtime Lab UI / 1 FXDeck runtime / 1 tsParticles engine / 1 persistent container / ${topology.particleCanvasCount} canvas / ${topology.registeredEffects} registered effects / ${topology.backendBundle}`);
+  log(`${BUILD}: full tsParticles bundle, ribbon/motion capability, P3 runtime bridges, build-authority MutationObserver and Particlr/reference iframe are not loaded`);
 
   await runSession1Gate(6);
   return state.runtime;
