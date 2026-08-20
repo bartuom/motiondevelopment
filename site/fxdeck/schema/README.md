@@ -1,6 +1,6 @@
 # FXDeck Effect Schema V1
 
-Build: **P4.4.1 / Sessions 2–4**
+Build: **P4.5.0 / Sessions 2–5**
 
 This directory defines the AI-facing authoring contract for Web2D effects. Normal effects are data + reusable assets, not effect-specific JavaScript.
 
@@ -30,12 +30,16 @@ Supported now:
 - burst and finite rate spawn,
 - inherited or explicit 2D direction,
 - per-layer semantic origin offset (`origin.x/y`), optionally rotated with gameplay direction,
+- layer anchors:
+  - `event` — normal gameplay position,
+  - `stage-top-center` — environmental stage-relative source,
+- optional percent emitter area through `spawn.area.widthPercent/heightPercent`,
 - spread and speed ranges,
 - optional gravity + drag,
 - finite particle lifetime,
 - two-point size/opacity over-life curves,
 - circle / square / image shapes,
-- constrained ribbon shape for effects that prove the need,
+- constrained ribbon shape remains available when justified,
 - normal / lighter blend,
 - manifest-backed image assets,
 - static random rotation,
@@ -49,23 +53,28 @@ Supported now:
 
 Color bindings are deliberately restricted to `replace`. There is no color expression language or arbitrary runtime scripting.
 
-### Why origin/orientation/ribbon were added
+## Capability provenance
 
-These capabilities were not speculative framework expansion. Session 4 visual review exposed concrete failures:
+Capabilities are added only when a real effect proves the need.
 
-- Critical Hit read as a generic point burst because its slash/streak shapes did not own a stable directional composition.
-- Goal Celebration read as a generic point explosion because every layer originated from the clicked point.
-- Goal Celebration needed a sustained curved celebration shape rather than more short radial particles.
-
-P4.4.1 therefore adds the smallest reusable semantic features that solve those real effects:
+Session 4 added:
 
 ```text
-origin       → spatial composition
-orientation  → direction/motion-aware sprite shape language
-ribbon       → sustained celebration/trail shape
+origin       → local spatial composition
+orientation  → direction/motion-aware image alignment
+ribbon       → constrained sustained shape capability
 ```
 
-Backend-specific ribbon options remain hidden behind the Web2D compiler.
+The accepted Goal Celebration later stopped using ribbon because the real visual review showed it was unstable for that composition. The capability remains available but is not mandatory.
+
+Session 5 real Rain added:
+
+```text
+anchor: "stage-top-center"
+spawn.area: { widthPercent, heightPercent }
+```
+
+These solve a concrete environmental requirement: a sustained rain field must originate across the stage top rather than from the user's clicked gameplay point.
 
 Explicitly not supported in V1:
 
@@ -88,17 +97,18 @@ Explicitly not supported in V1:
 2. `schema-test-smoke.json`
 3. `schema-test-rain.json`
 
-They are **not portfolio effects and are not exposed in the normal Play effect selector**. They remain registered so automated Debug regression gates can exercise burst, image and finite-rate paths.
-
-In particular, `schema-test-rain.json` is not the planned Rain / Environment effect. It is only a point-origin finite-rate emitter proof.
+They are **not portfolio effects and are not exposed in the normal Play effect selector**. In particular, `schema-test-rain.json` is only the old point-origin finite-rate proof; the real environmental effect is `../effects/rain.json`.
 
 ## Real Schema V1 effects
 
 - `../effects/dust-puff.json`
 - `../effects/critical-hit.json`
 - `../effects/goal-celebration.json`
+- `../effects/explosion.json`
+- `../effects/magic-burst.json`
+- `../effects/rain.json`
 
-These effects use the same generic schema runtime and do not have effect-specific runtime bridge scripts.
+All six use the generic schema runtime and require no effect-specific runtime bridge scripts.
 
 The deployed lab exposes:
 
