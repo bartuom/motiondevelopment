@@ -2,7 +2,13 @@ import {
   assertValidEffectDefinition,
   DEFAULT_WEB2D_CAPABILITIES,
   DEFAULT_WEB2D_BUDGET
-} from '../schema/validator.js?v=p4.5.0';
+} from '../schema/validator.js?v=p4.6.0';
+
+export const WEB2D_QUALITY_PROFILES = Object.freeze({
+  low: Object.freeze({ hero: 0.85, high: 0.65, medium: 0.5, low: 0.35 }),
+  medium: Object.freeze({ hero: 1, high: 0.85, medium: 0.72, low: 0.6 }),
+  high: Object.freeze({ hero: 1, high: 1, medium: 1, low: 1 })
+});
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -67,6 +73,27 @@ function applyBindings(effect, params) {
   }
 
   return resolved;
+}
+
+function normalizeQuality(value) {
+  return Object.hasOwn(WEB2D_QUALITY_PROFILES, value) ? value : 'high';
+}
+
+function applyQuality(effect, requestedQuality) {
+  const quality = normalizeQuality(requestedQuality);
+  const profile = WEB2D_QUALITY_PROFILES[quality];
+
+  for (const layer of effect.layers) {
+    const priority = layer.priority ?? effect.priority ?? 'medium';
+    const scale = profile[priority] ?? 1;
+    if (layer.spawn.mode === 'burst') {
+      layer.spawn.count = Math.max(1, Math.round(layer.spawn.count * scale));
+    } else if (layer.spawn.mode === 'rate') {
+      layer.spawn.ratePerSecond = Math.max(0.1, layer.spawn.ratePerSecond * scale);
+    }
+  }
+
+  return quality;
 }
 
 function assetMap(effect) {
@@ -281,6 +308,7 @@ export function compileWeb2D(effect, params = {}, {
 } = {}) {
   assertValidEffectDefinition(effect, { capabilities, budget });
   const resolved = applyBindings(effect, params);
+  const quality = applyQuality(resolved, params?.quality);
   assertValidEffectDefinition(resolved, { capabilities, budget });
 
   const assets = assetMap(resolved);
@@ -301,6 +329,7 @@ export function compileWeb2D(effect, params = {}, {
     schemaVersion: resolved.schemaVersion,
     id: resolved.id,
     durationMs: resolved.durationMs,
+    quality,
     assets: clone(resolved.assets ?? []),
     layers
   };
