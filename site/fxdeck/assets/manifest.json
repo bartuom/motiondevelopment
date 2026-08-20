@@ -56,6 +56,38 @@
       "height": 14,
       "license": "FXDeck original",
       "provenance": "site/assets/vfx/confetti-strip.svg"
+    },
+    "fire-soft": {
+      "type": "image",
+      "src": "../../assets/vfx/fire-soft.svg?v=p4.5.0",
+      "width": 128,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/fire-soft.svg"
+    },
+    "smoke-soft": {
+      "type": "image",
+      "src": "../../assets/vfx/smoke-soft.svg?v=p4.5.0",
+      "width": 128,
+      "height": 128,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/smoke-soft.svg"
+    },
+    "magic-arc": {
+      "type": "image",
+      "src": "../../assets/vfx/magic-arc.svg?v=p4.5.0",
+      "width": 256,
+      "height": 96,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/magic-arc.svg"
+    },
+    "rain-streak": {
+      "type": "image",
+      "src": "../../assets/vfx/rain-streak.svg?v=p4.5.0",
+      "width": 64,
+      "height": 8,
+      "license": "FXDeck original",
+      "provenance": "site/assets/vfx/rain-streak.svg"
     }
   }
 }
