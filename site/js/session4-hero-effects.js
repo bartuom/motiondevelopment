@@ -1,10 +1,10 @@
 import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.2';
 import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.2';
 
-const BUILD = 'P4.4.2';
+const BUILD = 'P4.4.3';
 const EFFECT_URLS = [
-  './fxdeck/effects/critical-hit.json?v=p4.4.2',
-  './fxdeck/effects/goal-celebration.json?v=p4.4.2'
+  './fxdeck/effects/critical-hit.json?v=p4.4.3',
+  './fxdeck/effects/goal-celebration.json?v=p4.4.3'
 ];
 const REGRESSION_EFFECT_IDS = new Set([
   'schema-test-burst',
@@ -51,7 +51,7 @@ function installSelectorOptions(effects) {
 
   const labels = new Map([
     ['critical-hit', 'Critical Hit — normalized directional slash'],
-    ['goal-celebration', 'Goal Celebration — compact ribbons + confetti']
+    ['goal-celebration', 'Goal Celebration — stable dual confetti jets']
   ]);
 
   for (const effect of [...effects].reverse()) {
@@ -92,11 +92,13 @@ const state = {
   build: BUILD,
   effects: structuredClone(effects),
   prefetch: structuredClone(prefetch),
-  ribbonCapabilityAdded: true,
   regressionFixturesHiddenFromPlay: true,
   visualNormalization: {
     criticalSlashAssetRatio: 4,
-    goalMaxLocalOffsetPx: 96,
+    goalUsesRibbon: false,
+    goalUsesRandomRotation: false,
+    goalMaxLocalOffsetPx: 62,
+    goalImageOrientation: 'motion',
     edgeClamp: true
   }
 };
@@ -104,6 +106,6 @@ const state = {
 globalThis.FXDeckHeroEffects = state;
 if (globalThis.FXDeckLab) globalThis.FXDeckLab.heroEffects = state;
 
-log(`${BUILD} HERO NORMALIZATION: oversized image radii removed; Critical Hit uses a neutral 4:1 slash rotated only by gameplay direction`);
-log(`${BUILD} GOAL NORMALIZATION: launch offsets reduced to a compact local composition and clamped to preview bounds`);
+log(`${BUILD} HERO STABILIZATION: Critical Hit retained; Goal Celebration no longer uses ribbon geometry or random sprite rotation`);
+log(`${BUILD} GOAL COMPOSITION: two compact mirrored team confetti jets + two delayed accent jets + small sparkle support`);
 log(`${BUILD} PLAY SURFACE: synthetic schema-test fixtures remain Debug-only`);
