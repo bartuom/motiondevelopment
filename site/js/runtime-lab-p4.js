@@ -1,16 +1,16 @@
-import { createWeb2DRuntime } from '../fxdeck/web2d/create-web2d-runtime.js?v=p4.6.0';
-import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p4.6.0';
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.6.0';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.6.0';
+import { createWeb2DRuntime } from '../fxdeck/web2d/create-web2d-runtime.js?v=p4.6.1';
+import { normalizeDirection } from '../fxdeck/core/fxdeck.js?v=p4.6.1';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.6.1';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.6.1';
 
-const BUILD = 'P4.6.0';
+const BUILD = 'P4.6.1';
 const FRAME_BUDGET_MS = 1000 / 60;
 const BOOT_KEY = '__FXDeckCanonicalRuntimeBootPromise';
 const BOOT_COUNT_KEY = '__FXDeckCanonicalRuntimeBootCount';
 const SCHEMA_URLS = [
-  './fxdeck/schema/examples/schema-test-burst.json?v=p4.6.0',
-  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.6.0',
-  './fxdeck/schema/examples/schema-test-rain.json?v=p4.6.0'
+  './fxdeck/schema/examples/schema-test-burst.json?v=p4.6.1',
+  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.6.1',
+  './fxdeck/schema/examples/schema-test-rain.json?v=p4.6.1'
 ];
 const EFFECT_ORDER = [
   ['heavyImpact', 'Heavy Impact — internal topology baseline'],
@@ -748,7 +748,7 @@ function metricsLoop(now) {
     metrics.p99.textContent = summary.p99Ms ? `${summary.p99Ms.toFixed(1)} ms` : '--';
     metrics.worst.textContent = summary.worstMs ? `${summary.worstMs.toFixed(1)} ms` : '--';
     metrics.debt.textContent = `${summary.debtMs.toFixed(1)} ms`;
-    metrics.spikes.textContent = String(summary.spikes20);
+    metrics.spikes20.textContent = String(summary.spikes20);
     const scale = particles.scale ?? { x: 1, y: 1 };
     metrics.scale.textContent = `${Number(scale.x ?? 1).toFixed(2)}×${Number(scale.y ?? 1).toFixed(2)}`;
     metrics.pressure.textContent = `${particles.queuePressure ?? 'none'} / peak ${particles.qualityPeakPressure ?? 'none'}`;
@@ -806,7 +806,7 @@ async function bootstrap() {
 
   const topology = state.runtime.topology();
   log(`PASS ${BUILD} BOOT: preserved Runtime Lab UI / 1 FXDeck runtime / 1 tsParticles engine / 1 persistent container / ${topology.particleCanvasCount} canvas / ${topology.registeredEffects} registered effects / ${topology.backendBundle}`);
-  log(`${BUILD}: full tsParticles bundle, ribbon/motion capability, P3 runtime bridges, build-authority MutationObserver and Particlr/reference iframe are not loaded`);
+  log(`${BUILD}: backend ${topology.backendBundle}; ribbon/motion capability, P3 runtime bridges, build-authority MutationObserver and Particlr/reference iframe are not loaded`);
 
   await runSession1Gate(6);
   return state.runtime;
