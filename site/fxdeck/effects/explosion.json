@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "explosion",
+  "label": "Explosion",
+  "durationMs": 1100,
+  "priority": "hero",
+  "assets": [
+    "hero-flare",
+    "fire-soft",
+    "hero-streak",
+    "smoke-soft"
+  ],
+  "bindings": [
+    { "param": "intensity", "layer": "fireball", "property": "spawn.count", "operation": "multiply", "min": 7, "max": 22 },
+    { "param": "intensity", "layer": "sparks", "property": "spawn.count", "operation": "multiply", "min": 5, "max": 20 },
+    { "param": "intensity", "layer": "debris", "property": "spawn.count", "operation": "multiply", "min": 4, "max": 14 },
+    { "param": "intensity", "layer": "smoke", "property": "spawn.count", "operation": "multiply", "min": 4, "max": 12 },
+    { "param": "intensity", "layer": "fireball", "property": "motion.speed.max", "operation": "multiply", "min": 10, "max": 24 },
+    { "param": "intensity", "layer": "sparks", "property": "motion.speed.max", "operation": "multiply", "min": 22, "max": 46 }
+  ],
+  "layers": [
+    {
+      "id": "flash",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "hero",
+      "z": 34,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 1 },
+      "shape": { "type": "image", "asset": "hero-flare" },
+      "color": "#fff2ad",
+      "lifetimeMs": { "min": 75, "max": 110 },
+      "motion": { "direction": 0, "spreadDeg": 0, "speed": { "min": 0, "max": 0.01 } },
+      "size": { "start": 24, "end": 52 },
+      "opacity": { "start": 1, "end": 0 }
+    },
+    {
+      "id": "fireball",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "hero",
+      "z": 32,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 12 },
+      "shape": { "type": "image", "asset": "fire-soft" },
+      "color": ["#fff0a0", "#ffb43c", "#ff6a28", "#d92f18"],
+      "lifetimeMs": { "min": 320, "max": 520 },
+      "motion": { "direction": 0, "spreadDeg": 360, "speed": { "min": 5, "max": 14 }, "gravity": 2.4, "drag": 0.035 },
+      "size": { "start": 12, "end": 3.5 },
+      "opacity": { "start": 0.96, "end": 0 }
+    },
+    {
+      "id": "sparks",
+      "type": "particles",
+      "delayMs": 10,
+      "priority": "high",
+      "z": 33,
+      "blend": "lighter",
+      "spawn": { "mode": "burst", "count": 10 },
+      "shape": { "type": "image", "asset": "hero-streak" },
+      "color": ["#ffffff", "#ffd166", "#ff8f36"],
+      "lifetimeMs": { "min": 150, "max": 300 },
+      "motion": { "direction": "inherit", "spreadDeg": 220, "speed": { "min": 16, "max": 30 }, "gravity": 5, "drag": 0.02 },
+      "size": { "start": 5.5, "end": 1.1 },
+      "opacity": { "start": 0.95, "end": 0 },
+      "orientation": { "mode": "motion", "offsetDeg": 0, "jitterDeg": 0 }
+    },
+    {
+      "id": "debris",
+      "type": "particles",
+      "delayMs": 24,
+      "priority": "medium",
+      "z": 30,
+      "blend": "normal",
+      "spawn": { "mode": "burst", "count": 7 },
+      "shape": { "type": "square" },
+      "color": ["#3b3028", "#6d5140", "#9a7050"],
+      "lifetimeMs": { "min": 300, "max": 520 },
+      "motion": { "direction": "inherit", "spreadDeg": 190, "speed": { "min": 6, "max": 13 }, "gravity": 8, "drag": 0.018 },
+      "size": { "start": 2.7, "end": 1.2 },
+      "opacity": { "start": 0.8, "end": 0 },
+      "rotationDeg": { "min": -180, "max": 180 }
+    },
+    {
+      "id": "smoke",
+      "type": "particles",
+      "delayMs": 58,
+      "priority": "low",
+      "z": 28,
+      "blend": "normal",
+      "spawn": { "mode": "burst", "count": 7 },
+      "shape": { "type": "image", "asset": "smoke-soft" },
+      "color": ["#5b5a5e", "#777276", "#3f4146"],
+      "lifetimeMs": { "min": 720, "max": 980 },
+      "motion": { "direction": 270, "spreadDeg": 100, "speed": { "min": 1.2, "max": 3.4 }, "gravity": -0.3, "drag": 0.028 },
+      "size": { "start": 15, "end": 38 },
+      "opacity": { "start": 0.38, "end": 0 },
+      "rotationDeg": { "min": -28, "max": 28 }
+    }
+  ]
+}
