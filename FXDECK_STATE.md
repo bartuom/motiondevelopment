@@ -4,10 +4,10 @@
 
 ## Current state — 2026-08-20
 
-- **Milestone:** **P4.6.0 — Session 6 Production / Performance Pass**.
+- **Milestone:** **P4.6.1 — Session 6 Runtime Recovery / Performance Pass**.
 - **Sessions 0–3:** accepted.
 - **Sessions 4–5:** technically useful coverage completed, but visual review was mixed; rejected effects are no longer public portfolio content.
-- **Session 6:** first production trim implemented; deployed browser gate + real mobile measurements pending.
+- **Session 6:** in progress. P4.6.0 modular CDN boot failed in the deployed browser; P4.6.1 restores the canonical lab with a known-good full-bundle fallback. Browser recovery gate is pending.
 - **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
 - **Production Web2D backend:** tsParticles only.
 - **Particlr:** reference/authoring source only.
@@ -17,7 +17,7 @@
 
 Runtime, architecture, schema, optimization and refactor work must preserve the established Runtime Lab UI/UX and working controls by default.
 
-P4.6.0 keeps the same Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress shell. Production work happens underneath it.
+P4.6.1 changes runtime/bootstrap behavior only. The Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress shell remains canonical.
 
 ---
 
@@ -76,15 +76,13 @@ Synthetic `schema-test-*` effects remain Debug-only regression fixtures.
 
 Dust Puff remains the strongest accepted asset-first Schema V1 proof.
 
-Known debt: many overlapping Dust Puff instances are expensive because large translucent SVG sprites create significant overdraw/raster work. P4.6 adds quality scaling; raster asset comparison is still pending.
+Known debt: many overlapping Dust Puff instances are expensive because large translucent SVG sprites create significant overdraw/raster work. Quality scaling exists; raster asset comparison is still pending.
 
 ---
 
 ## Sessions 4–5 — visual review outcome
 
-These sessions proved runtime capabilities, but technical success is not treated as portfolio success.
-
-User visual review on 2026-08-20 classified the effects approximately as:
+Technical success is not treated as portfolio success.
 
 | Effect | Runtime/technical role | Visual status |
 | --- | --- | --- |
@@ -97,40 +95,22 @@ User visual review on 2026-08-20 classified the effects approximately as:
 | Magic Burst | directional image-shape proof | **REJECT visual** |
 | Heavy Impact | old topology/lifecycle baseline | **REJECT visual / internal only** |
 
-### Consequence
-
-Do not represent the rejected effects as portfolio-ready merely because they pass runtime gates.
-
-As of P4.6.0 the normal Play surface is curated to:
+Normal Play is curated to:
 
 1. `dust-puff`
 2. `fireball`
 3. `explosion`
 4. `rain`
 
-`Critical Hit`, `Goal Celebration` and `Magic Burst` are not loaded by the production bootstrap. Their source remains in Git history/repo for reference, but they are not current product content.
-
-`Heavy Impact` remains registered internally only because the long-running Session 1 topology/lifecycle regression gate uses it. It is hidden from Play.
-
-The old synthetic schema fixtures remain internal Debug regression data and are hidden from Play.
+`Critical Hit`, `Goal Celebration` and `Magic Burst` are not production boot dependencies. `Heavy Impact` remains internal only because the Session 1 topology/lifecycle gate uses it.
 
 ---
 
 # Session 6 — Production / Performance
 
-## P4.6.0 implemented
+## P4.6.0 modular trim — DEPLOYED BOOT FAIL
 
-### 1. tsParticles production trim
-
-Canonical Runtime Lab no longer loads:
-
-```text
-tsparticles full bundle
-plugin-motion
-shape-ribbon
-```
-
-It now loads:
+P4.6.0 attempted to replace the known-good full bundle with:
 
 ```text
 @tsparticles/engine 4.3.2
@@ -138,31 +118,49 @@ It now loads:
 @tsparticles/plugin-emitters 4.3.2
 ```
 
-Runtime reports:
+The deployed browser produced:
+
+```text
+BOOT FAIL P4.6.0: FXDeck Web2D requires the emitters plugin loader.
+BOOTSTRAP FAIL P4.6.0: FXDeck Web2D requires the emitters plugin loader.
+```
+
+Root cause: the chosen CDN combination did not expose the expected `globalThis.loadEmittersPlugin` loader in the canonical page. The hard precondition failed before `FXDeckLab` initialized, which also caused the stress benchmark warning.
+
+**Conclusion:** the modular trim is **not accepted**. Do not put an unproven slim-loader path back on the canonical Runtime Lab.
+
+## P4.6.1 recovery hotfix — CURRENT
+
+Canonical HTML is restored to the known-good browser bundle:
+
+```text
+@tsparticles/engine 4.3.2
+tsparticles full bundle 4.3.2
+```
+
+`createWeb2DRuntime()` is now recovery-aware:
+
+```text
+if loadSlim + loadEmittersPlugin are both genuinely available
+  → slim+emitters
+else
+  → loadFull fallback
+```
+
+Current canonical HTML intentionally loads the full bundle so the user-facing Runtime Lab is reliable while modular slimming is moved back to an isolated proof task.
+
+Runtime reports one of:
 
 ```text
 backendBundle = "slim+emitters"
-ribbon capability = false
+backendBundle = "full-fallback"
 ```
 
-This is the first safe production trim. Exact byte savings must come from deployed measurements; do not invent bundle-size numbers.
+Ribbon/motion capability remains disabled for the curated production set.
 
-### 2. Production effect curation
+## Generic quality tiers retained
 
-New integration:
-
-- `site/js/session6-production-effects.js`
-
-It loads/prefetches only the coverage JSON still needed by the curated public set:
-
-- `explosion.json`
-- `rain.json`
-
-Rejected Session 4/5 hero modules are not canonical boot dependencies.
-
-### 3. Generic quality tiers
-
-`compileWeb2D()` now accepts:
+`compileWeb2D()` accepts:
 
 ```js
 FXDeck.play("dust-puff", {
@@ -172,44 +170,38 @@ FXDeck.play("dust-puff", {
 });
 ```
 
-Quality scaling is backend-generic and priority-aware:
+Quality scaling remains priority-aware and must satisfy monotonic density checks for Dust Puff and Rain.
 
-```text
-high   → authored particle/rate density
-medium → preserve hero layers, reduce support layers
-low    → preserve readability, aggressively reduce medium/low support density
-```
+## P4.6.1 recovery gate
 
-Quality is applied after normal runtime parameter bindings and before compilation/semantic validation.
-
-### 4. P4.6 production gate
-
-New gate:
-
-- `site/js/session6-production-gate.js`
-
-It checks:
+`site/js/session6-production-gate.js` checks:
 
 - public selector contains only Dust Puff / Projectile / Explosion / Rain,
-- Critical Hit / Goal Celebration / Magic Burst are not registered by production boot,
-- full tsParticles bundle is absent,
+- rejected hero effects do not leak back into Play,
 - ribbon/motion scripts are absent,
-- runtime is `slim+emitters`,
+- backend is either browser-proven modular or explicit full fallback,
 - Dust Puff low/medium/high burst counts scale monotonically,
 - Rain low/medium/high rates scale monotonically,
 - low-quality burst + sustained playback clean up correctly,
-- one persistent particle container/canvas remains,
-- browser Resource Timing / CDN HEAD size data is logged when available, without pretending unavailable bytes are known.
+- one persistent particle container/canvas remains.
 
-Expected success line:
+Expected recovery success line on the current canonical path:
 
 ```text
-PASS P4.6.0 SESSION 6 PRODUCTION GATE: curated 4-effect Play / slim+emitters / full bundle absent / ribbon absent / quality scaling / 1 persistent canvas
+PASS P4.6.1 SESSION 6 RECOVERY GATE: curated 4-effect Play / full-fallback / quality scaling / ribbon absent / 1 persistent canvas
 ```
 
-### P4.6.0 acceptance status
+Expected diagnostic:
 
-**Browser technical gate: pending deployed user run.**
+```text
+P4.6.1 MODULAR STATUS: P4.6.0 slim+emitters CDN boot failed because loadEmittersPlugin was unavailable; canonical runtime recovered on known-good full bundle. Slimming remains pending and must be browser-proven before replacing the fallback.
+```
+
+### P4.6.1 acceptance status
+
+**Browser recovery gate: pending user run.**
+
+**Modular slim build: NOT accepted / pending isolated browser proof.**
 
 **Physical mobile performance measurements: pending.**
 
@@ -221,24 +213,20 @@ Do not mark Session 6 complete from source inspection alone.
 
 ## Immediate next work
 
-1. Open `site/heavy-impact-lab.html?v=p4.6.0` on GitHub Pages.
-2. Confirm the Play selector contains only:
-   - Dust Puff
-   - Projectile / Fireball
-   - Explosion
-   - Rain / Environment
-3. Inspect the Debug log for `PASS P4.6.0 SESSION 6 PRODUCTION GATE`.
-4. Copy the P4.6 log back into the project conversation.
-5. Then run real overlap/stress measurements, especially Dust Puff and Rain + gameplay bursts.
-6. After browser acceptance, continue Session 6 with raster asset comparison and physical Galaxy S20+ profiling.
+1. Open `site/heavy-impact-lab.html?v=p4.6.1` on GitHub Pages.
+2. Confirm normal Runtime Lab boot is restored.
+3. Confirm Play contains only Dust Puff / Projectile / Explosion / Rain.
+4. Inspect Debug for `PASS P4.6.1 SESSION 6 RECOVERY GATE`.
+5. Only after recovery is confirmed, test the modular loader separately from the canonical page.
+6. Continue Session 6 with Dust Puff SVG vs PNG/WebP, overlap stress, Rain + burst stress and physical Galaxy S20+ profiling.
 
 ---
 
 ## Portfolio direction after performance pass
 
-Do **not** spend repeated blind iterations rescuing rejected hero effects.
+Do not spend repeated blind iterations rescuing rejected hero effects.
 
-For future portfolio replacements use:
+Future portfolio replacements use:
 
 ```text
 reference lock
@@ -249,8 +237,6 @@ reference lock
 → visual review
 ```
 
-No new hero effect should be invented from primitive particle noise without an agreed visual reference.
-
 Target final portfolio can be:
 
 ```text
@@ -260,5 +246,3 @@ Explosion        polish
 Rain             polish
 + 2 new reference-locked hero effects
 ```
-
-This is preferable to forcing Critical Hit / Goal Celebration / Magic Burst into the final package.
