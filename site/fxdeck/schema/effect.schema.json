@@ -73,6 +73,7 @@
           "priority": { "enum": ["hero", "high", "medium", "low"] },
           "z": { "type": "number", "minimum": 0, "maximum": 1000 },
           "blend": { "enum": ["normal", "lighter"] },
+          "anchor": { "enum": ["event", "stage-top-center"] },
           "origin": {
             "type": "object",
             "additionalProperties": false,
@@ -90,7 +91,8 @@
                 "required": ["mode", "count"],
                 "properties": {
                   "mode": { "const": "burst" },
-                  "count": { "type": "integer", "minimum": 1, "maximum": 10000 }
+                  "count": { "type": "integer", "minimum": 1, "maximum": 10000 },
+                  "area": { "$ref": "#/$defs/emitterArea" }
                 }
               },
               {
@@ -100,7 +102,8 @@
                 "properties": {
                   "mode": { "const": "rate" },
                   "ratePerSecond": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
-                  "durationMs": { "type": "integer", "minimum": 1, "maximum": 10000 }
+                  "durationMs": { "type": "integer", "minimum": 1, "maximum": 10000 },
+                  "area": { "$ref": "#/$defs/emitterArea" }
                 }
               }
             ]
@@ -185,6 +188,15 @@
       "properties": {
         "start": { "type": "number" },
         "end": { "type": "number" }
+      }
+    },
+    "emitterArea": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["widthPercent", "heightPercent"],
+      "properties": {
+        "widthPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "heightPercent": { "type": "number", "minimum": 0, "maximum": 100 }
       }
     }
   }
