@@ -748,7 +748,7 @@ function metricsLoop(now) {
     metrics.p99.textContent = summary.p99Ms ? `${summary.p99Ms.toFixed(1)} ms` : '--';
     metrics.worst.textContent = summary.worstMs ? `${summary.worstMs.toFixed(1)} ms` : '--';
     metrics.debt.textContent = `${summary.debtMs.toFixed(1)} ms`;
-    metrics.spikes20.textContent = String(summary.spikes20);
+    metrics.spikes.textContent = String(summary.spikes20);
     const scale = particles.scale ?? { x: 1, y: 1 };
     metrics.scale.textContent = `${Number(scale.x ?? 1).toFixed(2)}×${Number(scale.y ?? 1).toFixed(2)}`;
     metrics.pressure.textContent = `${particles.queuePressure ?? 'none'} / peak ${particles.qualityPeakPressure ?? 'none'}`;
