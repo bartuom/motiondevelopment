@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "rain",
+  "label": "Rain / Environment",
+  "durationMs": 5000,
+  "priority": "low",
+  "assets": [
+    "rain-streak"
+  ],
+  "bindings": [
+    { "param": "intensity", "layer": "far-rain", "property": "spawn.ratePerSecond", "operation": "multiply", "min": 14, "max": 48 },
+    { "param": "intensity", "layer": "near-rain", "property": "spawn.ratePerSecond", "operation": "multiply", "min": 8, "max": 32 }
+  ],
+  "layers": [
+    {
+      "id": "far-rain",
+      "type": "particles",
+      "delayMs": 0,
+      "priority": "low",
+      "z": 10,
+      "blend": "normal",
+      "anchor": "stage-top-center",
+      "spawn": {
+        "mode": "rate",
+        "ratePerSecond": 28,
+        "durationMs": 4100,
+        "area": { "widthPercent": 100, "heightPercent": 6 }
+      },
+      "shape": { "type": "image", "asset": "rain-streak" },
+      "color": ["#9fc7df", "#bad9ea", "#7da8c4"],
+      "lifetimeMs": { "min": 620, "max": 780 },
+      "motion": { "direction": 90, "spreadDeg": 5, "speed": { "min": 260, "max": 340 }, "gravity": 12, "drag": 0.004 },
+      "size": { "start": 10, "end": 7 },
+      "opacity": { "start": 0.42, "end": 0 },
+      "orientation": { "mode": "motion", "offsetDeg": 0, "jitterDeg": 0 }
+    },
+    {
+      "id": "near-rain",
+      "type": "particles",
+      "delayMs": 80,
+      "priority": "medium",
+      "z": 12,
+      "blend": "normal",
+      "anchor": "stage-top-center",
+      "spawn": {
+        "mode": "rate",
+        "ratePerSecond": 18,
+        "durationMs": 4000,
+        "area": { "widthPercent": 100, "heightPercent": 5 }
+      },
+      "shape": { "type": "image", "asset": "rain-streak" },
+      "color": ["#d6efff", "#b7dbef"],
+      "lifetimeMs": { "min": 500, "max": 650 },
+      "motion": { "direction": 90, "spreadDeg": 3, "speed": { "min": 340, "max": 460 }, "gravity": 16, "drag": 0.003 },
+      "size": { "start": 14, "end": 9 },
+      "opacity": { "start": 0.58, "end": 0 },
+      "orientation": { "mode": "motion", "offsetDeg": 0, "jitterDeg": 0 }
+    }
+  ]
+}
