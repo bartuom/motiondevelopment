@@ -1,13 +1,13 @@
-import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.4.1';
-import { validateEffectDefinition } from '../fxdeck/schema/validator.js?v=p4.4.1';
-import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.1';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.1';
+import { loadEffectDefinitions } from '../fxdeck/schema/effect-loader.js?v=p4.6.0';
+import { validateEffectDefinition } from '../fxdeck/schema/validator.js?v=p4.6.0';
+import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.6.0';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.6.0';
 
-const BUILD = 'P4.4.1';
+const BUILD = 'P4.6.0';
 const EFFECT_URLS = [
-  './fxdeck/schema/examples/schema-test-burst.json?v=p4.4.1',
-  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.4.1',
-  './fxdeck/schema/examples/schema-test-rain.json?v=p4.4.1'
+  './fxdeck/schema/examples/schema-test-burst.json?v=p4.6.0',
+  './fxdeck/schema/examples/schema-test-smoke.json?v=p4.6.0',
+  './fxdeck/schema/examples/schema-test-rain.json?v=p4.6.0'
 ];
 
 function log(message) {
@@ -75,7 +75,8 @@ async function playAndStop(runtime, effectId, direction = 25) {
   const instance = runtime.fx.play(effectId, {
     position: { x: -320, y: -320 },
     direction,
-    intensity: 1
+    intensity: 1,
+    quality: 'high'
   });
   await instance.ready;
   await nextFrame();
@@ -108,7 +109,7 @@ export async function runSession2Gate() {
   for (const effect of effects) {
     const resolved = runtime.fx.resolve(effect.id);
     if (!resolved.definition.schemaDriven) throw new Error(`${effect.id}: registry definition is not schema-driven`);
-    const compiled = compileWeb2D(effect, { directionDegrees: 25, intensity: 1 });
+    const compiled = compileWeb2D(effect, { directionDegrees: 25, intensity: 1, quality: 'high' });
     if (!compiled.layers.length) throw new Error(`${effect.id}: compiler produced zero layers`);
     for (const layer of compiled.layers) {
       if (!layer.emitter?.particles || !layer.spawnMode) throw new Error(`${effect.id}/${layer.id}: compiler output incomplete`);
