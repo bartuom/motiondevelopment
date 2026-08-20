@@ -4,9 +4,10 @@
 
 ## Current state — 2026-08-20
 
-- **Milestone:** **P4.5.0 — Session 5 Coverage Effects**.
-- **Sessions 0–4:** accepted for progression.
-- **Session 5:** implemented; deployed technical + visual acceptance pending.
+- **Milestone:** **P4.6.0 — Session 6 Production / Performance Pass**.
+- **Sessions 0–3:** accepted.
+- **Sessions 4–5:** technically useful coverage completed, but visual review was mixed; rejected effects are no longer public portfolio content.
+- **Session 6:** first production trim implemented; deployed browser gate + real mobile measurements pending.
 - **Canonical Runtime Lab:** `site/heavy-impact-lab.html`.
 - **Production Web2D backend:** tsParticles only.
 - **Particlr:** reference/authoring source only.
@@ -14,7 +15,9 @@
 
 ## Hard UI preservation rule
 
-Runtime, architecture, schema, optimization and refactor work must preserve the established Runtime Lab UI/UX and working controls by default. P4.5.0 changes runtime/schema/effect data under the existing UI; it does not replace the Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress interface.
+Runtime, architecture, schema, optimization and refactor work must preserve the established Runtime Lab UI/UX and working controls by default.
+
+P4.6.0 keeps the same Play / Debug / HUD / inspector / overlap / A/B / cancellation / stress shell. Production work happens underneath it.
 
 ---
 
@@ -65,169 +68,197 @@ generic schema runtime
 TsParticlesAdapter
 ```
 
-Synthetic `schema-test-*` effects remain regression fixtures only and are hidden from normal Play.
+Synthetic `schema-test-*` effects remain Debug-only regression fixtures.
 
 ### Session 3 — Asset Pipeline + Dust Puff
 
 **PASS / browser + visual accepted.**
 
-Dust Puff remains the first accepted asset-first Schema V1 effect.
+Dust Puff remains the strongest accepted asset-first Schema V1 proof.
 
-Known debt: many overlapping Dust Puff instances are expensive. Current large translucent SVG dust sprites/blur create overdraw/raster cost. Measure and optimize this in Session 6; do not rewrite the runtime now.
-
-### Session 4 — Critical Hit + Goal Celebration
-
-**PASS for progression / visual polish debt retained.**
-
-The first two visual passes were rejected. P4.4.2 fixed image-size semantics and Critical Hit transforms. P4.4.3 removed unstable ribbon geometry and random confetti rotation from Goal Celebration, leaving compact mirrored confetti jets.
-
-User review on 2026-08-20 accepted the current result as good enough to progress, while explicitly noting it is not final polish quality.
-
-Retained Session 4 capabilities:
-
-- semantic per-layer `origin`,
-- `orientation: direction | motion`,
-- constrained ribbon capability remains available in the backend/schema but is not used by the accepted Goal Celebration,
-- image-size authoring is treated as tsParticles radius semantics and checked conservatively.
+Known debt: many overlapping Dust Puff instances are expensive because large translucent SVG sprites create significant overdraw/raster work. P4.6 adds quality scaling; raster asset comparison is still pending.
 
 ---
 
-## Session 5 — Coverage Effects
+## Sessions 4–5 — visual review outcome
 
-### Goal
+These sessions proved runtime capabilities, but technical success is not treated as portfolio success.
 
-Complete the public Web2D V1 effect set without adding effect-specific runtime bridges.
+User visual review on 2026-08-20 classified the effects approximately as:
 
-Public set:
+| Effect | Runtime/technical role | Visual status |
+| --- | --- | --- |
+| Dust Puff | Schema + asset pipeline proof | **KEEP / good** |
+| Projectile / Fireball | moving-source reference | **KEEP / good, reads more like a rocket** |
+| Rain / Environment | sustained stage-wide emitter | **KEEP / usable** |
+| Explosion | layered schema coverage | **KEEP FOR NOW / polish needed** |
+| Critical Hit | direction/orientation proof | **REJECT visual** |
+| Goal Celebration | spatial/origin proof | **REJECT visual** |
+| Magic Burst | directional image-shape proof | **REJECT visual** |
+| Heavy Impact | old topology/lifecycle baseline | **REJECT visual / internal only** |
 
-1. Dust Puff ✅
-2. Critical Hit ✅
-3. Goal Celebration ✅ for progression
-4. Explosion — P4.5 review
-5. Magic Burst — P4.5 review
-6. Rain / Environment — P4.5 review
+### Consequence
 
-### Explosion
+Do not represent the rejected effects as portfolio-ready merely because they pass runtime gates.
 
-`site/fxdeck/effects/explosion.json`
+As of P4.6.0 the normal Play surface is curated to:
 
-Pure Schema V1 replacement for the old legacy `explosion` definition. Registering the same `explosion / v1 / default` key replaces the runtime definition in-place while preserving the public `FXDeck.play("explosion")` API.
+1. `dust-puff`
+2. `fireball`
+3. `explosion`
+4. `rain`
 
-Reference hierarchy is intentionally based on the accepted Particlr Explosion composition:
+`Critical Hit`, `Goal Celebration` and `Magic Burst` are not loaded by the production bootstrap. Their source remains in Git history/repo for reference, but they are not current product content.
 
-```text
-flash
-→ fireball body
-→ sparks + debris
-→ delayed smoke
-```
+`Heavy Impact` remains registered internally only because the long-running Session 1 topology/lifecycle regression gate uses it. It is hidden from Play.
 
-The new effect uses reusable assets rather than a custom explosion bridge:
+The old synthetic schema fixtures remain internal Debug regression data and are hidden from Play.
 
-- `hero-flare`
-- `fire-soft`
-- `hero-streak`
-- `smoke-soft`
+---
 
-### Magic Burst
+# Session 6 — Production / Performance
 
-`site/fxdeck/effects/magic-burst.json`
+## P4.6.0 implemented
 
-Designed around readable asymmetric direction rather than a radial particle explosion:
+### 1. tsParticles production trim
 
-```text
-small core
-→ dominant directional magic arc
-→ sparse forward motes
-→ offset delayed echo arc
-→ small echo motes
-```
-
-The dominant shape uses the reusable `magic-arc` asset and semantic direction/origin/orientation. No ribbon and no custom runtime hook is required.
-
-### Rain / Environment
-
-`site/fxdeck/effects/rain.json`
-
-This is the first real Rain effect. It replaces the misleading point-origin behavior of the old synthetic `schema-test-rain` fixture.
-
-Rain required two generic Schema V1 additions justified by the real environmental use case:
+Canonical Runtime Lab no longer loads:
 
 ```text
-anchor: "stage-top-center"
-spawn.area: { widthPercent, heightPercent }
+tsparticles full bundle
+plugin-motion
+shape-ribbon
 ```
 
-The compiler maps `spawn.area` to the backend emitter region, and generic schema playback resolves `stage-top-center` independently of the clicked gameplay position.
-
-Rain uses two finite rate layers:
-
-- far rain,
-- near rain.
-
-Both span the stage width, use motion-oriented `rain-streak` image particles, and remain finite/lifecycle-owned.
-
-### P4.5 reusable assets
-
-Added FXDeck-original assets:
-
-- `fire-soft`
-- `smoke-soft`
-- `magic-arc`
-- `rain-streak`
-
-All are manifest-managed and intentionally avoid filter blur in the new P4.5 assets.
-
-### Session 5 integration
-
-- `site/js/session5-coverage-effects.js`
-- `site/js/session5-coverage-gate.js`
-
-No `explosion-runtime-bridge.js`, `magic-burst-runtime-bridge.js`, or `rain-runtime-bridge.js` was added.
-
-### Expected technical gate
+It now loads:
 
 ```text
-PASS P4.5.0 SESSION 5 TECH GATE: 6 public schema effects / Explosion asset hierarchy / directional Magic Burst / stage-wide Rain rate emitters / 0 effect bridges / 1 persistent canvas
+@tsparticles/engine 4.3.2
+@tsparticles/slim 4.3.2
+@tsparticles/plugin-emitters 4.3.2
 ```
 
-The gate verifies:
+Runtime reports:
 
-- all six public showcase effects resolve as schema-driven,
-- Explosion uses additive flash/fireball and delayed normal-blend smoke,
-- Explosion streaks orient to motion,
-- Magic Burst uses a dominant direction-oriented `magic-arc`,
-- Rain uses stage-top-center anchoring,
-- Rain compiles 100% wide finite rate emitter regions,
-- Rain streaks orient to motion,
-- burst and sustained playback can be cleaned up,
-- persistent container identity remains unchanged,
-- exactly one particle canvas remains.
+```text
+backendBundle = "slim+emitters"
+ribbon capability = false
+```
 
-### Session 5 acceptance status
+This is the first safe production trim. Exact byte savings must come from deployed measurements; do not invent bundle-size numbers.
 
-**Technical browser gate: pending deployed user run.**
+### 2. Production effect curation
 
-**Visual gate: pending user review for Explosion, Magic Burst and real Rain.**
+New integration:
 
-Do not mark Session 5 complete until the deployed log passes and the three effects are visually reviewed.
+- `site/js/session6-production-effects.js`
+
+It loads/prefetches only the coverage JSON still needed by the curated public set:
+
+- `explosion.json`
+- `rain.json`
+
+Rejected Session 4/5 hero modules are not canonical boot dependencies.
+
+### 3. Generic quality tiers
+
+`compileWeb2D()` now accepts:
+
+```js
+FXDeck.play("dust-puff", {
+  position: { x, y },
+  intensity: 1,
+  quality: "low" | "medium" | "high"
+});
+```
+
+Quality scaling is backend-generic and priority-aware:
+
+```text
+high   → authored particle/rate density
+medium → preserve hero layers, reduce support layers
+low    → preserve readability, aggressively reduce medium/low support density
+```
+
+Quality is applied after normal runtime parameter bindings and before compilation/semantic validation.
+
+### 4. P4.6 production gate
+
+New gate:
+
+- `site/js/session6-production-gate.js`
+
+It checks:
+
+- public selector contains only Dust Puff / Projectile / Explosion / Rain,
+- Critical Hit / Goal Celebration / Magic Burst are not registered by production boot,
+- full tsParticles bundle is absent,
+- ribbon/motion scripts are absent,
+- runtime is `slim+emitters`,
+- Dust Puff low/medium/high burst counts scale monotonically,
+- Rain low/medium/high rates scale monotonically,
+- low-quality burst + sustained playback clean up correctly,
+- one persistent particle container/canvas remains,
+- browser Resource Timing / CDN HEAD size data is logged when available, without pretending unavailable bytes are known.
+
+Expected success line:
+
+```text
+PASS P4.6.0 SESSION 6 PRODUCTION GATE: curated 4-effect Play / slim+emitters / full bundle absent / ribbon absent / quality scaling / 1 persistent canvas
+```
+
+### P4.6.0 acceptance status
+
+**Browser technical gate: pending deployed user run.**
+
+**Physical mobile performance measurements: pending.**
+
+**Asset raster comparison (SVG vs PNG/WebP): pending.**
+
+Do not mark Session 6 complete from source inspection alone.
 
 ---
 
 ## Immediate next work
 
-1. Open `site/heavy-impact-lab.html?v=p4.5.0` on GitHub Pages.
-2. Review **Explosion** at intensity `0.5 / 1 / 2` and several directions.
-3. Review **Magic Burst** at `0° / 90° / 180° / 270°` and several intensities.
-4. Review **Rain / Environment**. It must spawn across the stage top and must not originate from the click point.
-5. Inspect `PASS/FAIL P4.5.0 SESSION 5 TECH GATE`.
-6. If visuals fail, tune JSON/assets/timing first; do not add effect-specific runtime code.
+1. Open `site/heavy-impact-lab.html?v=p4.6.0` on GitHub Pages.
+2. Confirm the Play selector contains only:
+   - Dust Puff
+   - Projectile / Fireball
+   - Explosion
+   - Rain / Environment
+3. Inspect the Debug log for `PASS P4.6.0 SESSION 6 PRODUCTION GATE`.
+4. Copy the P4.6 log back into the project conversation.
+5. Then run real overlap/stress measurements, especially Dust Puff and Rain + gameplay bursts.
+6. After browser acceptance, continue Session 6 with raster asset comparison and physical Galaxy S20+ profiling.
 
-## Deferred to Session 6
+---
 
-- Dust Puff overlap optimization,
-- raster WebP/PNG vs SVG measurements,
-- explicit slim tsParticles allowlist/build,
-- mobile quality scaling and physical-device profiling,
-- bundle gzip/Brotli measurement,
-- sustained rain + hero-effect stress testing.
+## Portfolio direction after performance pass
+
+Do **not** spend repeated blind iterations rescuing rejected hero effects.
+
+For future portfolio replacements use:
+
+```text
+reference lock
+→ layer breakdown
+→ asset requirements
+→ timing / motion targets
+→ Schema JSON
+→ visual review
+```
+
+No new hero effect should be invented from primitive particle noise without an agreed visual reference.
+
+Target final portfolio can be:
+
+```text
+Dust Puff        KEEP
+Projectile       KEEP / polish
+Explosion        polish
+Rain             polish
++ 2 new reference-locked hero effects
+```
+
+This is preferable to forcing Critical Hit / Goal Celebration / Magic Burst into the final package.
