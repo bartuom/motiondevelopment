@@ -1,10 +1,10 @@
-import { FXDeckAssetManager } from '../fxdeck/core/asset-manager.js?v=p4.4.1';
-import { loadEffectDefinition } from '../fxdeck/schema/effect-loader.js?v=p4.4.1';
-import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.4.1';
+import { FXDeckAssetManager } from '../fxdeck/core/asset-manager.js?v=p4.6.0';
+import { loadEffectDefinition } from '../fxdeck/schema/effect-loader.js?v=p4.6.0';
+import { registerSchemaEffects } from '../fxdeck/web2d/register-schema-effect.js?v=p4.6.0';
 
-const BUILD = 'P4.4.1';
-const MANIFEST_URL = './fxdeck/assets/manifest.json?v=p4.4.1';
-const DUST_URL = './fxdeck/effects/dust-puff.json?v=p4.4.1';
+const BUILD = 'P4.6.0';
+const MANIFEST_URL = './fxdeck/assets/manifest.json?v=p4.6.0';
+const DUST_URL = './fxdeck/effects/dust-puff.json?v=p4.6.0';
 
 function log(message) {
   const output = document.querySelector('#p2-log');
