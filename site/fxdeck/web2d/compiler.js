@@ -2,7 +2,7 @@ import {
   assertValidEffectDefinition,
   DEFAULT_WEB2D_CAPABILITIES,
   DEFAULT_WEB2D_BUDGET
-} from '../schema/validator.js?v=p4.4.1';
+} from '../schema/validator.js?v=p4.5.0';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -244,12 +244,21 @@ function compileParticles(effect, layer, params, assets) {
   return particles;
 }
 
+function emitterSize(spawn) {
+  const area = spawn?.area;
+  return {
+    width: Number(area?.widthPercent ?? 0),
+    height: Number(area?.heightPercent ?? 0),
+    mode: 'percent'
+  };
+}
+
 function compileEmitter(layer, particles) {
   if (layer.spawn.mode === 'burst') {
     return {
       autoPlay: true,
       startCount: layer.spawn.count,
-      size: { width: 0, height: 0, mode: 'percent' },
+      size: emitterSize(layer.spawn),
       rate: { quantity: 0, delay: 0 },
       life: { count: 1, duration: .05, wait: false },
       particles
@@ -259,7 +268,7 @@ function compileEmitter(layer, particles) {
   return {
     autoPlay: true,
     startCount: 0,
-    size: { width: 0, height: 0, mode: 'percent' },
+    size: emitterSize(layer.spawn),
     rate: { quantity: 1, delay: 1 / layer.spawn.ratePerSecond },
     life: { count: 1, duration: layer.spawn.durationMs / 1000, wait: false },
     particles
@@ -282,6 +291,7 @@ export function compileWeb2D(effect, params = {}, {
       delayMs: layer.delayMs ?? 0,
       priority: layer.priority ?? resolved.priority ?? 'medium',
       spawnMode: layer.spawn.mode,
+      anchor: layer.anchor ?? 'event',
       origin: clone(layer.origin ?? { x: 0, y: 0, rotateWithDirection: false }),
       emitter: compileEmitter(layer, particles)
     };
