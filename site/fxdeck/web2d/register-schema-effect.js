@@ -1,5 +1,5 @@
-import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.5.0';
-import { compileWeb2D } from './compiler.js?v=p4.5.0';
+import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.6.0';
+import { compileWeb2D } from './compiler.js?v=p4.6.0';
 
 function toRuntimeAssets(effect) {
   return (effect.assets ?? []).map((asset) => ({
@@ -60,11 +60,11 @@ function resolveLayerPosition(basePosition, origin = {}, params = {}, stage = nu
   };
 
   if (stage) {
-    const margin = 4;
-    const width = Math.max(margin * 2, Number(stage.clientWidth ?? 0));
-    const height = Math.max(margin * 2, Number(stage.clientHeight ?? 0));
-    resolved.x = clamp(resolved.x, margin, width - margin);
-    resolved.y = clamp(resolved.y, margin, height - margin);
+    const margin = anchor === 'stage-top-center' ? 0 : 4;
+    const width = Math.max(1, Number(stage.clientWidth ?? 0));
+    const height = Math.max(1, Number(stage.clientHeight ?? 0));
+    resolved.x = clamp(resolved.x, margin, Math.max(margin, width - margin));
+    resolved.y = clamp(resolved.y, margin, Math.max(margin, height - margin));
   }
 
   return resolved;
@@ -116,7 +116,8 @@ export function createSchemaEffectDefinition(effect, compilerOptions) {
         schemaDriven: true,
         schemaVersion: compiled.schemaVersion,
         compiledLayerCount: compiled.layers.length,
-        durationMs: compiled.durationMs
+        durationMs: compiled.durationMs,
+        quality: compiled.quality
       };
 
       const immediate = compiled.layers.map((layer) => scheduleLayer(instance, particles, layer, params));
