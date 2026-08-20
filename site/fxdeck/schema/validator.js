@@ -13,6 +13,7 @@ const BINDING_PROPERTIES = new Set([...NUMERIC_BINDING_PROPERTIES, ...COLOR_BIND
 const BINDING_OPERATIONS = new Set(['multiply', 'add', 'replace']);
 const COLOR_PARAMS = new Set(['tint', 'teamColor']);
 const ORIENTATION_MODES = new Set(['direction', 'motion']);
+const ANCHORS = new Set(['event', 'stage-top-center']);
 
 export const DEFAULT_WEB2D_BUDGET = Object.freeze({
   maxLayers: 8,
@@ -121,6 +122,19 @@ function validateOrigin(origin, path, issues) {
   }
 }
 
+function validateEmitterArea(area, path, issues) {
+  if (!isObject(area)) {
+    issue(issues, 'FXD_AREA_00', path, 'must be { widthPercent, heightPercent }');
+    return;
+  }
+  unknownKeys(area, new Set(['widthPercent', 'heightPercent']), path, issues);
+  for (const key of ['widthPercent', 'heightPercent']) {
+    if (!finite(area[key]) || area[key] < 0 || area[key] > 100) {
+      issue(issues, 'FXD_AREA_01', `${path}.${key}`, 'must be a finite percentage in [0, 100]');
+    }
+  }
+}
+
 function validateRibbon(ribbon, path, issues) {
   if (!isObject(ribbon)) {
     issue(issues, 'FXD_RIBBON_00', path, 'ribbon shape requires a ribbon object');
@@ -202,7 +216,7 @@ export function validateEffectDefinition(effect, {
   effect.layers.forEach((layer, index) => {
     const path = `$.layers[${index}]`;
     if (!isObject(layer)) return issue(issues, 'FXD_LAYER_01', path, 'layer must be an object');
-    unknownKeys(layer, new Set(['id', 'type', 'delayMs', 'priority', 'z', 'blend', 'origin', 'spawn', 'shape', 'color', 'lifetimeMs', 'motion', 'size', 'opacity', 'rotationDeg', 'orientation']), path, issues);
+    unknownKeys(layer, new Set(['id', 'type', 'delayMs', 'priority', 'z', 'blend', 'anchor', 'origin', 'spawn', 'shape', 'color', 'lifetimeMs', 'motion', 'size', 'opacity', 'rotationDeg', 'orientation']), path, issues);
 
     if (typeof layer.id !== 'string' || !ID_RE.test(layer.id)) issue(issues, 'FXD_LAYER_02', `${path}.id`, 'invalid layer id');
     if (layerIds.has(layer.id)) issue(issues, 'FXD_LAYER_03', `${path}.id`, 'duplicate layer id');
@@ -212,6 +226,7 @@ export function validateEffectDefinition(effect, {
     if (layer.delayMs != null && (!Number.isInteger(layer.delayMs) || layer.delayMs < 0)) issue(issues, 'FXD_DELAY_01', `${path}.delayMs`, 'must be a non-negative integer');
     if (layer.priority != null && !PRIORITIES.has(layer.priority)) issue(issues, 'FXD_PRIORITY_01', `${path}.priority`, 'unsupported priority');
     if (layer.blend != null && !capabilities.blends.has(layer.blend)) issue(issues, 'FXD_CAPABILITY_02', `${path}.blend`, `unsupported blend "${layer.blend}"`);
+    if (layer.anchor != null && !ANCHORS.has(layer.anchor)) issue(issues, 'FXD_ANCHOR_01', `${path}.anchor`, 'must be event or stage-top-center');
     if (layer.origin != null) validateOrigin(layer.origin, `${path}.origin`, issues);
 
     if (!isObject(layer.spawn)) {
@@ -219,17 +234,19 @@ export function validateEffectDefinition(effect, {
     } else if (!capabilities.spawnModes.has(layer.spawn.mode)) {
       issue(issues, 'FXD_CAPABILITY_03', `${path}.spawn.mode`, `unsupported spawn mode "${layer.spawn.mode}"`);
     } else if (layer.spawn.mode === 'burst') {
-      unknownKeys(layer.spawn, new Set(['mode', 'count']), `${path}.spawn`, issues);
+      unknownKeys(layer.spawn, new Set(['mode', 'count', 'area']), `${path}.spawn`, issues);
       if (!Number.isInteger(layer.spawn.count) || layer.spawn.count < 1) issue(issues, 'FXD_SPAWN_01', `${path}.spawn.count`, 'must be a positive integer');
+      if (layer.spawn.area != null) validateEmitterArea(layer.spawn.area, `${path}.spawn.area`, issues);
       if (Number.isInteger(layer.spawn.count)) {
         burstTotal += layer.spawn.count;
         estimatedSpawn += layer.spawn.count;
         if (layer.spawn.count > budget.maxBurstPerLayer) issue(issues, 'FXD_BUDGET_01', `${path}.spawn.count`, `burst exceeds ${budget.maxBurstPerLayer} particles per layer`);
       }
     } else if (layer.spawn.mode === 'rate') {
-      unknownKeys(layer.spawn, new Set(['mode', 'ratePerSecond', 'durationMs']), `${path}.spawn`, issues);
+      unknownKeys(layer.spawn, new Set(['mode', 'ratePerSecond', 'durationMs', 'area']), `${path}.spawn`, issues);
       if (!finite(layer.spawn.ratePerSecond) || layer.spawn.ratePerSecond <= 0) issue(issues, 'FXD_SPAWN_02', `${path}.spawn.ratePerSecond`, 'must be > 0');
       if (!Number.isInteger(layer.spawn.durationMs) || layer.spawn.durationMs < 1) issue(issues, 'FXD_SPAWN_03', `${path}.spawn.durationMs`, 'must be a positive integer');
+      if (layer.spawn.area != null) validateEmitterArea(layer.spawn.area, `${path}.spawn.area`, issues);
       if (finite(layer.spawn.ratePerSecond) && layer.spawn.ratePerSecond > budget.maxRatePerSecond) issue(issues, 'FXD_BUDGET_02', `${path}.spawn.ratePerSecond`, `rate exceeds ${budget.maxRatePerSecond}/s`);
       if (finite(layer.spawn.ratePerSecond) && Number.isInteger(layer.spawn.durationMs)) estimatedSpawn += Math.ceil(layer.spawn.ratePerSecond * layer.spawn.durationMs / 1000);
     }
