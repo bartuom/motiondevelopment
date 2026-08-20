@@ -1,11 +1,12 @@
-import { FXDeckRuntime } from '../core/fxdeck.js?v=p4.6.0';
-import { DomSpriteAdapter } from '../adapters/dom-sprite-adapter.js?v=p4.6.0';
-import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.6.0';
-import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.6.0';
-import { registerFireball } from '../effects/fireball.js?v=p4.6.0';
-import { registerSchemaEffects } from './register-schema-effect.js?v=p4.6.0';
+import { FXDeckRuntime } from '../core/fxdeck.js?v=p4.6.1';
+import { DomSpriteAdapter } from '../adapters/dom-sprite-adapter.js?v=p4.6.1';
+import { TsParticlesAdapter } from '../adapters/tsparticles-adapter.js?v=p4.6.1';
+import { registerHeavyImpact } from '../effects/heavy-impact.js?v=p4.6.1';
+import { registerFireball } from '../effects/fireball.js?v=p4.6.1';
+import { registerSchemaEffects } from './register-schema-effect.js?v=p4.6.1';
 
-export const WEB2D_BUILD = 'P4.6.0';
+export const WEB2D_BUILD = 'P4.6.1';
+const FULL_BUNDLE_SRC = 'https://cdn.jsdelivr.net/npm/tsparticles@4.3.2/tsparticles.bundle.min.js';
 
 function requireElement(value, label) {
   if (!(value instanceof Element)) throw new TypeError(`${label} must be a DOM Element.`);
@@ -17,20 +18,48 @@ function resolveHostId(host) {
   return host.id;
 }
 
-async function registerTsParticlesCapabilities(engine) {
-  if (!engine) throw new Error('FXDeck Web2D requires the tsParticles engine.');
-  if (typeof globalThis.loadSlim !== 'function') {
-    throw new Error('FXDeck Web2D requires the tsParticles slim loader.');
-  }
-  if (typeof globalThis.loadEmittersPlugin !== 'function') {
-    throw new Error('FXDeck Web2D requires the emitters plugin loader.');
+async function loadScriptOnce(src, readyCheck) {
+  if (readyCheck()) return;
+  const existing = [...document.scripts].find((script) => script.src === src);
+  if (existing) {
+    if (readyCheck()) return;
+    await new Promise((resolve, reject) => {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', reject, { once: true });
+    });
+    return;
   }
 
-  // P4.6 production trim: the accepted runtime set does not require Full,
-  // ribbons or the motion plugin. Slim already supplies image/square shapes,
-  // life/rotate updaters and interactivity; emitters are the only extra plugin.
-  await globalThis.loadSlim(engine);
-  await globalThis.loadEmittersPlugin(engine);
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.fxdeckFallback = 'full';
+    script.addEventListener('load', resolve, { once: true });
+    script.addEventListener('error', () => reject(new Error(`FXDeck Web2D failed to load fallback script: ${src}`)), { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+async function registerTsParticlesCapabilities(engine) {
+  if (!engine) throw new Error('FXDeck Web2D requires the tsParticles engine.');
+
+  if (typeof globalThis.loadSlim === 'function' && typeof globalThis.loadEmittersPlugin === 'function') {
+    await globalThis.loadSlim(engine);
+    await globalThis.loadEmittersPlugin(engine);
+    return 'slim+emitters';
+  }
+
+  // P4.6.0 proved that the CDN emitters loader is not reliable in the current
+  // GitHub Pages path. Recover the canonical lab first instead of leaving the
+  // product broken. Session 6 slimming stays an optimization experiment until
+  // its exact modular loader path is browser-proven.
+  await loadScriptOnce(FULL_BUNDLE_SRC, () => typeof globalThis.loadFull === 'function');
+  if (typeof globalThis.loadFull !== 'function') {
+    throw new Error('FXDeck Web2D recovery failed: full tsParticles loader is unavailable.');
+  }
+  await globalThis.loadFull(engine);
+  return 'full-fallback';
 }
 
 function registerInternalBaselineEffects(fx) {
@@ -56,7 +85,7 @@ export async function createWeb2DRuntime({
   requireElement(visualHost, 'visualHost');
 
   const engine = globalThis.tsParticles;
-  await registerTsParticlesCapabilities(engine);
+  const backendBundle = await registerTsParticlesCapabilities(engine);
 
   if (assetManager) await assetManager.loadManifest();
   const resolvedSchemaEffects = schemaEffects.map((effect) => assetManager ? assetManager.hydrateEffect(effect) : structuredClone(effect));
@@ -106,7 +135,7 @@ export async function createWeb2DRuntime({
     schemaEffects: structuredClone(resolvedSchemaEffects),
     assetManager,
     assetWarmup,
-    backendBundle: 'slim+emitters',
+    backendBundle,
     capabilities: Object.freeze({ ribbon: false, emitters: true, image: true, square: true, life: true, rotate: true }),
 
     async prefetchEffect(id) {
@@ -126,7 +155,7 @@ export async function createWeb2DRuntime({
         activeInstances: fx.getStats().activeInstances,
         particleCanvasCount: particleHost.querySelectorAll('canvas').length,
         cachedAssets: assetManager?.getStats?.().cachedAssets ?? 0,
-        backendBundle: 'slim+emitters',
+        backendBundle,
         ribbonCapability: false
       };
     },
