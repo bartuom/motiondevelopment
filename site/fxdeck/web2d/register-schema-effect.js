@@ -1,5 +1,5 @@
-import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.4.2';
-import { compileWeb2D } from './compiler.js?v=p4.4.2';
+import { assertValidEffectDefinition } from '../schema/validator.js?v=p4.5.0';
+import { compileWeb2D } from './compiler.js?v=p4.5.0';
 
 function toRuntimeAssets(effect) {
   return (effect.assets ?? []).map((asset) => ({
@@ -29,8 +29,18 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function resolveLayerPosition(basePosition, origin = {}, params = {}, stage = null) {
-  const base = basePosition ?? { x: 0, y: 0 };
+function anchorBasePosition(basePosition, anchor, stage) {
+  if (anchor === 'stage-top-center' && stage) {
+    return {
+      x: Math.max(1, Number(stage.clientWidth ?? 0)) * 0.5,
+      y: 0
+    };
+  }
+  return basePosition ?? { x: 0, y: 0 };
+}
+
+function resolveLayerPosition(basePosition, origin = {}, params = {}, stage = null, anchor = 'event') {
+  const base = anchorBasePosition(basePosition, anchor, stage);
   let x = Number(origin.x ?? 0);
   let y = Number(origin.y ?? 0);
 
@@ -49,8 +59,6 @@ function resolveLayerPosition(basePosition, origin = {}, params = {}, stage = nu
     y: Number(base.y ?? 0) + y
   };
 
-  // Authored local offsets must never throw a layer outside the gameplay surface.
-  // This keeps spatial compositions stable when the event is fired near an edge.
   if (stage) {
     const margin = 4;
     const width = Math.max(margin * 2, Number(stage.clientWidth ?? 0));
@@ -65,7 +73,7 @@ function resolveLayerPosition(basePosition, origin = {}, params = {}, stage = nu
 function scheduleLayer(instance, particles, layer, params) {
   const launch = async () => {
     if (instance.state !== 'playing') return null;
-    const position = resolveLayerPosition(params.position, layer.origin, params, particles.stage);
+    const position = resolveLayerPosition(params.position, layer.origin, params, particles.stage, layer.anchor);
     const handle = layer.spawnMode === 'burst'
       ? await particles.burst(layer.emitter, position, { priority: layer.priority })
       : await particles.spawn(layer.emitter, position);
