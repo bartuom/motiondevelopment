@@ -22,9 +22,22 @@ critical-slash
 hero-streak
 hero-flare
 confetti-strip
+fire-soft
+smoke-soft
+magic-arc
+rain-streak
 ```
 
-Assets are added only when a real effect proves the need. P4.4.1 added `confetti-strip` because Goal Celebration needed readable rectangular confetti rather than more geometric point-burst noise.
+Assets are added only when a real effect proves the need.
+
+P4.5 additions:
+
+- `fire-soft` — soft additive fireball alpha for Explosion,
+- `smoke-soft` — normal-blend smoke alpha for Explosion,
+- `magic-arc` — dominant direction-readable Magic Burst shape,
+- `rain-streak` — neutral horizontal streak oriented to particle motion by the compiler/runtime.
+
+The new P4.5 SVGs avoid filter blur. This does not imply SVG is the final production format; Session 6 will measure raster WebP/PNG alternatives, overdraw and decode/runtime cost.
 
 ## Performance note
 
