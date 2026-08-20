@@ -1,6 +1,6 @@
 import { compileWeb2D } from '../fxdeck/web2d/compiler.js?v=p4.4.2';
 
-const BUILD = 'P4.4.2';
+const BUILD = 'P4.4.3';
 const REGRESSION_EFFECT_IDS = new Set(['schema-test-burst', 'schema-test-smoke', 'schema-test-rain']);
 
 function log(message) {
@@ -93,70 +93,72 @@ function assertCriticalScale(definition) {
     const maxRadius = Math.max(layer.size.start, layer.size.end);
     const renderedWidth = maxRadius * 2;
     const renderedHeight = renderedWidth / ratio;
-    if (renderedWidth > 160 || renderedHeight > 42) {
-      throw new Error(`${id}: unsafe rendered size ${renderedWidth.toFixed(1)}x${renderedHeight.toFixed(1)}px`);
-    }
-    if (layer.origin && (Math.abs(layer.origin.x ?? 0) > 0 || Math.abs(layer.origin.y ?? 0) > 0)) {
-      throw new Error(`${id}: dominant slash must stay centered on gameplay impact`);
-    }
+    if (renderedWidth > 160 || renderedHeight > 42) throw new Error(`${id}: unsafe rendered size ${renderedWidth.toFixed(1)}x${renderedHeight.toFixed(1)}px`);
   }
 }
 
-function assertGoalTransformBudget(definition) {
+function assertGoalStableTransformContract(definition) {
+  if (definition.source.layers.length !== 5) throw new Error(`Goal Celebration expected 5 authored layers, got ${definition.source.layers.length}`);
+
+  const imageLayers = definition.source.layers.filter((layer) => layer.shape.type === 'image');
+  if (imageLayers.length !== 4) throw new Error(`Goal Celebration expected 4 image confetti layers, got ${imageLayers.length}`);
+
   for (const layer of definition.source.layers) {
+    if (layer.shape.type === 'ribbon') throw new Error(`${layer.id}: ribbon geometry is forbidden in stabilized Goal Celebration`);
+    if (layer.rotationDeg) throw new Error(`${layer.id}: random authored rotation is forbidden in stabilized Goal Celebration`);
     if (layer.origin) {
       const maxOffset = Math.max(Math.abs(layer.origin.x ?? 0), Math.abs(layer.origin.y ?? 0));
-      if (maxOffset > 110) throw new Error(`${layer.id}: local origin offset ${maxOffset}px exceeds compact composition budget`);
+      if (maxOffset > 64) throw new Error(`${layer.id}: local origin offset ${maxOffset}px exceeds stable composition budget`);
     }
-    if (layer.shape.type === 'image') {
-      const maxRadius = Math.max(layer.size.start, layer.size.end);
-      if (maxRadius > 6) throw new Error(`${layer.id}: confetti image radius ${maxRadius}px is oversized`);
-    }
+  }
+
+  for (const layer of imageLayers) {
+    if (layer.orientation?.mode !== 'motion') throw new Error(`${layer.id}: confetti strip must orient to motion`);
+    const maxRadius = Math.max(layer.size.start, layer.size.end);
+    if (maxRadius > 4.5) throw new Error(`${layer.id}: confetti image radius ${maxRadius}px exceeds stable size budget`);
+  }
+
+  const left = sourceLayer(definition, 'team-left');
+  const right = sourceLayer(definition, 'team-right');
+  if (left.origin.x !== -62 || right.origin.x !== 62 || left.origin.y !== 28 || right.origin.y !== 28) {
+    throw new Error('Goal primary launch origins are not mirrored around the gameplay event');
+  }
+  if (left.motion.direction !== 315 || right.motion.direction !== 225) {
+    throw new Error('Goal primary launch directions are not the expected mirrored upward jets');
   }
 }
 
 export async function runSession4Gate() {
   const runtime = await waitForReady();
-  const heroState = globalThis.FXDeckHeroEffects;
-
   const critical = runtime.fx.resolve('critical-hit').definition;
   const goal = runtime.fx.resolve('goal-celebration').definition;
+
   if (!critical.schemaDriven || !goal.schemaDriven) throw new Error('hero effects must both be schema-driven');
   if (critical.source.layers.length !== 5) throw new Error(`Critical Hit expected 5 authored layers, got ${critical.source.layers.length}`);
-  if (goal.source.layers.length !== 6) throw new Error(`Goal Celebration expected 6 authored layers, got ${goal.source.layers.length}`);
 
   assertCriticalScale(critical);
-  assertGoalTransformBudget(goal);
+  assertGoalStableTransformContract(goal);
 
-  const criticalCompiled = compileWeb2D(critical.source, {
-    direction: 123,
-    intensity: 1.25,
-    tint: '#ff4d8d'
-  });
+  const criticalCompiled = compileWeb2D(critical.source, { direction: 123, intensity: 1.25, tint: '#ff4d8d' });
   const primarySlash = compiledLayer(criticalCompiled, 'primary-slash');
   const criticalStreaks = compiledLayer(criticalCompiled, 'streaks').emitter.particles;
   if (criticalStreaks.move.angle.offset !== 123) throw new Error(`semantic direction did not compile: ${criticalStreaks.move.angle.offset}`);
   if (criticalStreaks.rotate?.path !== true) throw new Error('Critical Hit streaks are not oriented to motion');
-  if (primarySlash.emitter.particles.rotate?.path !== false) throw new Error('Critical Hit primary slash must use fixed direction orientation');
   if (Number(primarySlash.emitter.particles.rotate?.value) !== 123) throw new Error('Critical Hit primary slash is not aligned 1:1 with gameplay direction');
-  if (criticalStreaks.color.value !== '#ff4d8d') throw new Error(`critical tint did not compile: ${criticalStreaks.color.value}`);
 
-  const goalCompiled = compileWeb2D(goal.source, {
-    intensity: 1.15,
-    teamColor: '#e31837'
-  });
-  const leftRibbon = compiledLayer(goalCompiled, 'ribbon-left');
-  const rightRibbon = compiledLayer(goalCompiled, 'ribbon-right');
-  const leftConfetti = compiledLayer(goalCompiled, 'team-confetti-left');
-  const rightConfetti = compiledLayer(goalCompiled, 'team-confetti-right');
-  if (leftRibbon.emitter.particles.shape.type !== 'ribbon' || rightRibbon.emitter.particles.shape.type !== 'ribbon') {
-    throw new Error('Goal Celebration must compile two ribbon layers');
+  const goalCompiled = compileWeb2D(goal.source, { intensity: 1.15, teamColor: '#e31837' });
+  const left = compiledLayer(goalCompiled, 'team-left');
+  const right = compiledLayer(goalCompiled, 'team-right');
+  const accentLeft = compiledLayer(goalCompiled, 'accent-left');
+  const accentRight = compiledLayer(goalCompiled, 'accent-right');
+
+  for (const layer of [left, right, accentLeft, accentRight]) {
+    if (layer.emitter.particles.shape.type !== 'image') throw new Error(`${layer.id}: expected image confetti shape`);
+    if (layer.emitter.particles.rotate?.path !== true) throw new Error(`${layer.id}: confetti is not oriented to motion`);
   }
-  if (leftRibbon.origin.x !== -54 || rightRibbon.origin.x !== 54) throw new Error('Goal ribbon origins drifted from normalized local layout');
-  if (leftConfetti.emitter.particles.color.value !== '#e31837' || rightConfetti.emitter.particles.color.value !== '#e31837') {
-    throw new Error('teamColor binding did not compile into confetti layers');
+  if (left.emitter.particles.color.value !== '#e31837' || right.emitter.particles.color.value !== '#e31837') {
+    throw new Error('teamColor binding did not compile into primary confetti jets');
   }
-  if (!heroState.ribbonCapabilityAdded || runtime.capabilities?.ribbon !== true) throw new Error('ribbon capability was not registered during Web2D boot');
 
   assertRegressionFixturesHidden();
 
@@ -169,10 +171,9 @@ export async function runSession4Gate() {
   await playStop(runtime, 'critical-hit', { direction: 123, intensity: 1.25, tint: '#ff4d8d' }, 90);
   if (runtime.adapters.particles.container !== container) throw new Error('container changed after Critical Hit');
 
-  await playStop(runtime, 'goal-celebration', { intensity: 1.15, teamColor: '#e31837' }, 300);
+  await playStop(runtime, 'goal-celebration', { intensity: 1.15, teamColor: '#e31837' }, 260);
   if (runtime.adapters.particles.container !== container) throw new Error('container changed after Goal Celebration');
 
-  // Near-edge call validates generic origin clamping without adding effect-specific positioning code.
   await playStop(runtime, 'goal-celebration', { intensity: 0.7, teamColor: '#4ea1ff' }, 120, { x: 2, y: 2 });
 
   runtime.assertTopology();
@@ -184,10 +185,11 @@ export async function runSession4Gate() {
     build: BUILD,
     effects: ['critical-hit', 'goal-celebration'],
     schemaDriven: 2,
-    normalizedImageScale: true,
-    neutralSlashAsset: true,
-    directionAlignment: true,
-    compactGoalOrigins: true,
+    criticalRetained: true,
+    goalRibbonRemoved: true,
+    goalRandomRotationRemoved: true,
+    goalMirroredOrigins: true,
+    goalMotionOrientation: true,
     edgeClamp: true,
     regressionFixturesHiddenFromPlay: true,
     particleCanvasCount: canvasCount,
@@ -197,8 +199,8 @@ export async function runSession4Gate() {
   globalThis.FXDeckSession4Gate = result;
   if (globalThis.FXDeckLab) globalThis.FXDeckLab.runSession4Gate = runSession4Gate;
 
-  log(`PASS ${BUILD} SESSION 4 TRANSFORM GATE: normalized image scale / 4:1 neutral slash / direction aligned / compact Goal layout / edge-clamped origins / Debug-only fixtures / 1 persistent canvas`);
-  log(`${BUILD} SESSION 4 VISUAL GATE: USER REVIEW REQUIRED — reject again if composition, scale or orientation still looks wrong`);
+  log(`PASS ${BUILD} SESSION 4 STABLE TRANSFORM GATE: Critical Hit retained / Goal ribbon removed / no random confetti rotation / mirrored compact origins / motion-oriented strips / edge clamp / 1 persistent canvas`);
+  log(`${BUILD} SESSION 4 VISUAL GATE: USER REVIEW REQUIRED — Goal Celebration must now stay compact and coherent around the clicked gameplay event`);
   return result;
 }
 
@@ -206,6 +208,6 @@ try {
   await runSession4Gate();
 } catch (error) {
   globalThis.FXDeckSession4Gate = { pass: false, build: BUILD, error: error.message, visualAccepted: false };
-  log(`FAIL ${BUILD} SESSION 4 TRANSFORM GATE: ${error.message}`);
+  log(`FAIL ${BUILD} SESSION 4 STABLE TRANSFORM GATE: ${error.message}`);
   console.error(error);
 }
