@@ -2,3 +2,35 @@
 Thumbs.db
 .vscode/
 .idea/
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Private keys / certificates / keystores
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+
+# Credentials / tokens / auth files
+credentials.*
+secrets.*
+*.secret
+*.token
+auth.json
+service-account*.json
+.npmrc
+.pypirc
+
+# Local logs / caches / temporary files
+*.log
+*.tmp
+.cache/
+coverage/
